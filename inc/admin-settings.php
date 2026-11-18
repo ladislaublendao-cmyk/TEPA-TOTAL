@@ -44,11 +44,11 @@ function tepa_register_settings() {
 add_action( 'admin_init', 'tepa_register_settings' );
 
 /**
- * Add top-level WP-Admin menu item.
+ * Add top-level WP-Admin menu item and dedicated submenus.
  */
 function tepa_add_admin_menu() {
 	add_menu_page(
-		'TEPA Award 2026',
+		'TEPA Award 2026 — Command Center',
 		'TEPA Award 2026',
 		'manage_options',
 		'tepa-award-2026',
@@ -56,8 +56,40 @@ function tepa_add_admin_menu() {
 		'dashicons-awards',
 		3
 	);
+
+	$submenus = array(
+		array( 'slug' => 'tepa-award-2026',               'title' => '📡 Palco & Controlo' ),
+		array( 'slug' => 'tepa-award-2026&tab=questions',   'title' => '✨ Quiz Studio' ),
+		array( 'slug' => 'tepa-award-2026&tab=projects',    'title' => '🏆 Votação & Projetos' ),
+		array( 'slug' => 'tepa-award-2026&tab=submissions', 'title' => '🎁 Vencedores & Vouchers' ),
+		array( 'slug' => 'tepa-award-2026&tab=settings',    'title' => '📱 QR Codes & Ligação' ),
+		array( 'slug' => 'tepa-award-2026&tab=audit',       'title' => '🛡️ Auditoria do Sistema' ),
+	);
+
+	foreach ( $submenus as $sub ) {
+		add_submenu_page(
+			'tepa-award-2026',
+			'TEPA 2026 — ' . $sub['title'],
+			$sub['title'],
+			'manage_options',
+			$sub['slug'],
+			'tepa_render_admin_page'
+		);
+	}
 }
 add_action( 'admin_menu', 'tepa_add_admin_menu' );
+
+/**
+ * Add immersive app-shell body class when viewing TEPA Backoffice inside WP-Admin.
+ */
+function tepa_admin_body_class( $classes ) {
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+	if ( $screen && false !== strpos( (string) $screen->id, 'tepa-award-2026' ) ) {
+		$classes .= ' tepa-wp-admin-page tepa-wp-immersive ';
+	}
+	return $classes;
+}
+add_filter( 'admin_body_class', 'tepa_admin_body_class' );
 
 /**
  * Render unified WP-Admin Command Center with embedded WP Settings form template.

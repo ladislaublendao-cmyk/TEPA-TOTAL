@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEPA_THEME_VERSION', '1.4.1' );
+define( 'TEPA_THEME_VERSION', '1.5.0' );
 define( 'TEPA_DEFAULT_SUPABASE_URL', 'https://ujpzqulgainzxxombrgb.supabase.co' );
 define( 'TEPA_DEFAULT_SUPABASE_KEY', 'sb_publishable_cuReE7bA6g0vdzdJQCPWJQ_oPCuxzxM' );
 
@@ -44,13 +44,21 @@ function tepa_get_runtime_config() {
 	$supabase_url = '' !== $raw_url ? $raw_url : TEPA_DEFAULT_SUPABASE_URL;
 	$supabase_key = '' !== $raw_key ? $raw_key : TEPA_DEFAULT_SUPABASE_KEY;
 	$force_demo   = (bool) get_option( 'tepa_force_demo', false );
+	$is_wp_admin  = is_admin() && is_user_logged_in() && current_user_can( 'manage_options' );
+	$current_user = $is_wp_admin ? wp_get_current_user() : null;
+	$req_tab      = ( $is_wp_admin && isset( $_GET['tab'] ) ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
 
 	return array(
 		'supabaseUrl'     => $supabase_url,
 		'supabaseAnonKey' => $supabase_key,
 		'forceDemo'       => $force_demo || ( empty( $supabase_url ) || empty( $supabase_key ) ),
 		'rawForceDemo'    => $force_demo,
-		'isWpAdmin'       => is_admin(),
+		'isWpAdmin'       => $is_wp_admin,
+		'requireWpAdmin'  => true,
+		'wpUserDisplay'   => $current_user ? $current_user->display_name : '',
+		'wpDashboardUrl'  => admin_url( 'index.php' ),
+		'wpAdminTab'      => $req_tab,
+		'defaultPin'      => $is_wp_admin ? (string) get_option( 'tepa_admin_pin', '2026' ) : '',
 		'assetsBase'      => get_template_directory_uri() . '/assets',
 		'homeUrl'         => home_url( '/' ),
 		'quizUrl'         => tepa_get_view_url( 'quiz' ),
@@ -117,7 +125,7 @@ add_action( 'wp_enqueue_scripts', 'tepa_enqueue_assets' );
  * Enqueue same assets inside the TEPA WP-Admin dashboard page.
  */
 function tepa_enqueue_admin_assets( $hook_suffix ) {
-	if ( 'toplevel_page_tepa-award-2026' !== $hook_suffix ) {
+	if ( false === strpos( (string) $hook_suffix, 'tepa-award-2026' ) ) {
 		return;
 	}
 	tepa_enqueue_assets();

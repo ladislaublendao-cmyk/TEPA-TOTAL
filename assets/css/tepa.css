@@ -3390,3 +3390,549 @@ details.tepa-bo-details > summary {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   v1.5.0 Executive Backoffice App Shell & Dedicated Custom Menu ("Menu Próprio")
+   ========================================================================== */
+
+body.tepa-bo-standalone {
+  margin: 0;
+  padding: 0;
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+/* Full-bleed immersive mode inside WordPress Admin */
+body.tepa-wp-admin-page.tepa-wp-immersive #adminmenumain,
+body.tepa-wp-admin-page.tepa-wp-immersive #wpadminbar,
+body.tepa-wp-admin-page.tepa-wp-immersive #wpfooter,
+body.tepa-wp-admin-page.tepa-wp-immersive #screen-meta-links,
+body.tepa-wp-admin-page.tepa-wp-immersive .update-nag {
+  display: none !important;
+}
+
+html.wp-toolbar:has(body.tepa-wp-admin-page.tepa-wp-immersive) {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+
+body.tepa-wp-admin-page.tepa-wp-immersive #wpcontent,
+body.tepa-wp-admin-page.tepa-wp-immersive #wpbody-content {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body.tepa-wp-admin-page .tepa-wp-admin-wrap {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.tepa-bo.tepa-bo-app {
+  max-width: none;
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  background: #F1F5F9;
+  color: #0F172A;
+  align-items: stretch;
+}
+
+/* Left Dedicated Sidebar ("Menu Próprio") */
+.tepa-bo-sidebar {
+  background: linear-gradient(180deg, #0B0F19 0%, #111827 100%);
+  color: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 8px 0 32px rgba(15, 23, 42, 0.14);
+  z-index: 40;
+}
+
+.tepa-bo-side-brand {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tepa-bo-side-logos {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tepa-bo-side-te-pill {
+  background: #FFFFFF;
+  padding: 5px 10px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tepa-bo-side-te-pill img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.tepa-bo-side-lu-logo {
+  height: 25px;
+  width: auto;
+  display: block;
+}
+
+.tepa-bo-side-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #FFFFFF !important;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.tepa-bo-side-sub {
+  font-size: 11.5px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+.tepa-bo-side-rt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.tepa-bo-side-rt.is-live {
+  background: rgba(16, 185, 129, 0.14);
+  color: #34D399;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+}
+
+.tepa-bo-side-rt.is-demo {
+  background: rgba(245, 158, 11, 0.16);
+  color: #FBBF24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.tepa-bo-side-nav {
+  flex: 1;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tepa-bo-side-group-lbl {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  padding: 10px 10px 4px;
+}
+
+.tepa-bo-side-group-lbl:first-child {
+  padding-top: 0;
+}
+
+.tepa-bo .tepa-bo-nav-item {
+  appearance: none;
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #CBD5E1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+}
+
+.tepa-bo .tepa-bo-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
+}
+
+.tepa-bo .tepa-bo-nav-item.is-active {
+  background: linear-gradient(90deg, rgba(231, 68, 37, 0.22) 0%, rgba(33, 148, 212, 0.16) 100%);
+  border-color: rgba(247, 123, 57, 0.42);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+
+.tepa-bo-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tepa-bo-nav-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.tepa-bo-nav-item.is-active .tepa-bo-nav-icon {
+  background: var(--tepa-grad-cta);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(231, 36, 40, 0.35);
+}
+
+.tepa-bo-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  color: #E2E8F0;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.tepa-bo-nav-item.is-active .tepa-bo-nav-badge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+}
+
+.tepa-bo-nav-badge.is-dirty {
+  background: #F59E0B;
+  color: #0F172A;
+}
+
+.tepa-bo-nav-badge.is-live {
+  background: rgba(16, 185, 129, 0.22);
+  color: #6EE7B7;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.tepa-bo-side-footer {
+  padding: 14px 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tepa-bo-side-launch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.tepa-bo a.tepa-bo-side-link,
+.tepa-bo button.tepa-bo-side-link {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #E2E8F0;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tepa-bo a.tepa-bo-side-link:hover,
+.tepa-bo button.tepa-bo-side-link:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+}
+
+.tepa-bo a.tepa-bo-side-link.is-primary {
+  background: var(--tepa-grad-cta);
+  border-color: transparent;
+  color: #FFFFFF;
+  font-weight: 700;
+  height: 38px;
+  box-shadow: 0 4px 14px rgba(231, 36, 40, 0.3);
+}
+
+.tepa-bo-wp-meta {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.tepa-bo-wp-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* Main Workspace & Sticky Top Command Bar */
+.tepa-bo-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.tepa-bo-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #E2E8F0;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tepa-bo-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tepa-bo-topbar-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.02em;
+}
+
+.tepa-bo-topbar-desc {
+  font-size: 12.5px;
+  color: #64748B;
+  margin-top: 1px;
+}
+
+.tepa-bo-topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Quick Stage Bar in Topbar */
+.tepa-bo-quick-stage {
+  display: inline-flex;
+  align-items: center;
+  background: #F1F5F9;
+  border: 1px solid #CBD5E1;
+  border-radius: 11px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.tepa-bo-quick-stage-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  padding: 0 8px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tepa-bo .tepa-bo-quick-stage-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #475569;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.tepa-bo .tepa-bo-quick-stage-btn:hover {
+  color: #0F172A;
+  background: rgba(15, 23, 42, 0.05);
+}
+
+.tepa-bo .tepa-bo-quick-stage-btn.is-active {
+  background: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+}
+
+.tepa-bo-content {
+  flex: 1;
+  padding: 22px 28px 80px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Enhanced KPI Cards with Icon Badges */
+.tepa-bo-kpi-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.tepa-bo-kpi-card[data-tab] {
+  cursor: pointer;
+}
+
+.tepa-bo-kpi-card[data-tab]:hover {
+  transform: translateY(-2px);
+  border-color: #CBD5E1;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.tepa-bo-kpi-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* Inactive Project Row Dimming */
+.tepa-bo-proj-row.is-inactive {
+  opacity: 0.62;
+  background: #F1F5F9;
+}
+
+/* Interactive Phone Preview Question Pager */
+.tepa-bo-phone-q-pills {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.tepa-bo .tepa-bo-phone-q-pill {
+  appearance: none;
+  border: 1px solid #CBD5E1;
+  background: #F8FAFC;
+  color: #475569;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.tepa-bo .tepa-bo-phone-q-pill.is-active {
+  background: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+}
+
+/* Floating Unsaved Changes Action Bar */
+.tepa-bo-floating-save {
+  position: fixed;
+  bottom: 20px;
+  left: calc(272px + 50%);
+  transform: translateX(-50%);
+  z-index: 90;
+  background: #0F172A;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.38);
+  animation: tepaFadeUp 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* System Audit & Diagnostic Cards */
+.tepa-bo-audit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tepa-bo-audit-item {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.tepa-bo-audit-item.is-ok {
+  border-left: 4px solid #16A34A;
+}
+
+.tepa-bo-audit-item.is-warn {
+  border-left: 4px solid #F59E0B;
+  background: #FFFBEB;
+}
+
+@media (max-width: 1024px) {
+  .tepa-bo.tepa-bo-app {
+    grid-template-columns: 1fr;
+  }
+  .tepa-bo-sidebar {
+    position: static;
+    height: auto;
+  }
+  .tepa-bo-floating-save {
+    left: 50%;
+    width: calc(100% - 32px);
+    max-width: 520px;
+    justify-content: space-between;
+  }
+  .tepa-bo-audit-grid {
+    grid-template-columns: 1fr;
+  }
+}

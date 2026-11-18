@@ -61,11 +61,19 @@
     var cfg = global.TEPA_CONFIG || {};
     var params = new URLSearchParams(global.location ? global.location.search : '');
     var forceDemoParam = params.get('demo') === '1';
+    var wpTabParam = params.get('tab') || cfg.wpAdminTab || '';
     return {
       supabaseUrl: (cfg.supabaseUrl || '').trim(),
       supabaseAnonKey: (cfg.supabaseAnonKey || '').trim(),
       forceDemo: Boolean(cfg.forceDemo) || forceDemoParam,
+      isWpAdmin: cfg.isWpAdmin !== undefined ? Boolean(cfg.isWpAdmin) : true,
+      requireWpAdmin: Boolean(cfg.requireWpAdmin),
+      wpUserDisplay: cfg.wpUserDisplay || 'WordPress Admin',
+      wpDashboardUrl: cfg.wpDashboardUrl || '',
+      wpAdminTab: wpTabParam,
+      defaultPin: cfg.defaultPin || '',
       assetsBase: cfg.assetsBase || '../tepa-award-theme/assets',
+      homeUrl: cfg.homeUrl || '',
       quizUrl: cfg.quizUrl || 'quiz.html',
       voteUrl: cfg.voteUrl || 'vote.html',
       liveUrl: cfg.liveUrl || 'live.html',
@@ -349,11 +357,15 @@
         };
       });
 
+    var activeVotesTotal = projectsWithVotes.reduce(function (acc, p) {
+      return acc + (Number(p.votes) || 0);
+    }, 0);
+
     return {
       settings: clone(state.settings),
       active_quiz: activeQuiz ? clone(activeQuiz) : null,
       projects_with_votes: projectsWithVotes,
-      total_votes: state.votes.length,
+      total_votes: activeVotesTotal,
       quiz_stats: {
         total_participants: state.quiz_submissions.length,
         vouchers_awarded: winners.length,
@@ -598,7 +610,7 @@
       if (!state.settings.voting_open) {
         return { ok: false, error: 'Voting is currently closed.' };
       }
-      var project = state.projects.find(function (p) { return p.id === pid && p.is_active !== false; });
+      var project = state.projects.find(function (p) { return p.id === pid && p.is_active !== false && !p.is_archived; });
       if (!project) {
         return { ok: false, error: 'Selected project was not found.' };
       }
@@ -826,6 +838,13 @@
             state.settings[k] = payload[k];
           }
         });
+        if (state.settings.active_quiz_id && (payload.min_quiz_score !== undefined || payload.max_vouchers !== undefined)) {
+          var actQz = (state.quizzes || []).find(function (qz) { return qz.id === state.settings.active_quiz_id && !qz.is_archived; });
+          if (actQz) {
+            if (payload.min_quiz_score !== undefined) actQz.min_score = Math.max(1, Number(payload.min_quiz_score) || 1);
+            if (payload.max_vouchers !== undefined) actQz.max_vouchers = Math.max(1, Number(payload.max_vouchers) || 1);
+          }
+        }
         saveDemoState(state, true);
         return { ok: true, settings: clone(state.settings) };
       }

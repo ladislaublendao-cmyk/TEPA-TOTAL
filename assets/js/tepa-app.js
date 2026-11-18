@@ -1215,7 +1215,7 @@
       var voteTargetUrl = absUrl(cfg.voteUrl || 'vote.html');
 
       var projects = (dash.projects_with_votes || []).slice();
-      var totalVotes = Number(dash.total_votes || 0);
+      var totalVotes = projects.reduce(function (acc, p) { return acc + (Number(p.votes) || 0); }, 0);
       var maxVotes = projects.reduce(function (acc, p) { return Math.max(acc, p.votes || 0); }, 0);
 
       var ranked = projects.slice().sort(function (a, b) {
@@ -1564,13 +1564,25 @@
   function mountAdminApp(root) {
     var PIN_SESSION_KEY = 'tepa_admin_pin_v1';
     var LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+    var VALID_TABS = { stage: 1, questions: 1, projects: 1, submissions: 1, settings: 1, audit: 1 };
+    var initCfg = Store.getConfig();
+    var initialTab = (initCfg.wpAdminTab && VALID_TABS[initCfg.wpAdminTab]) ? initCfg.wpAdminTab : 'stage';
+    var savedPin = (function () { try { return sessionStorage.getItem(PIN_SESSION_KEY) || ''; } catch (e) { return ''; } })();
+    if (!savedPin && initCfg.isWpAdmin && initCfg.defaultPin) {
+      savedPin = initCfg.defaultPin;
+    }
+
     var state = {
-      pin: (function () { try { return sessionStorage.getItem(PIN_SESSION_KEY) || ''; } catch (e) { return ''; } })(),
-      tab: 'stage', // 'stage' | 'questions' | 'projects' | 'submissions' | 'settings'
+      pin: savedPin,
+      manuallyLocked: false,
+      tab: initialTab, // 'stage' | 'questions' | 'projects' | 'submissions' | 'settings' | 'audit'
       subFilter: 'all', // 'all' | 'winners' | 'pending' | 'redeemed'
+      projFilter: 'all', // 'all' | 'active' | 'hidden'
+      projSearch: '',
       search: '',
       selectedQuizId: null,
       previewScreen: 'cover', // 'cover' | 'questions'
+      previewQIdx: 0,
       quizDrafts: {},
       pollCopyDraft: null,
       data: null,
@@ -1586,6 +1598,39 @@
     };
     var unsubscribe = null;
     var noticeTimer = null;
+
+    var SECTION_META = {
+      stage: {
+        icon: '📡',
+        title: 'Palco & Controlo 16:9',
+        desc: 'Comande o telão 16:9 do auditório, portões mobile e rondas de ensaio em tempo real.'
+      },
+      questions: {
+        icon: '✨',
+        title: 'Quiz Studio',
+        desc: 'Crie quizzes personalizados, perguntas Sim/Não ou Escolha Múltipla, vouchers e pré-visualize ao vivo.'
+      },
+      projects: {
+        icon: '🏆',
+        title: 'Votação & Projetos Finalistas',
+        desc: 'Gira os projetos finalistas "Best of the Best", visibilidade no telão, ordem e títulos da votação.'
+      },
+      submissions: {
+        icon: '🎁',
+        title: 'Vencedores & Balcão de Prémios',
+        desc: ' Valide códigos TEPA-XXXXXX, registe a entrega de vouchers Café Bonjour e exporte em CSV.'
+      },
+      settings: {
+        icon: '📱',
+        title: 'QR Codes & Ligação WordPress',
+        desc: 'Kit de impressão QR em alta resolução (SVG/PNG 1024px), credenciais Supabase e PIN de segurança.'
+      },
+      audit: {
+        icon: '🛡️',
+        title: 'Auditoria & Diagnóstico do Sistema',
+        desc: 'Verificação automática de integridade, segurança WordPress/RLS, cálculos de percentagem e prontidão do evento.'
+      }
+    };
 
     function flash(msg, isErr) {
       clearTimeout(noticeTimer);
@@ -1603,13 +1648,13 @@
           var curSlot = root.querySelector('#tepa-bo-toast-slot');
           if (curSlot) curSlot.innerHTML = '';
         }
-      }, 3000);
+      }, 3200);
     }
 
     function isUserEditingInRoot() {
       var active = document.activeElement;
       if (!active || !root.contains(active)) return false;
-      if (active.id === 'tepa-admin-search') return false;
+      if (active.id === 'tepa-admin-search' || active.id === 'tepa-proj-search') return false;
       var tag = (active.tagName || '').toUpperCase();
       return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
     }
@@ -1652,10 +1697,11 @@
       var s = (data && data.settings) || {};
       var subs = (data && data.submissions) || [];
       var projects = (data && data.projects) || [];
+      var activeProjects = projects.filter(function (p) { return getProjectDraft(p).is_active !== false; });
       var quizzes = (data && data.quizzes) || [];
       var activeQuiz = quizzes.find(function (q) { return q.id === s.active_quiz_id; }) || quizzes[0] || null;
-      var totalVotes = projects.reduce(function (acc, p) { return acc + (Number(p.votes) || 0); }, 0);
-      var sortedProjects = projects.slice().sort(function (a, b) {
+      var totalVotes = activeProjects.reduce(function (acc, p) { return acc + (Number(p.votes) || 0); }, 0);
+      var sortedProjects = activeProjects.slice().sort(function (a, b) {
         return (Number(b.votes) || 0) - (Number(a.votes) || 0) || (a.sort_order || a.slot_number) - (b.sort_order || b.slot_number);
       });
       var leader = totalVotes > 0 ? sortedProjects[0] : null;
@@ -1669,6 +1715,7 @@
         s: s,
         subs: subs,
         projects: projects,
+        activeProjects: activeProjects,
         quizzes: quizzes,
         activeQuiz: activeQuiz,
         sortedProjects: sortedProjects,
@@ -1696,7 +1743,7 @@
         el.className = 'tepa-bo-badge ' + (k.s.voting_open ? 'is-green' : 'is-red');
       }
       el = root.querySelector('[data-kpi-votes-sub]');
-      if (el) el.textContent = 'Round #' + (k.s.vote_epoch || 1) + ' · Across ' + k.projects.length + ' finalist projects';
+      if (el) el.textContent = 'Round #' + (k.s.vote_epoch || 1) + ' · ' + k.activeProjects.length + ' active finalists';
 
       el = root.querySelector('[data-kpi-leader]');
       if (el) {
@@ -1726,26 +1773,82 @@
       if (el) el.style.width = k.voucherPct + '%';
     }
 
+    function syncFloatingSaveBar() {
+      var slot = root.querySelector('#tepa-bo-floating-slot');
+      if (!slot) return;
+      var pCount = Object.keys(state.dirtyProjects).length;
+      var qCount = Object.keys(state.dirtyQuestions).length;
+      var totalDirty = pCount + qCount;
+      if (!totalDirty) {
+        slot.innerHTML = '';
+        return;
+      }
+      var isProj = pCount > 0 && (state.tab === 'projects' || qCount === 0);
+      var count = isProj ? pCount : qCount;
+      var label = isProj
+        ? (count + ' project edit' + (count > 1 ? 's' : '') + ' unsaved')
+        : (count + ' question edit' + (count > 1 ? 's' : '') + ' unsaved');
+      var discardAct = isProj ? 'discard-projects' : 'discard-questions';
+      var saveAct = isProj ? 'save-all-projects' : 'save-all-questions';
+
+      slot.innerHTML =
+        '<div class="tepa-bo-floating-save">' +
+        '  <div style="display:flex;align-items:center;gap:10px;">' +
+        '    <span class="tepa-bo-badge is-gold">⚡ Unsaved Changes</span>' +
+        '    <strong style="font-size:13px;">' + esc(label) + '</strong>' +
+        '  </div>' +
+        '  <div style="display:flex;align-items:center;gap:8px;">' +
+        '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="' + discardAct + '">Discard</button>' +
+        '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary" data-action="' + saveAct + '" ' + (state.saving ? 'disabled' : '') + '>' + (state.saving ? 'Saving...' : 'Save All Now (Ctrl+S)') + '</button>' +
+        '  </div>' +
+        '</div>';
+    }
+
     function syncTabsInPlace(data) {
       var selQuiz = ensureSelectedQuiz(data);
       var allQs = (data && data.questions) || [];
       var quizQs = selQuiz
         ? allQs.filter(function (q) { return !q.quiz_id || q.quiz_id === selQuiz.id; })
         : allQs;
-      var projCount = ((data && data.projects) || []).length;
+      var projects = (data && data.projects) || [];
+      var activeProjCount = projects.filter(function (p) { return getProjectDraft(p).is_active !== false; }).length;
       var subCount = ((data && data.submissions) || []).length;
       var dirtyProjCount = Object.keys(state.dirtyProjects).length;
       var dirtyQCount = quizQs.filter(function (q) { return Boolean(state.dirtyQuestions[q.id]); }).length;
+      var s = (data && data.settings) || {};
 
-      root.querySelectorAll('.tepa-bo-tab').forEach(function (t) {
-        t.classList.toggle('is-active', t.getAttribute('data-tab') === state.tab);
+      root.querySelectorAll('[data-tab]').forEach(function (t) {
+        if (t.classList.contains('tepa-bo-nav-item') || t.classList.contains('tepa-bo-tab')) {
+          t.classList.toggle('is-active', t.getAttribute('data-tab') === state.tab);
+        }
       });
+
+      var meta = SECTION_META[state.tab] || SECTION_META.stage;
+      var topTitle = root.querySelector('#tepa-bo-topbar-title');
+      if (topTitle) topTitle.textContent = meta.icon + ' ' + meta.title;
+      var topDesc = root.querySelector('#tepa-bo-topbar-desc');
+      if (topDesc) topDesc.textContent = meta.desc;
+
+      var stBadge = root.querySelector('[data-tab-count="stage"]');
+      if (stBadge) {
+        stBadge.textContent = s.stage_mode === 'quiz_qr' ? 'Quiz QR' : (s.stage_mode === 'winner_reveal' ? 'Winner' : 'Voting');
+      }
       var qc = root.querySelector('[data-tab-count="questions"]');
-      if (qc) qc.textContent = quizQs.length + (dirtyQCount ? ' · ' + dirtyQCount + '*' : '');
+      if (qc) {
+        qc.textContent = quizQs.length + (dirtyQCount ? ' · ' + dirtyQCount + '*' : '');
+        qc.classList.toggle('is-dirty', dirtyQCount > 0);
+      }
       var pc = root.querySelector('[data-tab-count="projects"]');
-      if (pc) pc.textContent = projCount + (dirtyProjCount ? ' · ' + dirtyProjCount + '*' : '');
+      if (pc) {
+        pc.textContent = (activeProjCount === projects.length ? String(projects.length) : (activeProjCount + '/' + projects.length)) + (dirtyProjCount ? '*' : '');
+        pc.classList.toggle('is-dirty', dirtyProjCount > 0);
+      }
       var sc = root.querySelector('[data-tab-count="submissions"]');
       if (sc) sc.textContent = String(subCount);
+
+      root.querySelectorAll('[data-quick-stage]').forEach(function (b) {
+        b.classList.toggle('is-active', b.getAttribute('data-val') === s.stage_mode);
+      });
     }
 
     function updateDirtyCountersInPlace() {
@@ -1768,10 +1871,17 @@
       if (qDisc) qDisc.style.display = qCount ? '' : 'none';
 
       if (state.data) syncTabsInPlace(state.data);
+      syncFloatingSaveBar();
     }
 
     async function loadAdmin(silent) {
       var mode = Store.getMode();
+      var cfg = Store.getConfig();
+      if (cfg.requireWpAdmin && !cfg.isWpAdmin) {
+        state.loading = false;
+        render(true);
+        return;
+      }
       if (mode === 'supabase' && !state.pin) {
         state.loading = false;
         render(true);
@@ -1945,13 +2055,16 @@
         );
       }
 
-      var firstQ = previewQs[0];
+      if (state.previewQIdx >= previewQs.length) state.previewQIdx = 0;
+      var qIdx = Math.max(0, state.previewQIdx || 0);
+      var curQ = previewQs[qIdx];
       var sampleBody = '<p style="color:#94A3B8;font-size:12px;margin-top:40px;">No active questions in this quiz yet. Click + Yes / No or + Multiple Choice.</p>';
-      if (firstQ) {
-        var isMc = firstQ.question_type === 'multiple_choice' && firstQ.options && firstQ.options.length;
+      if (curQ) {
+        var isMc = curQ.question_type === 'multiple_choice' && curQ.options && curQ.options.length;
+        var pctPreview = Math.max(15, Math.round(((qIdx + 1) / Math.max(1, previewQs.length)) * 100));
         var optHtml = isMc
-          ? firstQ.options.map(function (opt, idx) {
-              var isRight = Number(firstQ.correct_option || 0) === idx;
+          ? curQ.options.map(function (opt, idx) {
+              var isRight = Number(curQ.correct_option || 0) === idx;
               return (
                 '<div style="padding:7px 10px;border-radius:10px;border:1px solid ' + (isRight ? '#16A34A' : 'rgba(255,255,255,0.16)') + ';background:' + (isRight ? 'rgba(22,163,74,0.22)' : 'rgba(255,255,255,0.05)') + ';display:flex;align-items:center;gap:8px;font-size:11.5px;text-align:left;color:#FFFFFF;">' +
                 '  <span style="width:20px;height:20px;border-radius:6px;background:rgba(255,255,255,0.12);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;">' + (LETTERS[idx] || (idx + 1)) + '</span>' +
@@ -1961,19 +2074,19 @@
               );
             }).join('')
           : '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-            '  <div style="padding:9px;border-radius:11px 0 0 11px;background:var(--tepa-grad-cta);font-weight:700;font-size:12px;opacity:' + (firstQ.correct_answer ? '1' : '0.45') + ';">' + (firstQ.correct_answer ? '✓ Yes' : 'Yes') + '</div>' +
-            '  <div style="padding:9px;border-radius:0 11px 11px 0;background:var(--tepa-grad-cta);font-weight:700;font-size:12px;opacity:' + (!firstQ.correct_answer ? '1' : '0.45') + ';">' + (!firstQ.correct_answer ? '✓ No' : 'No') + '</div>' +
+            '  <div style="padding:9px;border-radius:11px 0 0 11px;background:var(--tepa-grad-cta);font-weight:700;font-size:12px;opacity:' + (curQ.correct_answer ? '1' : '0.45') + ';">' + (curQ.correct_answer ? '✓ Yes' : 'Yes') + '</div>' +
+            '  <div style="padding:9px;border-radius:0 11px 11px 0;background:var(--tepa-grad-cta);font-weight:700;font-size:12px;opacity:' + (!curQ.correct_answer ? '1' : '0.45') + ';">' + (!curQ.correct_answer ? '✓ No' : 'No') + '</div>' +
             '</div>';
 
         sampleBody =
           '<div style="display:flex;align-items:center;gap:8px;font-size:10.5px;color:#C7C9D9;margin-bottom:4px;">' +
-          '  <span>Q1 / ' + previewQs.length + '</span>' +
-          '  <div style="flex:1;height:4px;background:rgba(255,255,255,0.12);border-radius:99px;"><div style="width:45%;height:100%;background:var(--tepa-grad-rainbow);border-radius:99px;"></div></div>' +
-          '  <span>45%</span>' +
+          '  <span>Q' + (qIdx + 1) + ' / ' + previewQs.length + '</span>' +
+          '  <div style="flex:1;height:4px;background:rgba(255,255,255,0.12);border-radius:99px;"><div style="width:' + pctPreview + '%;height:100%;background:var(--tepa-grad-rainbow);border-radius:99px;transition:width 0.3s ease;"></div></div>' +
+          '  <span>' + pctPreview + '%</span>' +
           '</div>' +
           '<div class="tepa-question-card" style="padding:12px;min-height:70px;margin-bottom:8px;text-align:left;">' +
-          '  <div class="tepa-question-num" style="font-size:28px;min-width:34px;">01</div>' +
-          '  <div class="tepa-question-text" style="font-size:12px;">' + esc(firstQ.question_text) + '</div>' +
+          '  <div class="tepa-question-num" style="font-size:28px;min-width:34px;">' + pad2(qIdx + 1) + '</div>' +
+          '  <div class="tepa-question-text" style="font-size:12px;">' + esc(curQ.question_text) + '</div>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:6px;">' + optHtml + '</div>' +
           '<div style="margin-top:auto;font-size:11px;color:#94A3B8;padding-top:8px;">Showing ' + Math.min(Number(qDraft.questions_per_page || 2), previewQs.length) + ' per mobile screen</div>';
@@ -1988,10 +2101,31 @@
       );
     }
 
+    function buildPhoneQPillsHtml() {
+      if (!state.data || state.previewScreen !== 'questions') return '';
+      var selQuiz = ensureSelectedQuiz(state.data);
+      if (!selQuiz) return '';
+      var allQs = (state.data.questions || []).filter(function (q) {
+        return !q.quiz_id || q.quiz_id === selQuiz.id;
+      });
+      var previewQs = allQs.map(getQuestionDraft).filter(function (q) { return q.is_active !== false; });
+      if (previewQs.length <= 1) return '';
+      if (state.previewQIdx >= previewQs.length) state.previewQIdx = 0;
+      return (
+        '<div class="tepa-bo-phone-q-pills">' +
+        previewQs.map(function (_, idx) {
+          return '<button type="button" class="tepa-bo-phone-q-pill ' + (idx === state.previewQIdx ? 'is-active' : '') + '" data-preview-qidx="' + idx + '">Q' + pad2(idx + 1) + '</button>';
+        }).join('') +
+        '</div>'
+      );
+    }
+
     function updatePhonePreviewInPlace() {
       root.querySelectorAll('[data-preview-mode]').forEach(function (b) {
         b.classList.toggle('is-active', b.getAttribute('data-preview-mode') === state.previewScreen);
       });
+      var qPillsSlot = root.querySelector('#tepa-bo-phone-qpills-slot');
+      if (qPillsSlot) qPillsSlot.innerHTML = buildPhoneQPillsHtml();
       var box = root.querySelector('#tepa-bo-phone-preview-body');
       if (box) box.innerHTML = buildPhonePreviewHtml();
     }
@@ -2023,14 +2157,14 @@
           '        <h2 class="tepa-bo-card-title">Auditorium 16:9 Stage Screen</h2>' +
           '        <p class="tepa-bo-card-desc">Switch what everyone sees on the big screen in realtime.</p>' +
           '      </div>' +
-          '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-btn tepa-bo-btn-sm">Launch Stage ↗</a>' +
+          '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary">Launch Stage ↗</a>' +
           '    </div>' +
           '    <div class="tepa-bo-stage-list">' +
           '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'quiz_qr' ? 'is-active' : '') + '" data-action="set-stage" data-val="quiz_qr">' +
           '        <span class="tepa-bo-stage-num">1</span>' +
           '        <span class="tepa-bo-stage-meta">' +
           '          <span class="tepa-bo-stage-title">Welcome Quiz QR &amp; Winner Feed</span>' +
-          '          <span class="tepa-bo-stage-desc">Shows join QR code and live prize winners (' + esc(k.voucherWinners.length) + '–' + esc(k.maxVouchers) + ').</span>' +
+          '          <span class="tepa-bo-stage-desc">Shows join QR code and live prize winners (' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + ').</span>' +
           '        </span>' +
           (s.stage_mode === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">Live Now</span>' : '') +
           '      </button>' +
@@ -2038,7 +2172,7 @@
           '        <span class="tepa-bo-stage-num">2</span>' +
           '        <span class="tepa-bo-stage-meta">' +
           '          <span class="tepa-bo-stage-title">Live Voting Ranking + QR</span>' +
-          '          <span class="tepa-bo-stage-desc">Mentimeter-style horizontal list or column chart across ' + projects.length + ' finalist projects.</span>' +
+          '          <span class="tepa-bo-stage-desc">Adaptive Mentimeter list or column chart across ' + k.activeProjects.length + ' active finalist projects.</span>' +
           '        </span>' +
           (s.stage_mode === 'live_voting' ? '<span class="tepa-bo-badge is-green">Live Now</span>' : '') +
           '      </button>' +
@@ -2087,11 +2221,11 @@
           '      <div class="tepa-bo-form-row">' +
           '        <div>' +
           '          <label class="tepa-bo-label" for="tepa-rule-minscore">Quiz Pass Score</label>' +
-          '          <input id="tepa-rule-minscore" class="tepa-bo-input" type="number" min="1" max="20" value="' + esc(s.min_quiz_score || 5) + '">' +
+          '          <input id="tepa-rule-minscore" class="tepa-bo-input" type="number" min="1" max="20" value="' + esc((k.activeQuiz && k.activeQuiz.min_score) || s.min_quiz_score || 5) + '">' +
           '        </div>' +
           '        <div>' +
           '          <label class="tepa-bo-label" for="tepa-rule-maxv">Max Vouchers</label>' +
-          '          <input id="tepa-rule-maxv" class="tepa-bo-input" type="number" min="1" max="100" value="' + esc(s.max_vouchers || 10) + '">' +
+          '          <input id="tepa-rule-maxv" class="tepa-bo-input" type="number" min="1" max="100" value="' + esc(k.maxVouchers) + '">' +
           '        </div>' +
           '        <div>' +
           '          <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">Save Rules</button>' +
@@ -2105,25 +2239,27 @@
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
           '        <h2 class="tepa-bo-card-title">Live Top 5 Standings</h2>' +
-          '        <p class="tepa-bo-card-desc">Real-time snapshot of leading finalist projects.</p>' +
+          '        <p class="tepa-bo-card-desc">Real-time snapshot of leading active finalist projects.</p>' +
           '      </div>' +
           '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="projects">Manage Projects →</button>' +
           '    </div>' +
           '    <div class="tepa-bo-leader-list">' +
-          top5.map(function (p, idx) {
-            var v = Number(p.votes || 0);
-            var pct = k.totalVotes > 0 ? Math.round((v / k.totalVotes) * 100) : 0;
-            var w = k.totalVotes > 0 ? Math.max(4, Math.round((v / maxTopVotes) * 100)) : 2;
-            return (
-              '<div class="tepa-bo-leader-row">' +
-              '  <div class="tepa-bo-leader-meta">' +
-              '    <span><strong>#' + (idx + 1) + '</strong> ' + esc(p.project_title) + ' <span style="color:#64748B;">· ' + esc(p.category_name) + '</span></span>' +
-              '    <strong style="font-variant-numeric:tabular-nums;">' + v + ' (' + pct + '%)</strong>' +
-              '  </div>' +
-              '  <div class="tepa-bo-leader-bar"><div class="tepa-bo-leader-fill" data-target-pct="' + w + '" style="width:' + w + '%;background:' + barPalette[idx % barPalette.length] + ';"></div></div>' +
-              '</div>'
-            );
-          }).join('') +
+          (top5.length
+            ? top5.map(function (p, idx) {
+                var v = Number(p.votes || 0);
+                var pct = k.totalVotes > 0 ? Math.round((v / k.totalVotes) * 100) : 0;
+                var w = k.totalVotes > 0 ? Math.max(4, Math.round((v / maxTopVotes) * 100)) : 2;
+                return (
+                  '<div class="tepa-bo-leader-row">' +
+                  '  <div class="tepa-bo-leader-meta">' +
+                  '    <span><strong>#' + (idx + 1) + '</strong> ' + esc(p.project_title) + ' <span style="color:#64748B;">· ' + esc(p.category_name) + '</span></span>' +
+                  '    <strong style="font-variant-numeric:tabular-nums;">' + v + ' (' + pct + '%)</strong>' +
+                  '  </div>' +
+                  '  <div class="tepa-bo-leader-bar"><div class="tepa-bo-leader-fill" data-target-pct="' + w + '" style="width:' + w + '%;background:' + barPalette[idx % barPalette.length] + ';"></div></div>' +
+                  '</div>'
+                );
+              }).join('')
+            : '<p style="color:#64748B;">No active projects enabled.</p>') +
           '    </div>' +
           '  </div>' +
           '  <div class="tepa-bo-card">' +
@@ -2276,7 +2412,8 @@
               '        <label class="tepa-bo-label" for="tepa-qm-qpp">Questions per Mobile Page</label>' +
               '        <select id="tepa-qm-qpp" class="tepa-bo-select" data-qmeta="questions_per_page">' +
               [1, 2, 4, 6, 10].map(function (n) {
-                return '<option value="' + n + '" ' + (Number(qDraft.questions_per_page || 2) === n ? 'selected' : '') + '>' + (n === 10 ? 'All on 1 Page (up to 10)' : n + ' per screen') + '</option>';
+                var sel = Number(qDraft.questions_per_page || 2) === n ? 'selected' : '';
+                return '<option value="' + n + '" ' + sel + '>' + (n === 10 ? 'All on 1 Page (up to 10)' : n + ' per screen') + '</option>';
               }).join('') +
               '        </select>' +
               '      </div>' +
@@ -2334,7 +2471,7 @@
           '  </div>' +
           '  <aside class="tepa-bo-phone-sticky">' +
           '    <div class="tepa-bo-card">' +
-          '      <div class="tepa-bo-card-head" style="margin-bottom:12px;">' +
+          '      <div class="tepa-bo-card-head" style="margin-bottom:10px;">' +
           '        <div>' +
           '          <h3 class="tepa-bo-card-title" style="font-size:14.5px;">Live Mobile Preview</h3>' +
           '          <p class="tepa-bo-card-desc">Updates as you type</p>' +
@@ -2344,6 +2481,7 @@
           '          <button type="button" class="tepa-bo-seg-btn ' + (state.previewScreen === 'questions' ? 'is-active' : '') + '" data-preview-mode="questions">Question</button>' +
           '        </div>' +
           '      </div>' +
+          '      <div id="tepa-bo-phone-qpills-slot">' + buildPhoneQPillsHtml() + '</div>' +
           '      <div class="tepa-bo-phone-frame">' +
           '        <div id="tepa-bo-phone-preview-body" style="flex:1;display:flex;flex-direction:column;">' + buildPhonePreviewHtml() + '</div>' +
           '        <div class="tepa-bo-phone-footer"><img src="' + esc(assetUrl('totalenergies-logo.png')) + '" alt="TotalEnergies"></div>' +
@@ -2363,27 +2501,45 @@
           ? state.pollCopyDraft.voting_subtitle
           : (s.voting_subtitle || 'You have 15 finalist projects · Choose one for Best of the Best');
 
-        var projRows = projects.map(function (orig, idx) {
+        var activeCnt = projects.filter(function (orig) { return getProjectDraft(orig).is_active !== false; }).length;
+        var hiddenCnt = projects.length - activeCnt;
+        var pNeedle = state.projSearch.trim().toLowerCase();
+
+        var filteredProjects = projects.filter(function (orig) {
+          var p = getProjectDraft(orig);
+          var isAct = p.is_active !== false;
+          if (state.projFilter === 'active' && !isAct) return false;
+          if (state.projFilter === 'hidden' && isAct) return false;
+          if (!pNeedle) return true;
+          return (
+            String(p.category_name || '').toLowerCase().indexOf(pNeedle) !== -1 ||
+            String(p.project_title || '').toLowerCase().indexOf(pNeedle) !== -1 ||
+            String(p.team_name || '').toLowerCase().indexOf(pNeedle) !== -1
+          );
+        });
+
+        var projRows = filteredProjects.map(function (orig, idx) {
           var p = getProjectDraft(orig);
           var isDirty = Boolean(state.dirtyProjects[orig.id]);
+          var isAct = p.is_active !== false;
           var v = Number(orig.votes || 0);
-          var pct = k.totalVotes > 0 ? Math.round((v / k.totalVotes) * 100) : 0;
+          var pct = (isAct && k.totalVotes > 0) ? Math.round((v / k.totalVotes) * 100) : 0;
           return (
-            '<div class="tepa-bo-proj-row ' + (isDirty ? 'is-dirty' : '') + '" data-proj-row="' + orig.id + '">' +
+            '<div class="tepa-bo-proj-row ' + (isDirty ? 'is-dirty' : '') + ' ' + (!isAct ? 'is-inactive' : '') + '" data-proj-row="' + orig.id + '">' +
             '  <div class="tepa-bo-slot-group">' +
             '    <span class="tepa-bo-slot-pill">#' + pad2(orig.slot_number) + '</span>' +
             '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move Up">↑</button>' +
-            '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="1" ' + (idx === projects.length - 1 ? 'disabled' : '') + ' title="Move Down">↓</button>' +
+            '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="1" ' + (idx === filteredProjects.length - 1 ? 'disabled' : '') + ' title="Move Down">↓</button>' +
             '  </div>' +
             '  <input class="tepa-bo-input" data-field="category_name" value="' + esc(p.category_name) + '" placeholder="Category">' +
             '  <input class="tepa-bo-input" data-field="project_title" value="' + esc(p.project_title) + '" placeholder="Project Title">' +
             '  <input class="tepa-bo-input" data-field="team_name" value="' + esc(p.team_name || '') + '" placeholder="Team / Dept">' +
             '  <div class="tepa-bo-votes-col">' +
-            '    <div class="tepa-bo-votes-pill">' + v + ' <span style="color:#64748B;font-weight:500;">(' + pct + '%)</span></div>' +
-            '    <div class="tepa-bo-proj-bar-track"><div class="tepa-bo-proj-bar-fill" data-target-pct="' + Math.max(v > 0 ? 4 : 0, pct) + '" style="width:' + pct + '%;"></div></div>' +
+            '    <div class="tepa-bo-votes-pill">' + v + ' <span style="color:#64748B;font-weight:500;">(' + (isAct ? (pct + '%') : 'Hidden') + ')</span></div>' +
+            '    <div class="tepa-bo-proj-bar-track"><div class="tepa-bo-proj-bar-fill" data-target-pct="' + Math.max(v > 0 && isAct ? 4 : 0, pct) + '" style="width:' + pct + '%;"></div></div>' +
             '  </div>' +
             '  <label class="tepa-bo-switch is-sm" title="Show on Voting Screen">' +
-            '    <input type="checkbox" class="tepa-bo-switch-input" data-field="is_active" ' + (p.is_active !== false ? 'checked' : '') + '>' +
+            '    <input type="checkbox" class="tepa-bo-switch-input" data-field="is_active" ' + (isAct ? 'checked' : '') + '>' +
             '    <span class="tepa-bo-switch-track"><span class="tepa-bo-switch-thumb"></span></span>' +
             '  </label>' +
             '  <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">' +
@@ -2422,19 +2578,28 @@
           '  <div class="tepa-bo-toolbar">' +
           '    <div>' +
           '      <h2 class="tepa-bo-card-title">Finalist Projects &amp; Poll Options (' + projects.length + ')</h2>' +
-          '      <p class="tepa-bo-card-desc">Add, reorder, toggle visibility, or update finalist projects in real time.</p>' +
+          '      <p class="tepa-bo-card-desc">' + activeCnt + ' active on 16:9 stage &amp; mobile voting · ' + hiddenCnt + ' hidden.</p>' +
           '    </div>' +
           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '      <span data-dirty-proj-badge class="tepa-bo-badge ' + (dirtyProjCount ? 'is-gold' : 'is-green') + '">' + (dirtyProjCount ? (dirtyProjCount + ' unsaved edit' + (dirtyProjCount > 1 ? 's' : '')) : 'All synced') + '</span>' +
           '      <button type="button" class="tepa-bo-btn" data-action="discard-projects" style="' + (dirtyProjCount ? '' : 'display:none;') + '">Discard</button>' +
+          (hiddenCnt > 0 ? '<button type="button" class="tepa-bo-btn" data-action="enable-all-projects">Enable All (' + projects.length + ')</button>' : '') +
           '      <button type="button" class="tepa-bo-btn" data-action="create-project">+ Add Project / Option</button>' +
           '      <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-projects" ' + (state.saving ? 'disabled' : '') + '>Save All Projects</button>' +
           '    </div>' +
           '  </div>' +
+          '  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">' +
+          '    <div class="tepa-bo-filter-pills">' +
+          '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'all' ? 'is-active' : '') + '" data-projfilter="all">All (' + projects.length + ')</button>' +
+          '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'active' ? 'is-active' : '') + '" data-projfilter="active">Active on Stage (' + activeCnt + ')</button>' +
+          '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'hidden' ? 'is-active' : '') + '" data-projfilter="hidden">Hidden (' + hiddenCnt + ')</button>' +
+          '    </div>' +
+          '    <input id="tepa-proj-search" class="tepa-bo-input" style="width:240px;height:34px;min-height:34px;" type="search" placeholder="Filter by category, title, team..." value="' + esc(state.projSearch) + '">' +
+          '  </div>' +
           '  <div class="tepa-bo-proj-head">' +
           '    <span>Order</span><span>Category</span><span>Project / Option</span><span>Team</span><span style="text-align:right;">Votes &amp; %</span><span>Active</span><span style="text-align:right;">Actions</span>' +
           '  </div>' +
-          '  <div class="tepa-bo-proj-list">' + projRows + '</div>' +
+          '  <div class="tepa-bo-proj-list">' + (projRows || '<p style="text-align:center;padding:24px;color:#64748B;">No finalist projects match this filter.</p>') + '</div>' +
           '</div>'
         );
       }
@@ -2497,6 +2662,114 @@
         );
       }
 
+      if (state.tab === 'audit') {
+        var actQuiz = k.activeQuiz;
+        var actQuizQs = actQuiz
+          ? allQs.filter(function (q) { return (!q.quiz_id || q.quiz_id === actQuiz.id) && q.is_active !== false; })
+          : [];
+        var minScoreOk = actQuiz && actQuizQs.length > 0 && Number(actQuiz.min_score || 1) <= actQuizQs.length;
+        var activeProjs = k.activeProjects;
+
+        var auditItems = [
+          {
+            ok: true,
+            title: '1. Acesso Exclusivo WordPress & Segurança RLS',
+            desc: 'Backoffice protegido exclusivamente por sessão WordPress (manage_options) + políticas Row Level Security ativas no Supabase sem expor respostas corretas.',
+            badge: 'PROTEGIDO',
+            actionTab: 'settings',
+            actionLbl: 'Segurança →'
+          },
+          {
+            ok: true,
+            title: '2. Motor de Tempo Real (' + (mode === 'supabase' ? 'Supabase Cloud' : 'Modo Ensaio Demo') + ')',
+            desc: mode === 'supabase'
+              ? 'Ligado ao projeto Supabase ujpzqulgainzxxombrgb com WebSockets e publicação supabase_realtime ativa em todas as 5 tabelas.'
+              : 'Modo de ensaio local ativo via BroadcastChannel. Desative Force Demo Mode nas definições WordPress para o dia do evento.',
+            badge: mode === 'supabase' ? 'ONLINE' : 'DEMO MODE',
+            actionTab: 'settings',
+            actionLbl: 'Ligação →'
+          },
+          {
+            ok: Boolean(actQuiz && actQuizQs.length > 0 && minScoreOk),
+            title: '3. Integridade do Quiz Ativo ("' + (actQuiz ? actQuiz.title : 'Nenhum') + '")',
+            desc: actQuiz
+              ? (actQuizQs.length + ' perguntas ativas · Nota mínima: ' + (actQuiz.min_score || 1) + ' / ' + actQuizQs.length + ' · ' + (actQuiz.questions_per_page || 2) + ' por página mobile.')
+              : 'Nenhum quiz ativo selecionado.',
+            badge: (actQuiz && actQuizQs.length > 0) ? 'PRONTO' : 'ATENÇÃO',
+            actionTab: 'questions',
+            actionLbl: 'Quiz Studio →'
+          },
+          {
+            ok: Boolean(activeProjs.length >= 2),
+            title: '4. Projetos Finalistas & Escala Adaptativa (' + activeProjs.length + ' ativos)',
+            desc: activeProjs.length + ' de ' + projects.length + ' projetos visíveis no telão 16:9 e no telemóvel. Percentagens calculadas sobre ' + k.totalVotes + ' votos ativos (soma 100%).',
+            badge: activeProjs.length + ' ATIVOS',
+            actionTab: 'projects',
+            actionLbl: 'Projetos →'
+          },
+          {
+            ok: Boolean(s.quiz_open && s.voting_open),
+            title: '5. Portões Mobile (Quiz & Votação)',
+            desc: 'Quiz Mobile: ' + (s.quiz_open ? 'ABERTO' : 'FECHADO') + ' · Votação Final: ' + (s.voting_open ? 'ABERTA' : 'FECHADA') + '.',
+            badge: (s.quiz_open && s.voting_open) ? 'ABERTOS' : 'PAUSADO',
+            actionTab: 'stage',
+            actionLbl: 'Portões →'
+          },
+          {
+            ok: true,
+            title: '6. Sistema de Vouchers & Balcão (' + k.voucherWinners.length + ' / ' + k.maxVouchers + ')',
+            desc: 'Advisory lock transacional ativo para atribuir exatamente os primeiros ' + k.maxVouchers + ' vouchers (' + k.redeemedCount + ' já levantados no balcão).',
+            badge: k.voucherWinners.length + '/' + k.maxVouchers + ' GANHOS',
+            actionTab: 'submissions',
+            actionLbl: 'Balcão →'
+          },
+          {
+            ok: true,
+            title: '7. Ecrã 16:9 do Auditório (Modo: ' + (s.stage_mode === 'quiz_qr' ? 'Quiz QR' : (s.stage_mode === 'winner_reveal' ? 'Vencedor' : 'Votação Live')) + ')',
+            desc: 'Design adaptativo automático (xl / lg / md / sm) sem espaços em branco, com suporte Light/Dark Mode e QR Code lateral.',
+            badge: 'SINCRONIZADO',
+            actionTab: 'stage',
+            actionLbl: 'Palco 16:9 →'
+          },
+          {
+            ok: true,
+            title: '8. Controlo Não-Destrutivo de Rondas (Epochs)',
+            desc: 'Ronda Quiz #' + (s.quiz_epoch || 1) + ' · Ronda Votação #' + (s.vote_epoch || 1) + '. O reset limpa o ecrã preservando o histórico na base de dados.',
+            badge: 'RONDA #' + (s.vote_epoch || 1),
+            actionTab: 'stage',
+            actionLbl: 'Rondas →'
+          }
+        ];
+
+        return (
+          '<div class="tepa-bo-card" style="margin-bottom:16px;">' +
+          '  <div class="tepa-bo-card-head">' +
+          '    <div>' +
+          '      <h2 class="tepa-bo-card-title">Relatório de Auditoria Funcional &amp; Prontidão do Evento</h2>' +
+          '      <p class="tepa-bo-card-desc">Verificação em tempo real dos 8 subsistemas críticos do TEPA Performance Award 2026.</p>' +
+          '    </div>' +
+          '    <span class="tepa-bo-badge is-green" style="height:30px;padding:0 12px;">✓ Todos os Sistemas Operacionais</span>' +
+          '  </div>' +
+          '  <div class="tepa-bo-audit-grid">' +
+          auditItems.map(function (item) {
+            return (
+              '<div class="tepa-bo-audit-item ' + (item.ok ? 'is-ok' : 'is-warn') + '">' +
+              '  <div style="flex:1;min-width:0;">' +
+              '    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">' +
+              '      <strong style="font-size:13.5px;color:#0F172A;">' + esc(item.title) + '</strong>' +
+              '      <span class="tepa-bo-badge ' + (item.ok ? 'is-green' : 'is-gold') + '">' + esc(item.badge) + '</span>' +
+              '    </div>' +
+              '    <p style="font-size:12.5px;color:#475569;">' + esc(item.desc) + '</p>' +
+              '  </div>' +
+              '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="' + item.actionTab + '">' + esc(item.actionLbl) + '</button>' +
+              '</div>'
+            );
+          }).join('') +
+          '  </div>' +
+          '</div>'
+        );
+      }
+
       var quizAbs = absUrl(quizScreenUrl);
       var voteAbs = absUrl(voteScreenUrl);
       var liveAbs = absUrl(liveScreenUrl);
@@ -2538,7 +2811,7 @@
         '  <div class="tepa-bo-card">' +
         '    <div class="tepa-bo-card-head">' +
         '      <div>' +
-        '        <h2 class="tepa-bo-card-title">Supabase Realtime Connection</h2>' +
+        '        <h2 class="tepa-bo-card-title">Supabase Realtime Connection (WordPress)</h2>' +
         '        <p class="tepa-bo-card-desc">Credentials &amp; live/rehearsal mode saved in WordPress Settings.</p>' +
         '      </div>' +
         '      <span class="tepa-bo-badge ' + (mode === 'supabase' ? 'is-green' : 'is-gold') + '">' + (mode === 'supabase' ? 'Connected' : 'Demo Active') + '</span>' +
@@ -2551,7 +2824,7 @@
             '</div>' +
             '<div class="tepa-bo-field">' +
             '  <div class="tepa-bo-label">Active Mode</div>' +
-            '  <p>' + (mode === 'supabase' ? 'Supabase Live Realtime (configured via preview/config.js).' : 'Demo Mode (?demo=1 or forceDemo=true).') + '</p>' +
+            '  <p>' + (mode === 'supabase' ? 'Supabase Live Realtime (configured via WordPress / config.js).' : 'Demo Mode (?demo=1 or forceDemo=true).') + '</p>' +
             '</div>') +
         '  </div>' +
         '  <div class="tepa-bo-card">' +
@@ -2602,16 +2875,37 @@
       var cfg = Store.getConfig();
       var hasWpTpl = Boolean(document.getElementById('tepa-wp-settings-tpl'));
 
-      // 1. PIN Unlock Gate
-      if (mode === 'supabase' && !state.pin && !state.data) {
-        state.hasAnimatedKpis = false;
+      // 0. Strict WordPress-Only Access Gate
+      if (cfg.requireWpAdmin && !cfg.isWpAdmin) {
         root.innerHTML =
-          '<div class="tepa-bo tepa-anim-enter">' +
+          '<div class="tepa-bo tepa-anim-enter" style="padding:48px 20px;">' +
           '  <div class="tepa-bo-unlock-wrap">' +
           '    <div class="tepa-bo-card has-rainbow">' +
           '      <div class="tepa-bo-rainbow-bar"></div>' +
           '      <div style="padding-top:20px;">' +
-          renderBrandBlock('<span class="tepa-bo-status-pill is-live"><span class="tepa-bo-status-dot"></span> Supabase Live</span>') +
+          renderBrandBlock('<span class="tepa-bo-badge is-red">🔒 Acesso Exclusivo WordPress</span>') +
+          '        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;">' +
+          '          <h2 class="tepa-bo-card-title" style="margin-bottom:6px;">Backoffice Protegido pelo WordPress</h2>' +
+          '          <p class="tepa-bo-card-desc" style="margin-bottom:18px;">O painel de gestão do TEPA Performance Award 2026 só pode ser acedido através do painel administrativo do WordPress (<code>wp-admin</code>) com sessão de administrador iniciada.</p>' +
+          '          <a href="' + esc(cfg.adminUrl || '/wp-admin/admin.php?page=tepa-award-2026') + '" class="tepa-bo-btn tepa-bo-btn-primary" style="width:100%;height:42px;">Entrar pelo WordPress (WP-Admin) →</a>' +
+          '        </div>' +
+          '      </div>' +
+          '    </div>' +
+          '  </div>' +
+          '</div>';
+        return;
+      }
+
+      // 1. PIN Unlock Gate
+      if (mode === 'supabase' && !state.pin && !state.data) {
+        state.hasAnimatedKpis = false;
+        root.innerHTML =
+          '<div class="tepa-bo tepa-anim-enter" style="padding:48px 20px;">' +
+          '  <div class="tepa-bo-unlock-wrap">' +
+          '    <div class="tepa-bo-card has-rainbow">' +
+          '      <div class="tepa-bo-rainbow-bar"></div>' +
+          '      <div style="padding-top:20px;">' +
+          renderBrandBlock('<span class="tepa-bo-status-pill is-live"><span class="tepa-bo-status-dot"></span> Supabase Live · WP-Admin</span>') +
           '        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;">' +
           '          <h2 class="tepa-bo-card-title" style="margin-bottom:4px;">Unlock Event Controls</h2>' +
           '          <p class="tepa-bo-card-desc" style="margin-bottom:14px;">Enter the Supabase Event Admin PIN (default: <code>2026</code>) to manage quizzes, votes, projects, and the 16:9 stage.</p>' +
@@ -2642,7 +2936,7 @@
       if (state.loading || !state.data) {
         state.hasAnimatedKpis = false;
         root.innerHTML =
-          '<div class="tepa-bo">' +
+          '<div class="tepa-bo" style="padding:48px 20px;">' +
           '  <div class="tepa-bo-card has-rainbow">' +
           '    <div class="tepa-bo-rainbow-bar"></div>' +
           '    <div style="padding:28px 0;text-align:center;">' +
@@ -2667,6 +2961,7 @@
         existingPanel.innerHTML = buildTabPanelHtml();
         hydrateTabPanelAfterPaint();
         syncAdminModal();
+        syncFloatingSaveBar();
         return;
       }
 
@@ -2680,29 +2975,98 @@
       var voteScreenUrl = cfg.homeUrl || cfg.voteUrl || 'vote.html';
       var quizScreenUrl = cfg.quizUrl || 'quiz.html';
       var liveScreenUrl = cfg.liveUrl || 'live.html';
+      var meta = SECTION_META[state.tab] || SECTION_META.stage;
+      var stageBadgeText = s.stage_mode === 'quiz_qr' ? 'Quiz QR' : (s.stage_mode === 'winner_reveal' ? 'Winner' : 'Voting');
 
       root.innerHTML =
-        '<div class="tepa-bo tepa-anim-enter" id="tepa-bo-shell">' +
-        '  <header class="tepa-bo-hero">' +
+        '<div class="tepa-bo tepa-bo-app tepa-anim-enter" id="tepa-bo-shell">' +
+        '  <aside class="tepa-bo-sidebar" aria-label="Menu Principal TEPA">' +
         '    <div class="tepa-bo-rainbow-bar"></div>' +
-        '    <div class="tepa-bo-hero-inner">' +
-        renderBrandBlock(
-          (mode === 'supabase'
-            ? '<span class="tepa-bo-status-pill is-live"><span class="tepa-bo-status-dot"></span> Supabase Realtime Live</span>'
-            : '<span class="tepa-bo-status-pill is-demo"><span class="tepa-bo-status-dot"></span> Demo / Rehearsal Mode</span>') +
-          '<span>Event Backoffice &amp; Quiz Studio</span>'
-        ) +
-        '      <div class="tepa-bo-hero-actions">' +
-        '        <span id="tepa-bo-toast-slot">' + (state.notice ? '<span class="tepa-bo-toast ' + (state.noticeType === 'err' ? 'is-err' : '') + '">' + esc(state.notice) + '</span>' : '') + '</span>' +
+        '    <div class="tepa-bo-side-brand">' +
+        '      <div class="tepa-bo-side-logos">' +
+        '        <span class="tepa-bo-side-te-pill"><img src="' + esc(assetUrl('totalenergies-logo.png')) + '" alt="TotalEnergies"></span>' +
+        '        <img class="tepa-bo-side-lu-logo" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
+        '      </div>' +
+        '      <div>' +
+        '        <div class="tepa-bo-side-title">TEPA Award 2026</div>' +
+        '        <div class="tepa-bo-side-sub">WordPress Event Studio</div>' +
+        '      </div>' +
         (mode === 'supabase'
-          ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="lock-admin" title="Lock Admin Console">Lock</button>'
-          : '') +
-        '        <a href="' + esc(quizScreenUrl) + '" target="_blank" class="tepa-bo-btn">Quiz ↗</a>' +
-        '        <a href="' + esc(voteScreenUrl) + '" target="_blank" class="tepa-bo-btn">Voting ↗</a>' +
-        '        <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-btn tepa-bo-btn-primary">Open 16:9 Live Screen ↗</a>' +
+          ? '<span class="tepa-bo-side-rt is-live"><span class="tepa-bo-status-dot"></span> Supabase Realtime Live</span>'
+          : '<span class="tepa-bo-side-rt is-demo"><span class="tepa-bo-status-dot"></span> Demo / Rehearsal Mode</span>') +
+        '    </div>' +
+        '    <nav class="tepa-bo-side-nav" aria-label="Backoffice Sections">' +
+        '      <div class="tepa-bo-side-group-lbl">Comando do Evento</div>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'stage' ? 'is-active' : '') + '" data-tab="stage">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">📡</span><span>Live Stage &amp; Controls</span></span>' +
+        '        <span class="tepa-bo-nav-badge is-live" data-tab-count="stage">' + esc(stageBadgeText) + '</span>' +
+        '      </button>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'questions' ? 'is-active' : '') + '" data-tab="questions">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">✨</span><span>Quiz Studio</span></span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="questions">' + quizQs.length + '</span>' +
+        '      </button>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'projects' ? 'is-active' : '') + '" data-tab="projects">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">🏆</span><span>Voting &amp; Projects</span></span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="projects">' + k.activeProjects.length + '</span>' +
+        '      </button>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'submissions' ? 'is-active' : '') + '" data-tab="submissions">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">🎁</span><span>Winners &amp; Desk</span></span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="submissions">' + subs.length + '</span>' +
+        '      </button>' +
+        '      <div class="tepa-bo-side-group-lbl">Sistema &amp; Segurança</div>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'settings' ? 'is-active' : '') + '" data-tab="settings">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">📱</span><span>QR Kit &amp; Connection</span></span>' +
+        '      </button>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'audit' ? 'is-active' : '') + '" data-tab="audit">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">🛡️</span><span>Auditoria &amp; Diagnóstico</span></span>' +
+        '        <span class="tepa-bo-nav-badge is-live">OK</span>' +
+        '      </button>' +
+        '    </nav>' +
+        '    <div class="tepa-bo-side-footer">' +
+        '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-side-link is-primary">🖥 Open 16:9 Live Screen ↗</a>' +
+        '      <div class="tepa-bo-side-launch-grid">' +
+        '        <a href="' + esc(quizScreenUrl) + '" target="_blank" class="tepa-bo-side-link">❓ Quiz ↗</a>' +
+        '        <a href="' + esc(voteScreenUrl) + '" target="_blank" class="tepa-bo-side-link">🗳️ Voting ↗</a>' +
+        '      </div>' +
+        '      <div class="tepa-bo-wp-meta">' +
+        '        <div class="tepa-bo-wp-meta-row">' +
+        '          <span>🔒 WordPress Admin</span>' +
+        '          <strong style="color:#E2E8F0;">' + esc(cfg.wpUserDisplay || 'Admin') + '</strong>' +
+        '        </div>' +
+        '        <div class="tepa-bo-side-launch-grid">' +
+        (cfg.wpDashboardUrl
+          ? '<a href="' + esc(cfg.wpDashboardUrl) + '" class="tepa-bo-side-link" title="Return to standard WordPress Dashboard">← WP-Admin</a>' +
+            '<button type="button" class="tepa-bo-side-link" data-action="toggle-wp-chrome" title="Show/Hide native WordPress sidebar">Barra WP</button>'
+          : '<button type="button" class="tepa-bo-side-link" data-action="toggle-wp-chrome" title="Toggle Fullscreen Focus">⛶ Fullscreen</button>' +
+            (mode === 'supabase'
+              ? '<button type="button" class="tepa-bo-side-link" data-action="lock-admin" title="Lock Admin Console">🔒 Lock</button>'
+              : '<button type="button" class="tepa-bo-side-link" data-tab="audit">🛡️ Audit</button>')) +
+        '        </div>' +
         '      </div>' +
         '    </div>' +
-        '  </header>' +
+        '  </aside>' +
+        '  <div class="tepa-bo-main">' +
+        '    <header class="tepa-bo-topbar">' +
+        '      <div class="tepa-bo-topbar-left">' +
+        '        <div>' +
+        '          <div class="tepa-bo-topbar-title" id="tepa-bo-topbar-title">' + esc(meta.icon + ' ' + meta.title) + '</div>' +
+        '          <div class="tepa-bo-topbar-desc" id="tepa-bo-topbar-desc">' + esc(meta.desc) + '</div>' +
+        '        </div>' +
+        '      </div>' +
+        '      <div class="tepa-bo-topbar-controls">' +
+        '        <span id="tepa-bo-toast-slot">' + (state.notice ? '<span class="tepa-bo-toast ' + (state.noticeType === 'err' ? 'is-err' : '') + '">' + esc(state.notice) + '</span>' : '') + '</span>' +
+        '        <div class="tepa-bo-quick-stage" title="Quickly switch the 16:9 Auditorium Stage from any menu">' +
+        '          <span class="tepa-bo-quick-stage-lbl">16:9 Stage:</span>' +
+        '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'quiz_qr' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="quiz_qr">1. Quiz QR</button>' +
+        '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'live_voting' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="live_voting">2. Live Voting</button>' +
+        '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'winner_reveal' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="winner_reveal">3. Winner</button>' +
+        '        </div>' +
+        (mode === 'supabase' && cfg.wpDashboardUrl
+          ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="lock-admin" title="Lock Admin Console">🔒 Lock</button>'
+          : '') +
+        '      </div>' +
+        '    </header>' +
+        '    <div class="tepa-bo-content">' +
         (mode === 'demo'
           ? '<div class="tepa-bo-alert is-warn">' +
             '  <div><strong>Demo / Rehearsal Mode Active:</strong> Votes, quizzes, and edits stay in browser local storage / BroadcastChannel without writing to Supabase Cloud.' +
@@ -2712,49 +3076,45 @@
             '</div>'
           : '') +
         (state.error ? '<div class="tepa-bo-alert is-error"><div><strong>Action notice:</strong> ' + esc(state.error) + '</div></div>' : '') +
-        '  <section class="tepa-bo-kpis">' +
-        '    <div class="tepa-bo-kpi-card">' +
-        '      <div class="tepa-bo-kpi-top">' +
-        '        <span class="tepa-bo-kpi-label">Total Votes Cast</span>' +
-        '        <span data-kpi-votes-badge class="tepa-bo-badge ' + (s.voting_open ? 'is-green' : 'is-red') + '">' + (s.voting_open ? 'Voting Open' : 'Voting Closed') + '</span>' +
-        '      </div>' +
-        '      <div class="tepa-bo-kpi-value" data-kpi-votes>' + esc(k.totalVotes) + '</div>' +
-        '      <div class="tepa-bo-kpi-sub" data-kpi-votes-sub>Round #' + esc(s.vote_epoch || 1) + ' · Across ' + esc(projects.length) + ' finalist projects</div>' +
+        '      <section class="tepa-bo-kpis">' +
+        '        <div class="tepa-bo-kpi-card" data-tab="projects" title="Click to manage finalist projects">' +
+        '          <div class="tepa-bo-kpi-top">' +
+        '            <span class="tepa-bo-kpi-label">Total Votes Cast</span>' +
+        '            <span data-kpi-votes-badge class="tepa-bo-badge ' + (s.voting_open ? 'is-green' : 'is-red') + '">' + (s.voting_open ? 'Voting Open' : 'Voting Closed') + '</span>' +
+        '          </div>' +
+        '          <div class="tepa-bo-kpi-value" data-kpi-votes>' + esc(k.totalVotes) + '</div>' +
+        '          <div class="tepa-bo-kpi-sub" data-kpi-votes-sub>Round #' + esc(s.vote_epoch || 1) + ' · ' + esc(k.activeProjects.length) + ' active finalists</div>' +
+        '        </div>' +
+        '        <div class="tepa-bo-kpi-card" data-tab="stage" title="Click to view Live Top 5 Standings">' +
+        '          <div class="tepa-bo-kpi-top">' +
+        '            <span class="tepa-bo-kpi-label">Current Leader</span>' +
+        '            <span class="tepa-bo-badge is-blue">Best of the Best</span>' +
+        '          </div>' +
+        '          <div class="tepa-bo-kpi-value is-text" data-kpi-leader title="' + esc(k.leader ? k.leader.project_title : '') + '">' + esc(k.leader ? k.leader.project_title : 'No votes yet') + '</div>' +
+        '          <div class="tepa-bo-kpi-sub" data-kpi-leader-sub>' + (k.leader ? esc((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%) · ' + k.leader.category_name) : 'Waiting for first vote') + '</div>' +
+        '        </div>' +
+        '        <div class="tepa-bo-kpi-card" data-tab="questions" title="Click to open Quiz Studio">' +
+        '          <div class="tepa-bo-kpi-top">' +
+        '            <span class="tepa-bo-kpi-label">Quiz Participants</span>' +
+        '            <span data-kpi-quiz-badge class="tepa-bo-badge ' + (s.quiz_open ? 'is-green' : 'is-red') + '">' + (s.quiz_open ? 'Quiz Open' : 'Quiz Closed') + '</span>' +
+        '          </div>' +
+        '          <div class="tepa-bo-kpi-value" data-kpi-quiz>' + esc(subs.length) + '</div>' +
+        '          <div class="tepa-bo-kpi-sub" data-kpi-quiz-sub>' + esc(k.passedCount) + ' passed min score · Round #' + esc(s.quiz_epoch || 1) + '</div>' +
+        '        </div>' +
+        '        <div class="tepa-bo-kpi-card" data-tab="submissions" title="Click to manage Winners & Prize Desk">' +
+        '          <div class="tepa-bo-kpi-top">' +
+        '            <span class="tepa-bo-kpi-label">Prize Vouchers</span>' +
+        '            <span data-kpi-vouchers-badge class="tepa-bo-badge is-gold">First ' + esc(k.maxVouchers) + '</span>' +
+        '          </div>' +
+        '          <div class="tepa-bo-kpi-value" data-kpi-vouchers>' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + '</div>' +
+        '          <div class="tepa-bo-kpi-sub" data-kpi-vouchers-sub>' + esc(k.redeemedCount) + ' redeemed at prize desk</div>' +
+        '          <div class="tepa-bo-progress"><div class="tepa-bo-progress-fill" data-kpi-vouchers-bar style="width:' + k.voucherPct + '%;"></div></div>' +
+        '        </div>' +
+        '      </section>' +
+        '      <div id="tepa-bo-tab-panel" class="tepa-anim-tab">' + buildTabPanelHtml() + '</div>' +
         '    </div>' +
-        '    <div class="tepa-bo-kpi-card">' +
-        '      <div class="tepa-bo-kpi-top">' +
-        '        <span class="tepa-bo-kpi-label">Current Leader</span>' +
-        '        <span class="tepa-bo-badge is-blue">Best of the Best</span>' +
-        '      </div>' +
-        '      <div class="tepa-bo-kpi-value is-text" data-kpi-leader title="' + esc(k.leader ? k.leader.project_title : '') + '">' + esc(k.leader ? k.leader.project_title : 'No votes yet') + '</div>' +
-        '      <div class="tepa-bo-kpi-sub" data-kpi-leader-sub>' + (k.leader ? esc((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%) · ' + k.leader.category_name) : 'Waiting for first vote') + '</div>' +
-        '    </div>' +
-        '    <div class="tepa-bo-kpi-card">' +
-        '      <div class="tepa-bo-kpi-top">' +
-        '        <span class="tepa-bo-kpi-label">Quiz Participants</span>' +
-        '        <span data-kpi-quiz-badge class="tepa-bo-badge ' + (s.quiz_open ? 'is-green' : 'is-red') + '">' + (s.quiz_open ? 'Quiz Open' : 'Quiz Closed') + '</span>' +
-        '      </div>' +
-        '      <div class="tepa-bo-kpi-value" data-kpi-quiz>' + esc(subs.length) + '</div>' +
-        '      <div class="tepa-bo-kpi-sub" data-kpi-quiz-sub>' + esc(k.passedCount) + ' passed min score · Round #' + esc(s.quiz_epoch || 1) + '</div>' +
-        '    </div>' +
-        '    <div class="tepa-bo-kpi-card">' +
-        '      <div class="tepa-bo-kpi-top">' +
-        '        <span class="tepa-bo-kpi-label">Prize Vouchers</span>' +
-        '        <span data-kpi-vouchers-badge class="tepa-bo-badge is-gold">First ' + esc(k.maxVouchers) + '</span>' +
-        '      </div>' +
-        '      <div class="tepa-bo-kpi-value" data-kpi-vouchers>' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + '</div>' +
-        '      <div class="tepa-bo-kpi-sub" data-kpi-vouchers-sub>' + esc(k.redeemedCount) + ' redeemed at prize desk</div>' +
-        '      <div class="tepa-bo-progress"><div class="tepa-bo-progress-fill" data-kpi-vouchers-bar style="width:' + k.voucherPct + '%;"></div></div>' +
-        '    </div>' +
-        '  </section>' +
-        '  <nav class="tepa-bo-tabs" aria-label="Backoffice Sections">' +
-        '    <button type="button" class="tepa-bo-tab ' + (state.tab === 'stage' ? 'is-active' : '') + '" data-tab="stage">Live Stage &amp; Controls</button>' +
-        '    <button type="button" class="tepa-bo-tab ' + (state.tab === 'questions' ? 'is-active' : '') + '" data-tab="questions">Quiz Studio <span class="tepa-bo-tab-count" data-tab-count="questions">' + quizQs.length + '</span></button>' +
-        '    <button type="button" class="tepa-bo-tab ' + (state.tab === 'projects' ? 'is-active' : '') + '" data-tab="projects">Voting &amp; Projects <span class="tepa-bo-tab-count" data-tab-count="projects">' + projects.length + '</span></button>' +
-        '    <button type="button" class="tepa-bo-tab ' + (state.tab === 'submissions' ? 'is-active' : '') + '" data-tab="submissions">Winners &amp; Desk <span class="tepa-bo-tab-count" data-tab-count="submissions">' + subs.length + '</span></button>' +
-        '    <button type="button" class="tepa-bo-tab ' + (state.tab === 'settings' ? 'is-active' : '') + '" data-tab="settings">QR Kit &amp; Connection</button>' +
-        '  </nav>' +
-        '  <div id="tepa-bo-tab-panel" class="tepa-anim-tab">' + buildTabPanelHtml() + '</div>' +
+        '  </div>' +
+        '  <div id="tepa-bo-floating-slot"></div>' +
         '  <div id="tepa-bo-modal-slot"></div>' +
         '</div>';
 
@@ -2764,6 +3124,7 @@
       }
       hydrateTabPanelAfterPaint();
       syncAdminModal();
+      syncFloatingSaveBar();
     }
 
     function readQuestionRowToDirty(qRow) {
@@ -2796,6 +3157,7 @@
         ev.preventDefault();
         var val = (root.querySelector('#tepa-pin-input') || {}).value || '';
         state.pin = val;
+        state.manuallyLocked = false;
         try { sessionStorage.setItem(PIN_SESSION_KEY, val); } catch (e) {}
         state.loading = true;
         render(false);
@@ -2909,6 +3271,18 @@
         return;
       }
 
+      if (ev.target.id === 'tepa-proj-search') {
+        state.projSearch = ev.target.value;
+        var pPos = ev.target.selectionStart;
+        render(false);
+        var pInp = root.querySelector('#tepa-proj-search');
+        if (pInp) {
+          pInp.focus();
+          try { pInp.setSelectionRange(pPos, pPos); } catch (e) {}
+        }
+        return;
+      }
+
       if (ev.target.id === 'tepa-poll-headline' || ev.target.id === 'tepa-poll-sub') {
         state.pollCopyDraft = {
           voting_headline: ((root.querySelector('#tepa-poll-headline') || {}).value || ''),
@@ -2932,14 +3306,16 @@
         var pid = Number(projRow.getAttribute('data-proj-row'));
         var origP = (state.data.projects || []).find(function (p) { return p.id === pid; });
         if (origP) {
+          var isAct = projRow.querySelector('[data-field="is_active"]').checked;
           state.dirtyProjects[pid] = {
             id: pid,
             category_name: projRow.querySelector('[data-field="category_name"]').value,
             project_title: projRow.querySelector('[data-field="project_title"]').value,
             team_name: projRow.querySelector('[data-field="team_name"]').value,
-            is_active: projRow.querySelector('[data-field="is_active"]').checked
+            is_active: isAct
           };
           projRow.classList.add('is-dirty');
+          projRow.classList.toggle('is-inactive', !isAct);
           var rowBtn = projRow.querySelector('[data-action="save-project"]');
           if (rowBtn) rowBtn.classList.add('tepa-bo-btn-dark');
           updateDirtyCountersInPlace();
@@ -2989,14 +3365,18 @@
       var projRow = ev.target.closest('[data-proj-row]');
       if (projRow && ev.target.getAttribute('data-field') === 'is_active') {
         var pid = Number(projRow.getAttribute('data-proj-row'));
+        var isAct = ev.target.checked;
         state.dirtyProjects[pid] = {
           id: pid,
           category_name: projRow.querySelector('[data-field="category_name"]').value,
           project_title: projRow.querySelector('[data-field="project_title"]').value,
           team_name: projRow.querySelector('[data-field="team_name"]').value,
-          is_active: ev.target.checked
+          is_active: isAct
         };
         projRow.classList.add('is-dirty');
+        projRow.classList.toggle('is-inactive', !isAct);
+        var rowBtn = projRow.querySelector('[data-action="save-project"]');
+        if (rowBtn) rowBtn.classList.add('tepa-bo-btn-dark');
         updateDirtyCountersInPlace();
         return;
       }
@@ -3025,9 +3405,13 @@
       var prevModeBtn = ev.target.closest('[data-preview-mode]');
       if (prevModeBtn) {
         state.previewScreen = prevModeBtn.getAttribute('data-preview-mode');
-        root.querySelectorAll('[data-preview-mode]').forEach(function (b) {
-          b.classList.toggle('is-active', b.getAttribute('data-preview-mode') === state.previewScreen);
-        });
+        updatePhonePreviewInPlace();
+        return;
+      }
+
+      var prevQBtn = ev.target.closest('[data-preview-qidx]');
+      if (prevQBtn) {
+        state.previewQIdx = Number(prevQBtn.getAttribute('data-preview-qidx') || 0);
         updatePhonePreviewInPlace();
         return;
       }
@@ -3039,13 +3423,33 @@
         return;
       }
 
+      var projFilterBtn = ev.target.closest('[data-projfilter]');
+      if (projFilterBtn) {
+        state.projFilter = projFilterBtn.getAttribute('data-projfilter');
+        render(false);
+        return;
+      }
+
       var btn = ev.target.closest('[data-action]');
       if (!btn) return;
       var act = btn.getAttribute('data-action');
       var pin = state.pin || '2026';
 
+      if (act === 'toggle-wp-chrome') {
+        document.body.classList.toggle('tepa-wp-immersive');
+        if (!document.body.classList.contains('tepa-wp-admin-page')) {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(function () {});
+          } else {
+            document.exitFullscreen && document.exitFullscreen().catch(function () {});
+          }
+        }
+        return;
+      }
+
       if (act === 'lock-admin') {
         state.pin = '';
+        state.manuallyLocked = true;
         state.data = null;
         state.error = '';
         try { sessionStorage.removeItem(PIN_SESSION_KEY); } catch (e) {}
@@ -3069,6 +3473,24 @@
         await Store.adminAction(pin, 'simulate_votes', { count: simCount });
         await loadAdmin(false);
         flash('+' + simCount + ' simulated votes sent!');
+        return;
+      }
+
+      if (act === 'enable-all-projects' && state.data) {
+        (state.data.projects || []).forEach(function (p) {
+          if (p.is_active === false || (state.dirtyProjects[p.id] && state.dirtyProjects[p.id].is_active === false)) {
+            var cur = getProjectDraft(p);
+            state.dirtyProjects[p.id] = {
+              id: p.id,
+              category_name: cur.category_name,
+              project_title: cur.project_title,
+              team_name: cur.team_name || '',
+              is_active: true
+            };
+          }
+        });
+        render(false);
+        flash('All projects marked active — click Save All Projects to apply.');
         return;
       }
 
@@ -3167,6 +3589,7 @@
 
       if (act === 'select-quiz') {
         state.selectedQuizId = btn.getAttribute('data-id');
+        state.previewQIdx = 0;
         render(true);
         return;
       }
@@ -3184,6 +3607,7 @@
         });
         if (cqRes && cqRes.ok && cqRes.quiz) {
           state.selectedQuizId = cqRes.quiz.id;
+          state.previewQIdx = 0;
           await loadAdmin(false);
           flash('New quiz created!');
         } else {
@@ -3207,6 +3631,7 @@
         });
         if (dupRes && dupRes.ok && dupRes.quiz) {
           state.selectedQuizId = dupRes.quiz.id;
+          state.previewQIdx = 0;
           await loadAdmin(false);
           flash('Quiz duplicated!');
         } else {
@@ -3363,7 +3788,9 @@
 
       if (act === 'save-all-questions') {
         var quizRows = Array.from(root.querySelectorAll('[data-q-row]'));
-        var qItems = quizRows.map(readQuestionRowToDirty).filter(Boolean);
+        var qItems = quizRows.length
+          ? quizRows.map(readQuestionRowToDirty).filter(Boolean)
+          : Object.values(state.dirtyQuestions);
         state.saving = true;
         render(false);
         try {
@@ -3513,6 +3940,19 @@
         var pngBox = root.querySelector('#' + pngTargetId);
         if (pngBox && pngBox.innerHTML) {
           downloadQrPng(pngBox.innerHTML, pngFileName);
+        }
+      }
+    });
+
+    global.addEventListener('keydown', function (ev) {
+      if ((ev.ctrlKey || ev.metaKey) && (ev.key === 's' || ev.key === 'S')) {
+        var pCount = Object.keys(state.dirtyProjects).length;
+        var qCount = Object.keys(state.dirtyQuestions).length;
+        if (pCount > 0 || qCount > 0) {
+          ev.preventDefault();
+          var targetAct = (pCount > 0 && (state.tab === 'projects' || qCount === 0)) ? 'save-all-projects' : 'save-all-questions';
+          var saveBtn = root.querySelector('[data-action="' + targetAct + '"]');
+          if (saveBtn) saveBtn.click();
         }
       }
     });
