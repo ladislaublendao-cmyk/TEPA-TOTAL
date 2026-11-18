@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TEPA Performance Award 2026 — Presentation &amp; Realtime Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="../tepa-award-theme/assets/css/tepa.css">
+  <style>
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: #0A0B12;
+    }
+    .studio-shell {
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    .studio-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 20px;
+      background: #121420;
+      border-bottom: 2px solid transparent;
+      border-image: var(--tepa-grad-rainbow) 1;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .studio-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .studio-brand img {
+      height: 32px;
+      width: auto;
+    }
+    .studio-brand-title {
+      font-size: 14.5px;
+      font-weight: 700;
+    }
+    .studio-brand-sub {
+      font-size: 11.5px;
+      color: #C7C9D9;
+    }
+    .studio-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .studio-stage {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 20px;
+      padding: 16px 20px;
+      align-items: stretch;
+    }
+    .phone-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 0;
+    }
+    .phone-frame {
+      width: 390px;
+      height: min(760px, calc(100vh - 140px));
+      border-radius: 44px;
+      padding: 10px;
+      background: linear-gradient(145deg, #2b2e42, #12131d);
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.72);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .phone-notch {
+      width: 110px;
+      height: 20px;
+      background: #05050A;
+      border-radius: 999px;
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      pointer-events: none;
+    }
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 34px;
+      background: #0F1019;
+    }
+    .stage-column {
+      min-width: 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stage-frame-wrap {
+      flex: 1;
+      min-height: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.55);
+      background: #0F1019;
+    }
+    .stage-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    @media (max-width: 1080px) {
+      html, body { height: auto; overflow: auto; }
+      .studio-shell { height: auto; }
+      .studio-stage { grid-template-columns: 1fr; }
+      .stage-frame-wrap { min-height: 620px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="studio-shell">
+    <header class="studio-bar">
+      <div class="studio-brand">
+        <img src="../tepa-award-theme/assets/images/light-up-logo.png" alt="LIGHT UP">
+        <div>
+          <div class="studio-brand-title">TEPA Performance Award 2026 — Presentation Studio</div>
+          <div class="studio-brand-sub">Simulador Realtime: Telemóvel (iPhone 17) ↔ Ecrã 16:9 do Auditório</div>
+        </div>
+      </div>
+
+      <div class="studio-actions">
+        <button type="button" class="tepa-stage-btn" id="btn-phone-quiz">Telemóvel: Welcome Quiz</button>
+        <button type="button" class="tepa-stage-btn is-active" id="btn-phone-vote">Telemóvel: Voting System</button>
+        <button type="button" class="tepa-stage-btn" id="btn-new-phone">Novo Colaborador (Simular)</button>
+        <button type="button" class="tepa-btn-cta" id="btn-sim-votes" style="min-height:32px;padding:6px 14px;font-size:12px;border-radius:10px;">+5 Votos ao Vivo</button>
+        <a href="quiz.html" target="_blank" class="tepa-stage-btn">Quiz ↗</a>
+        <a href="vote.html" target="_blank" class="tepa-stage-btn">Voting ↗</a>
+        <a href="live.html" target="_blank" class="tepa-stage-btn">Telão ↗</a>
+        <a href="admin.html" target="_blank" class="tepa-stage-btn">Painel Admin ↗</a>
+      </div>
+    </header>
+
+    <main class="studio-stage">
+      <section class="phone-column" aria-label="Mobile Simulator">
+        <div class="phone-frame">
+          <div class="phone-notch" aria-hidden="true"></div>
+          <iframe id="phone-iframe" class="phone-screen" src="vote.html" title="Mobile Simulator"></iframe>
+        </div>
+      </section>
+
+      <section class="stage-column" aria-label="Auditorium Live Screen Simulator">
+        <div class="stage-frame-wrap">
+          <iframe id="live-iframe" class="stage-frame" src="live.html" title="Auditorium 16:9 Live Screen"></iframe>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="../tepa-award-theme/assets/js/qrcode.min.js"></script>
+  <script src="../tepa-award-theme/assets/js/tepa-data.js"></script>
+  <script>
+    (function () {
+      var phoneFrame = document.getElementById('phone-iframe');
+      var btnQuiz = document.getElementById('btn-phone-quiz');
+      var btnVote = document.getElementById('btn-phone-vote');
+      var btnNewPhone = document.getElementById('btn-new-phone');
+      var btnSimVotes = document.getElementById('btn-sim-votes');
+      var currentMode = 'vote';
+
+      function setPhone(mode) {
+        currentMode = mode;
+        phoneFrame.src = mode === 'vote' ? 'vote.html' : 'quiz.html';
+        btnQuiz.classList.toggle('is-active', mode === 'quiz');
+        btnVote.classList.toggle('is-active', mode === 'vote');
+        window.TepaStore.adminAction('2026', 'update_settings', {
+          stage_mode: mode === 'vote' ? 'live_voting' : 'quiz_qr',
+          reveal_winner: false
+        });
+      }
+
+      btnQuiz.addEventListener('click', function () { setPhone('quiz'); });
+      btnVote.addEventListener('click', function () { setPhone('vote'); });
+
+      btnNewPhone.addEventListener('click', function () {
+        window.TepaStore.rotateSimulatedDeviceId();
+        phoneFrame.src = currentMode === 'vote' ? 'vote.html' : 'quiz.html';
+      });
+
+      btnSimVotes.addEventListener('click', async function () {
+        await window.TepaStore.adminAction('2026', 'simulate_votes', { count: 5 });
+      });
+    })();
+  </script>
+</body>
+</html>
