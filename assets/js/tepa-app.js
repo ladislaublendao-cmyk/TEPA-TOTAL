@@ -1009,6 +1009,7 @@
     var safetyPoll = null;
     var prevServerStage = null;
     var prevQuizReveal = null;
+    var prevRemoteSig = null;
 
     function colorFor(project) {
       var idx = Math.max(0, Number(project.slot_number || project.id || 1) - 1);
@@ -1028,15 +1029,45 @@
     async function refresh() {
       try {
         var nextDash = await Store.getDashboardState();
-        var nextServerStage = (nextDash && nextDash.settings && nextDash.settings.reveal_winner)
-          ? 'winner_reveal'
-          : (nextDash && nextDash.settings && nextDash.settings.stage_mode) || 'live_voting';
-        var nextQuizReveal = Boolean(nextDash && nextDash.settings && nextDash.settings.reveal_quiz_winners);
+        var s = (nextDash && nextDash.settings) || {};
+        var nextServerStage = s.reveal_winner ? 'winner_reveal' : (s.stage_mode || 'live_voting');
+        var nextQuizReveal = Boolean(s.reveal_quiz_winners);
+        var remoteSig = [
+          s.live_theme || 'light',
+          s.live_chart_type || 'horizontal',
+          s.live_vertical_scope || 'top5',
+          s.live_sort_mode || 'votes',
+          s.live_show_qr !== false ? '1' : '0',
+          s.live_hide_results ? '1' : '0'
+        ].join('|');
+
         if (prevServerStage && prevServerStage !== nextServerStage) {
           state.localStageOverride = null;
         }
         if (prevQuizReveal !== null && prevQuizReveal !== nextQuizReveal && nextQuizReveal) {
           state.localStageOverride = null;
+        }
+        if (prevRemoteSig !== remoteSig) {
+          if (s.live_theme === 'dark' || s.live_theme === 'light') {
+            state.theme = s.live_theme;
+            try { global.localStorage.setItem(THEME_KEY, state.theme); } catch (e) {}
+          }
+          if (s.live_chart_type === 'vertical' || s.live_chart_type === 'horizontal') {
+            state.chartType = s.live_chart_type;
+          }
+          if (s.live_vertical_scope === 'top5' || s.live_vertical_scope === 'all15') {
+            state.verticalScope = s.live_vertical_scope;
+          }
+          if (s.live_sort_mode === 'votes' || s.live_sort_mode === 'slot') {
+            state.sortMode = s.live_sort_mode;
+          }
+          if (s.live_show_qr !== undefined && s.live_show_qr !== null) {
+            state.showQrSidebar = Boolean(s.live_show_qr);
+          }
+          if (s.live_hide_results !== undefined && s.live_hide_results !== null) {
+            state.hideResults = Boolean(s.live_hide_results);
+          }
+          prevRemoteSig = remoteSig;
         }
         prevServerStage = nextServerStage;
         prevQuizReveal = nextQuizReveal;
@@ -1584,7 +1615,7 @@
   function mountAdminApp(root) {
     var PIN_SESSION_KEY = 'tepa_admin_pin_v1';
     var LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-    var VALID_TABS = { stage: 1, questions: 1, projects: 1, submissions: 1, settings: 1, audit: 1 };
+    var VALID_TABS = { stage: 1, livescreen: 1, questions: 1, projects: 1, submissions: 1, settings: 1, audit: 1 };
     var initCfg = Store.getConfig();
     var initialTab = (initCfg.wpAdminTab && VALID_TABS[initCfg.wpAdminTab]) ? initCfg.wpAdminTab : 'stage';
     var savedPin = (function () { try { return sessionStorage.getItem(PIN_SESSION_KEY) || ''; } catch (e) { return ''; } })();
@@ -1623,7 +1654,12 @@
       download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
       check: '<path d="M20 6 9 17l-5-5"/>',
       x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
-      smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>'
+      smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+      eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+      eyeOff: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>',
+      sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+      moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+      list: '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>'
     };
 
     function icon(name, size) {
@@ -1664,6 +1700,11 @@
         iconName: 'radio',
         title: 'Live Stage & Controls',
         desc: 'Control the 16:9 auditorium screen, mobile participation gates, and rehearsal rounds in real time.'
+      },
+      livescreen: {
+        iconName: 'monitor',
+        title: '16:9 Live Screen Director',
+        desc: 'Dedicated real-time remote control for the 16:9 auditorium projection: stage scenes, chart layouts, theme, QR sidebar, and live winner reveals.'
       },
       questions: {
         iconName: 'sparkles',
@@ -1900,6 +1941,10 @@
       var stBadge = root.querySelector('[data-tab-count="stage"]');
       if (stBadge) {
         stBadge.textContent = s.stage_mode === 'quiz_qr' ? 'Quiz QR' : (s.stage_mode === 'winner_reveal' ? 'Winner' : 'Voting');
+      }
+      var lsBadge = root.querySelector('[data-tab-count="livescreen"]');
+      if (lsBadge) {
+        lsBadge.textContent = (s.live_theme === 'dark' ? 'Dark' : 'Light') + ' · ' + (s.stage_mode === 'quiz_qr' ? 'S1' : (s.stage_mode === 'winner_reveal' ? 'S3' : 'S2'));
       }
       var qc = root.querySelector('[data-tab-count="questions"]');
       if (qc) {
@@ -2372,6 +2417,239 @@
           '      </div>' +
           '      <p class="tepa-bo-hint" style="margin-top:8px;">Resetting increments the round epoch so rehearsal phones can vote or play again. Requires confirmation.</p>' +
           '    </div>' +
+          '  </div>' +
+          '</div>'
+        );
+      }
+
+      if (state.tab === 'livescreen') {
+        var curTheme = s.live_theme === 'dark' ? 'dark' : 'light';
+        var curChart = s.live_chart_type === 'vertical' ? 'vertical' : 'horizontal';
+        var curScope = s.live_vertical_scope === 'all15' ? 'all15' : 'top5';
+        var curSort = s.live_sort_mode === 'slot' ? 'slot' : 'votes';
+        var curShowQr = s.live_show_qr !== false;
+        var curHideRes = Boolean(s.live_hide_results);
+        var curStage = s.reveal_winner ? 'winner_reveal' : (s.stage_mode || 'live_voting');
+        var curQuizReveal = Boolean(s.reveal_quiz_winners);
+        var prizeTitleLs = (k.activeQuiz && k.activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher';
+        var evTitleVal = (state.pollCopyDraft && state.pollCopyDraft.event_title !== undefined)
+          ? state.pollCopyDraft.event_title
+          : (s.event_title || 'TEPA Performance Award 2026');
+        var vHeadVal = (state.pollCopyDraft && state.pollCopyDraft.voting_headline !== undefined)
+          ? state.pollCopyDraft.voting_headline
+          : (s.voting_headline || 'Which finalist project deserves the Best of the Best?');
+
+        var stageNameMap = {
+          quiz_qr: 'Scene 1 · Welcome Quiz QR & Official Winners',
+          live_voting: 'Scene 2 · Live Voting Ranking + QR',
+          winner_reveal: 'Scene 3 · Best of the Best Winner Spotlight'
+        };
+        var monitorHeadline = curStage === 'quiz_qr'
+          ? ((k.activeQuiz && k.activeQuiz.title && k.activeQuiz.title !== 'Quiz' ? k.activeQuiz.title : 'Welcome Quiz') + ' — Scan to Join & Win!')
+          : (curStage === 'winner_reveal'
+            ? (evTitleVal + ' — Best of the Best')
+            : vHeadVal);
+
+        var monitorBodyHtml = '';
+        if (curStage === 'quiz_qr') {
+          monitorBodyHtml =
+            '<div style="display:flex;align-items:center;gap:14px;">' +
+            '  <div style="width:56px;height:56px;border-radius:12px;background:' + (curTheme === 'dark' ? 'rgba(255,255,255,0.08)' : '#F1F5F9') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + icon('qr', 26) + '</div>' +
+            '  <div style="min-width:0;flex:1;">' +
+            '    <div style="font-size:12px;font-weight:700;color:#F77B39;">' + esc(k.subs.length) + ' Participants · ' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + ' Qualified</div>' +
+            '    <div style="font-size:12.5px;margin-top:3px;opacity:0.85;">' +
+            (curQuizReveal
+              ? ('● Showing ' + esc(k.voucherWinners.length) + ' official ' + esc(prizeTitleLs) + ' winners on screen')
+              : '🔒 Winners list hidden on 16:9 screen (Awaiting Manager Reveal)') +
+            '    </div>' +
+            '  </div>' +
+            '</div>';
+        } else if (curStage === 'winner_reveal') {
+          monitorBodyHtml =
+            '<div style="padding:10px 14px;border-radius:12px;background:rgba(247,123,57,0.12);border:1px solid rgba(247,123,57,0.3);">' +
+            '  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#F77B39;">★ Best of the Best Spotlight</div>' +
+            '  <div style="font-size:15px;font-weight:800;margin-top:2px;">' + esc(k.leader ? k.leader.project_title : 'Waiting for votes...') + '</div>' +
+            (k.leader ? '<div style="font-size:12px;opacity:0.8;margin-top:2px;">' + esc(k.leader.votes) + ' votes (' + esc(k.leaderPct) + '%) · ' + esc(k.leader.category_name) + '</div>' : '') +
+            '</div>';
+        } else {
+          var topPreview = k.sortedProjects.slice(0, 3);
+          monitorBodyHtml =
+            '<div style="display:flex;flex-direction:column;gap:6px;">' +
+            topPreview.map(function (p, i) {
+              var pv = Number(p.votes || 0);
+              var ppct = (!curHideRes && k.totalVotes > 0) ? Math.round((pv / k.totalVotes) * 100) : 0;
+              return (
+                '<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;">' +
+                '  <strong style="width:18px;">' + (i + 1) + '.</strong>' +
+                '  <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(p.project_title) + '</span>' +
+                '  <div style="width:90px;height:6px;border-radius:99px;background:rgba(148,163,184,0.22);overflow:hidden;"><div style="width:' + (curHideRes ? 15 : Math.max(8, ppct)) + '%;height:100%;background:#F77B39;border-radius:99px;"></div></div>' +
+                '  <strong style="width:46px;text-align:right;">' + (curHideRes ? '••' : (pv + ' (' + ppct + '%)')) + '</strong>' +
+                '</div>'
+              );
+            }).join('') +
+            '</div>';
+        }
+
+        return (
+          '<div class="tepa-bo-live-director-grid">' +
+          '  <div class="tepa-bo-card">' +
+          '    <div class="tepa-bo-card-head">' +
+          '      <div>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('monitor', 15) + '</span><h2 class="tepa-bo-card-title">16:9 Auditorium Scene Switcher</h2></div>' +
+          '        <p class="tepa-bo-card-desc">Click any scene below to switch the 16:9 big screen in real time.</p>' +
+          '      </div>' +
+          '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary">' + icon('external', 13) + '<span>Open 16:9 Screen</span></a>' +
+          '    </div>' +
+          '    <div class="tepa-bo-stage-list">' +
+          '      <button type="button" class="tepa-bo-stage-card ' + (curStage === 'quiz_qr' ? 'is-active' : '') + '" data-action="set-stage" data-val="quiz_qr">' +
+          '        <span class="tepa-bo-stage-num">' + icon('qr', 15) + '</span>' +
+          '        <span class="tepa-bo-stage-meta">' +
+          '          <span class="tepa-bo-stage-title">Scene 1 · Welcome Quiz QR &amp; Official Winners</span>' +
+          '          <span class="tepa-bo-stage-desc">Displays Quiz QR code, live participant counter (' + esc(k.subs.length) + '), and official winners reveal (' + (curQuizReveal ? 'ANNOUNCED' : 'HIDDEN') + ').</span>' +
+          '        </span>' +
+          (curStage === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">● ON AIR</span>' : '') +
+          '      </button>' +
+          '      <button type="button" class="tepa-bo-stage-card ' + (curStage === 'live_voting' ? 'is-active' : '') + '" data-action="set-stage" data-val="live_voting">' +
+          '        <span class="tepa-bo-stage-num">' + icon('barChart', 15) + '</span>' +
+          '        <span class="tepa-bo-stage-meta">' +
+          '          <span class="tepa-bo-stage-title">Scene 2 · Live Voting Ranking + QR</span>' +
+          '          <span class="tepa-bo-stage-desc">Mentimeter-style horizontal list or vertical columns across ' + esc(k.activeProjects.length) + ' active finalists (' + esc(k.totalVotes) + ' votes).</span>' +
+          '        </span>' +
+          (curStage === 'live_voting' ? '<span class="tepa-bo-badge is-green">● ON AIR</span>' : '') +
+          '      </button>' +
+          '      <button type="button" class="tepa-bo-stage-card ' + (curStage === 'winner_reveal' ? 'is-active' : '') + '" data-action="set-stage" data-val="winner_reveal">' +
+          '        <span class="tepa-bo-stage-num">' + icon('trophy', 15) + '</span>' +
+          '        <span class="tepa-bo-stage-meta">' +
+          '          <span class="tepa-bo-stage-title">Scene 3 · Best of the Best Winner Spotlight</span>' +
+          '          <span class="tepa-bo-stage-desc">Grand ceremony reveal of #1 winner (' + esc(k.leader ? k.leader.project_title : 'No votes yet') + ') + runners-up.</span>' +
+          '        </span>' +
+          (curStage === 'winner_reveal' ? '<span class="tepa-bo-badge is-green">● ON AIR</span>' : '') +
+          '      </button>' +
+          '    </div>' +
+          '  </div>' +
+          '  <div class="tepa-bo-card">' +
+          '    <div class="tepa-bo-card-head">' +
+          '      <div>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('radio', 15) + '</span><h2 class="tepa-bo-card-title">Live 16:9 Stage Monitor</h2></div>' +
+          '        <p class="tepa-bo-card-desc">Real-time mirror of the active auditorium projection state.</p>' +
+          '      </div>' +
+          '      <span class="tepa-bo-badge is-green">● ' + (mode === 'supabase' ? 'Supabase Realtime' : 'Demo Realtime') + '</span>' +
+          '    </div>' +
+          '    <div class="tepa-bo-monitor-frame is-' + curTheme + '">' +
+          '      <div class="tepa-bo-monitor-top">' +
+          '        <span class="tepa-bo-monitor-onair"><span class="tepa-bo-status-dot"></span> ON AIR · ' + esc(stageNameMap[curStage] || 'Live Stage') + '</span>' +
+          '        <span class="tepa-bo-monitor-chip">' + (curTheme === 'dark' ? 'Dark Mode' : 'Light Mode') + '</span>' +
+          '      </div>' +
+          '      <div class="tepa-bo-monitor-body">' +
+          '        <div class="tepa-bo-monitor-headline">' + esc(monitorHeadline) + '</div>' +
+          monitorBodyHtml +
+          '      </div>' +
+          '      <div class="tepa-bo-monitor-chips">' +
+          '        <span class="tepa-bo-monitor-chip">' + icon('barChart', 11) + '<span>Chart: ' + (curChart === 'vertical' ? ('Columns (' + (curScope === 'top5' ? 'Top 5' : 'All ' + k.activeProjects.length) + ')') : 'Ranked List') + '</span></span>' +
+          '        <span class="tepa-bo-monitor-chip">' + icon('qr', 11) + '<span>Vote QR: ' + (curShowQr ? 'Visible' : 'Hidden') + '</span></span>' +
+          '        <span class="tepa-bo-monitor-chip">' + icon(curHideRes ? 'eyeOff' : 'eye', 11) + '<span>Numbers: ' + (curHideRes ? 'Suspense (••)' : 'Visible') + '</span></span>' +
+          '        <span class="tepa-bo-monitor-chip">' + icon('gift', 11) + '<span>Quiz Winners: ' + (curQuizReveal ? 'LIVE' : 'Secret') + '</span></span>' +
+          '      </div>' +
+          '    </div>' +
+          '  </div>' +
+          '</div>' +
+          '<div class="tepa-bo-grid-2">' +
+          '  <div class="tepa-bo-card">' +
+          '    <div class="tepa-bo-card-head">' +
+          '      <div>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('sliders', 15) + '</span><h2 class="tepa-bo-card-title">Remote Display &amp; Chart Controls (16:9)</h2></div>' +
+          '        <p class="tepa-bo-card-desc">Change chart layout, theme, sorting, QR sidebar, and suspense mode remotely without touching the projector PC.</p>' +
+          '      </div>' +
+          '    </div>' +
+          '    <div class="tepa-bo-ctrl-matrix">' +
+          '      <div class="tepa-bo-ctrl-box">' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('sun', 13) + '<span>1. Auditorium Theme</span></div>' +
+          '        <div class="tepa-bo-seg">' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curTheme === 'light' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_theme" data-val="light">' + icon('sun', 12) + '<span>Light</span></button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curTheme === 'dark' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_theme" data-val="dark">' + icon('moon', 12) + '<span>Dark</span></button>' +
+          '        </div>' +
+          '      </div>' +
+          '      <div class="tepa-bo-ctrl-box">' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('barChart', 13) + '<span>2. Voting Chart Style</span></div>' +
+          '        <div class="tepa-bo-seg">' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curChart === 'horizontal' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_chart_type" data-val="horizontal">' + icon('list', 12) + '<span>Ranked List</span></button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curChart === 'vertical' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_chart_type" data-val="vertical">' + icon('barChart', 12) + '<span>Columns</span></button>' +
+          '        </div>' +
+          '      </div>' +
+          '      <div class="tepa-bo-ctrl-box">' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('trophy', 13) + '<span>3. Vertical Columns Scope</span></div>' +
+          '        <div class="tepa-bo-seg">' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curScope === 'top5' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_vertical_scope" data-val="top5">Top 5 Leaders</button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curScope === 'all15' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_vertical_scope" data-val="all15">All ' + esc(k.activeProjects.length) + ' Projects</button>' +
+          '        </div>' +
+          '      </div>' +
+          '      <div class="tepa-bo-ctrl-box">' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('arrowDown', 13) + '<span>4. Project Sort Order</span></div>' +
+          '        <div class="tepa-bo-seg">' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curSort === 'votes' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_sort_mode" data-val="votes">By Most Votes</button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curSort === 'slot' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_sort_mode" data-val="slot">By Slot #01–15</button>' +
+          '        </div>' +
+          '      </div>' +
+          '      <div class="tepa-bo-ctrl-box">' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('qr', 13) + '<span>5. Voting QR Sidebar</span></div>' +
+          '        <div class="tepa-bo-seg">' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curShowQr ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_show_qr" data-val="true">Show QR Card</button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (!curShowQr ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_show_qr" data-val="false">Hide QR (Full Width)</button>' +
+          '        </div>' +
+          '      </div>' +
+          '      <div class="tepa-bo-ctrl-box">' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon(curHideRes ? 'eyeOff' : 'eye', 13) + '<span>6. Suspense Mode (Vote Counts)</span></div>' +
+          '        <div class="tepa-bo-seg">' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (!curHideRes ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_hide_results" data-val="false">Show Live %</button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curHideRes ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_hide_results" data-val="true">Hide Results (••)</button>' +
+          '        </div>' +
+          '      </div>' +
+          '    </div>' +
+          '  </div>' +
+          '  <div class="tepa-bo-card">' +
+          '    <div class="tepa-bo-card-head">' +
+          '      <div>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('gift', 15) + '</span><h2 class="tepa-bo-card-title">Live Ceremony Announcements &amp; Screen Headlines</h2></div>' +
+          '        <p class="tepa-bo-card-desc">Reveal Quiz winners or Best of the Best champion on the 16:9 screen with 1 click.</p>' +
+          '      </div>' +
+          '    </div>' +
+          '    <div class="tepa-bo-reveal-banner ' + (curQuizReveal ? 'is-live' : 'is-hidden') + '" style="margin-bottom:12px;">' +
+          '      <div style="min-width:0;flex:1;">' +
+          '        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">' +
+          '          <strong style="font-size:14px;color:#0F172A;">Quiz Winners Reveal on 16:9 Screen</strong>' +
+          '          <span class="tepa-bo-badge ' + (curQuizReveal ? 'is-green' : 'is-gold') + '">' + (curQuizReveal ? '● LIVE ON 16:9' : 'HIDDEN / SECRET') + '</span>' +
+          '        </div>' +
+          '        <div style="font-size:12.5px;color:#475569;">' + esc(k.voucherWinners.length) + ' of ' + esc(k.maxVouchers) + ' ' + esc(prizeTitleLs) + ' winners ready to announce.</div>' +
+          '      </div>' +
+          '      <button type="button" class="tepa-bo-btn ' + (curQuizReveal ? 'tepa-bo-btn-dark' : 'tepa-bo-btn-primary') + '" data-action="announce-quiz-winners" data-val="' + (!curQuizReveal) + '">' +
+          icon('radio', 14) + '<span>' + (curQuizReveal ? 'Hide Quiz Winners' : 'Announce Quiz Winners Now') + '</span></button>' +
+          '    </div>' +
+          '    <div class="tepa-bo-reveal-banner ' + (curStage === 'winner_reveal' ? 'is-live' : '') + '" style="margin-bottom:16px;">' +
+          '      <div style="min-width:0;flex:1;">' +
+          '        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">' +
+          '          <strong style="font-size:14px;color:#0F172A;">Best of the Best Grand Winner Reveal</strong>' +
+          '          <span class="tepa-bo-badge ' + (curStage === 'winner_reveal' ? 'is-green' : 'is-blue') + '">' + (curStage === 'winner_reveal' ? '● ON AIR' : 'STANDBY') + '</span>' +
+          '        </div>' +
+          '        <div style="font-size:12.5px;color:#475569;">Current #1: <strong>' + esc(k.leader ? k.leader.project_title : 'No votes yet') + '</strong>' + (k.leader ? (' (' + esc(k.leader.votes) + ' votes · ' + esc(k.leaderPct) + '%)') : '') + '</div>' +
+          '      </div>' +
+          '      <button type="button" class="tepa-bo-btn ' + (curStage === 'winner_reveal' ? 'tepa-bo-btn-dark' : 'tepa-bo-btn-primary') + '" data-action="set-stage" data-val="' + (curStage === 'winner_reveal' ? 'live_voting' : 'winner_reveal') + '">' +
+          icon('trophy', 14) + '<span>' + (curStage === 'winner_reveal' ? 'Back to Voting Chart' : 'Reveal Best of the Best') + '</span></button>' +
+          '    </div>' +
+          '    <form id="tepa-live-headlines-form" style="padding-top:12px;border-top:1px solid #E2E8F0;">' +
+          '      <div class="tepa-bo-field">' +
+          '        <label class="tepa-bo-label" for="tepa-ls-ev-title">16:9 Ceremony Title (Scene 3 Winner Spotlight)</label>' +
+          '        <input id="tepa-ls-ev-title" class="tepa-bo-input" type="text" maxlength="100" value="' + esc(evTitleVal) + '">' +
+          '      </div>' +
+          '      <div class="tepa-bo-rules-grid" style="grid-template-columns:1fr auto;">' +
+          '        <div>' +
+          '          <label class="tepa-bo-label" for="tepa-ls-v-head">16:9 Voting Poll Question Headline (Scene 2)</label>' +
+          '          <input id="tepa-ls-v-head" class="tepa-bo-input" type="text" maxlength="160" value="' + esc(vHeadVal) + '">' +
+          '        </div>' +
+          '        <div>' +
+          '          <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="height:40px;padding:0 18px;">' + icon('check', 14) + '<span>Update Screen Titles</span></button>' +
+          '        </div>' +
+          '      </div>' +
+          '    </form>' +
           '  </div>' +
           '</div>'
         );
@@ -3089,6 +3367,10 @@
         '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('radio', 15) + '</span><span>Live Stage &amp; Controls</span></span>' +
         '        <span class="tepa-bo-nav-badge is-live" data-tab-count="stage">' + esc(stageBadgeText) + '</span>' +
         '      </button>' +
+        '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'livescreen' ? 'is-active' : '') + '" data-tab="livescreen">' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('monitor', 15) + '</span><span>16:9 Live Screen</span></span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="livescreen">' + esc((s.live_theme === 'dark' ? 'Dark' : 'Light') + ' · ' + (s.stage_mode === 'quiz_qr' ? 'S1' : (s.stage_mode === 'winner_reveal' ? 'S3' : 'S2'))) + '</span>' +
+        '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'questions' ? 'is-active' : '') + '" data-tab="questions">' +
         '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('sparkles', 15) + '</span><span>Quiz Studio</span></span>' +
         '        <span class="tepa-bo-nav-badge" data-tab-count="questions">' + quizQs.length + '</span>' +
@@ -3325,6 +3607,24 @@
         return;
       }
 
+      if (ev.target.id === 'tepa-live-headlines-form') {
+        ev.preventDefault();
+        var lsEvTitle = ((root.querySelector('#tepa-ls-ev-title') || {}).value || '').trim();
+        var lsVHead = ((root.querySelector('#tepa-ls-v-head') || {}).value || '').trim();
+        var lsRes = await Store.adminAction(state.pin || '2026', 'update_settings', {
+          event_title: lsEvTitle,
+          voting_headline: lsVHead
+        });
+        if (lsRes && lsRes.ok) {
+          state.pollCopyDraft = null;
+          await loadAdmin(false);
+          flash('16:9 Live Screen titles updated!');
+        } else {
+          flash((lsRes && lsRes.error) || 'Failed to update titles.', true);
+        }
+        return;
+      }
+
       if (ev.target.id === 'tepa-change-pin-form') {
         ev.preventDefault();
         var p1 = ((root.querySelector('#tepa-new-pin') || {}).value || '').trim();
@@ -3544,6 +3844,25 @@
         });
         await loadAdmin(false);
         flash('Stage switched to ' + stageVal.replace('_', ' '));
+        return;
+      }
+
+      if (act === 'set-live-pref') {
+        var prefKey = btn.getAttribute('data-key');
+        var rawPrefVal = btn.getAttribute('data-val');
+        var prefVal = (rawPrefVal === 'true' || rawPrefVal === 'false') ? (rawPrefVal === 'true') : rawPrefVal;
+        var prefPayload = {};
+        prefPayload[prefKey] = prefVal;
+        if (prefKey === 'live_vertical_scope') {
+          prefPayload.live_chart_type = 'vertical';
+        }
+        var prefRes = await Store.adminAction(pin, 'update_settings', prefPayload);
+        if (prefRes && prefRes.ok) {
+          await loadAdmin(false);
+          flash('16:9 Live Screen updated in real time!');
+        } else {
+          flash((prefRes && prefRes.error) || 'Failed to update 16:9 display setting.', true);
+        }
         return;
       }
 

@@ -238,6 +238,12 @@
         reveal_winner: false,
         reveal_quiz_winners: false,
         stage_mode: 'live_voting',
+        live_theme: 'light',
+        live_chart_type: 'horizontal',
+        live_vertical_scope: 'top5',
+        live_sort_mode: 'votes',
+        live_show_qr: true,
+        live_hide_results: false,
         min_quiz_score: 5,
         max_vouchers: 10,
         quiz_epoch: 1,
@@ -258,6 +264,12 @@
     if (!state.settings.voting_headline) state.settings.voting_headline = 'Which finalist project deserves the Best of the Best?';
     if (!state.settings.voting_subtitle) state.settings.voting_subtitle = 'You have 15 finalist projects · Choose one for Best of the Best';
     if (state.settings.reveal_quiz_winners == null) state.settings.reveal_quiz_winners = false;
+    if (!state.settings.live_theme) state.settings.live_theme = 'light';
+    if (!state.settings.live_chart_type) state.settings.live_chart_type = 'horizontal';
+    if (!state.settings.live_vertical_scope) state.settings.live_vertical_scope = 'top5';
+    if (!state.settings.live_sort_mode) state.settings.live_sort_mode = 'votes';
+    if (state.settings.live_show_qr == null) state.settings.live_show_qr = true;
+    if (state.settings.live_hide_results == null) state.settings.live_hide_results = false;
     if (!Array.isArray(state.quizzes) || !state.quizzes.length) {
       state.quizzes = clone(DEFAULT_QUIZZES);
     }
@@ -868,7 +880,13 @@
       }
 
       if (action === 'update_settings') {
-        ['event_title', 'voting_headline', 'voting_subtitle', 'quiz_open', 'voting_open', 'reveal_winner', 'reveal_quiz_winners', 'stage_mode', 'min_quiz_score', 'max_vouchers'].forEach(function (k) {
+        [
+          'event_title', 'voting_headline', 'voting_subtitle',
+          'quiz_open', 'voting_open', 'reveal_winner', 'reveal_quiz_winners',
+          'stage_mode', 'live_theme', 'live_chart_type', 'live_vertical_scope',
+          'live_sort_mode', 'live_show_qr', 'live_hide_results',
+          'min_quiz_score', 'max_vouchers'
+        ].forEach(function (k) {
           if (payload[k] !== undefined && payload[k] !== null) {
             state.settings[k] = payload[k];
           }
