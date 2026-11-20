@@ -2714,12 +2714,18 @@ body:not(.wp-admin) a,
 
 .tepa-quiz-stage-grid {
   position: relative;
-  width: 100%;
+  width: auto;
   max-width: 1500px;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto auto;
+  justify-content: center;
   align-items: center;
   gap: clamp(32px, 5vw, 88px);
+}
+
+.tepa-quiz-stage.is-revealed .tepa-quiz-stage-grid {
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 .tepa-quiz-qr-panel {
