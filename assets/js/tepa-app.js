@@ -2114,7 +2114,7 @@
           ? (quizWinnersRevealedForKey + ':' + (qsForKey.max_vouchers || 10) + ':' + (quizWinnersRevealedForKey ? winnersSig : ''))
           : '',
         stageMode === 'winner_reveal'
-          ? ((totalVotes > 0 ? '1' : '0') + ':' + (topWinnerForKey.id || 0) + ':' + runnerIdsSig)
+          ? ((totalVotes > 0 ? '1' : '0') + ':' + (topWinnerForKey.id || 0))
           : ''
       ].join('|');
 
@@ -2178,7 +2178,7 @@
           ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
           : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
 
-      var headlineRow =
+      var headlineRow = stageMode === 'winner_reveal' ? '' :
         '<div class="tepa-menti-headline-row tepa-anim-enter">' +
         '  <h1 class="tepa-menti-headline">' + headlineTitle + '</h1>' +
         (stageMode === 'live_voting' && state.chartType === 'vertical' && projects.length > 5
@@ -2243,41 +2243,48 @@
           '</div>';
       } else if (stageMode === 'winner_reveal') {
         var topWinner = ranked[0];
-        var runners = ranked.slice(1, 4);
-        var pctWin = totalVotes > 0 && topWinner ? Math.round((topWinner.votes / totalVotes) * 100) : 0;
+        var hasWinner = Boolean(topWinner && totalVotes > 0);
+        var pctWin = hasWinner ? Math.round((topWinner.votes / totalVotes) * 100) : 0;
+        var eventLabel = isSimplePoll
+          ? ((activePoll && activePoll.title) || 'Live Poll Results')
+          : (settings.event_title || 'TEPA Performance Award 2026');
+        var trophySvg =
+          '<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">' +
+          '<defs><linearGradient id="tepaTrophyGrad" x1="0" y1="0" x2="1" y2="1">' +
+          '<stop offset="0" stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/>' +
+          '</linearGradient></defs>' +
+          '<path d="M20 8h24v14c0 7.2-5.4 13-12 13s-12-5.8-12-13V8z" fill="url(#tepaTrophyGrad)"/>' +
+          '<path d="M20 12h-7c0 7.5 3.8 12 9.5 13M44 12h7c0 7.5-3.8 12-9.5 13" stroke="url(#tepaTrophyGrad)" stroke-width="3.2" stroke-linecap="round"/>' +
+          '<path d="M28 35h8v8h-8z" fill="url(#tepaTrophyGrad)"/>' +
+          '<rect x="20" y="43" width="24" height="7" rx="2.5" fill="url(#tepaTrophyGrad)"/>' +
+          '<rect x="16" y="50" width="32" height="6" rx="2.5" fill="url(#tepaTrophyGrad)"/>' +
+          '<path d="M27 15l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#FFFFFF" opacity="0.85"/>' +
+          '</svg>';
 
         workspaceHtml =
-          '<div class="tepa-menti-spotlight tepa-anim-enter">' +
-          '  <div class="tepa-voucher-badge" style="font-size:13px;padding:7px 18px;">★ ' + (isSimplePoll ? esc((activePoll && activePoll.title) || 'Live Poll Results') : esc(settings.event_title || 'TEPA Performance Award 2026')) + '</div>' +
-          '  <h2 class="tepa-rainbow-text" style="font-size:clamp(38px, 4.4vw, 60px);font-weight:800;margin:8px 0 12px;letter-spacing:-0.025em;">' + (isSimplePoll ? 'WINNING CHOICE' : 'BEST OF THE BEST') + '</h2>' +
-          (topWinner && totalVotes > 0
-            ? (topWinner.category_name
-                ? '<div style="font-size:15px;color:#F77B39;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Category ' + esc(pad2(topWinner.slot_number)) + ' · ' + esc(topWinner.category_name) + '</div>'
+          '<div class="tepa-menti-spotlight tepa-winner-stage' + (hasWinner ? '' : ' is-empty') + '">' +
+          '  <div class="tepa-winner-glow" aria-hidden="true"></div>' +
+          '  <div class="tepa-winner-rays" aria-hidden="true"></div>' +
+          '  <div class="tepa-winner-content">' +
+          '    <div class="tepa-winner-trophy w-anim w-d1">' + trophySvg + '</div>' +
+          '    <div class="tepa-winner-eyebrow w-anim w-d2">★ ' + esc(eventLabel) + '</div>' +
+          '    <h2 class="tepa-winner-kicker tepa-rainbow-text w-anim-title w-d3">' + (isSimplePoll ? 'WINNING CHOICE' : 'BEST OF THE BEST') + '</h2>' +
+          '    <div class="tepa-winner-divider w-anim-line w-d4" aria-hidden="true"></div>' +
+          (hasWinner
+            ? ((topWinner.category_name
+                ? '<div class="tepa-winner-cat w-anim w-d5">Category ' + esc(pad2(topWinner.slot_number)) + ' · ' + esc(topWinner.category_name) + '</div>'
                 : '') +
-              '<div style="font-size:clamp(26px, 3vw, 42px);font-weight:700;margin:8px 0 6px;">' + esc(topWinner.project_title) + '</div>' +
+              '<div class="tepa-winner-name w-anim-name w-d6">' + esc(topWinner.project_title) + '</div>' +
               ((!isSimplePoll && topWinner.team_name)
-                ? '<div style="font-size:16px;color:var(--m-muted);margin-bottom:18px;">Team: ' + esc(topWinner.team_name) + '</div>'
-                : '<div style="margin-bottom:14px;"></div>') +
-              '<div style="display:inline-flex;gap:18px;padding:12px 24px;border-radius:999px;background:var(--m-bg);border:1px solid var(--m-border);">' +
-              '  <span><strong id="tepa-reveal-votes" style="font-size:24px;">' + esc(topWinner.votes) + '</strong> votes</span>' +
-              '  <span>·</span>' +
-              '  <span><strong id="tepa-reveal-pct" style="font-size:24px;color:#4E6AF5;">' + pctWin + '%</strong> share</span>' +
-              '</div>'
-            : '<p style="color:var(--m-muted);font-size:16px;">No votes recorded yet — waiting for participants.</p>') +
-          (runners.length && totalVotes > 0
-            ? '<div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:26px;width:100%;max-width:880px;">' +
-              runners.map(function (rn, idx) {
-                var rPct = totalVotes > 0 ? Math.round((rn.votes / totalVotes) * 100) : 0;
-                return (
-                  '<div class="tepa-anim-enter" style="animation-delay:' + ((idx + 1) * 90) + 'ms;flex:1;min-width:210px;background:var(--m-bg);border:1px solid var(--m-border);border-radius:16px;padding:14px 16px;text-align:left;">' +
-                  '  <div style="font-size:11.5px;color:var(--m-muted);font-weight:600;">#' + (idx + 2) + (rn.category_name ? (' · ' + esc(rn.category_name)) : '') + '</div>' +
-                  '  <div style="font-size:15px;font-weight:600;margin:4px 0;">' + esc(rn.project_title) + '</div>' +
-                  '  <div style="font-size:13px;color:#F77B39;font-weight:600;" data-runner-idx="' + idx + '">' + esc(rn.votes) + ' votes (' + rPct + '%)</div>' +
-                  '</div>'
-                );
-              }).join('') +
-              '</div>'
-            : '') +
+                ? '<div class="tepa-winner-team w-anim w-d7">' + esc(topWinner.team_name) + '</div>'
+                : '') +
+              '<div class="tepa-winner-stats w-anim w-d8">' +
+              '  <div class="tepa-winner-stat"><strong id="tepa-reveal-votes">' + esc(topWinner.votes) + '</strong><span>votes</span></div>' +
+              '  <div class="tepa-winner-stat-sep" aria-hidden="true"></div>' +
+              '  <div class="tepa-winner-stat"><strong id="tepa-reveal-pct" class="is-gold">' + pctWin + '%</strong><span>of all votes</span></div>' +
+              '</div>')
+            : '<div class="tepa-winner-waiting w-anim w-d5">Waiting for votes — the winner will be revealed here.</div>') +
+          '  </div>' +
           '</div>';
       } else {
         var chartHtml = '';

@@ -2454,29 +2454,240 @@ body:not(.wp-admin) a,
   }
 }
 
-.tepa-menti-stage-body .tepa-menti-spotlight > * {
-  animation: tepaHeroRise 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+@keyframes tepaHeroName {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 26px, 0) scale(0.92);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
 }
 
-.tepa-menti-stage-body .tepa-menti-spotlight > h2 {
+@keyframes tepaHeroLine {
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes tepaTrophyIn {
+  0% { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.6) rotate(-8deg); }
+  60% { opacity: 1; transform: translate3d(0, -4px, 0) scale(1.06) rotate(2deg); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+}
+
+@keyframes tepaRaysSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes tepaGlowBreath {
+  0%, 100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+}
+
+/* Best of the Best — single winner hero stage (always dark for broadcast contrast) */
+.tepa-winner-stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(120% 90% at 50% 0%, #1D2036 0%, #10121D 55%, #0A0B14 100%);
+  color: #FFFFFF;
+  border-radius: 28px;
+  padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 64px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 30px 80px rgba(10, 11, 20, 0.28);
+}
+
+.tepa-winner-glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(1100px, 120%);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, rgba(255, 210, 57, 0.22), transparent 62%),
+    radial-gradient(closest-side at 30% 60%, rgba(247, 123, 57, 0.18), transparent 70%),
+    radial-gradient(closest-side at 72% 40%, rgba(33, 148, 212, 0.16), transparent 70%);
+  transform: translate(-50%, -50%);
+  z-index: -2;
+  pointer-events: none;
+  animation: tepaGlowBreath 6s ease-in-out infinite;
+}
+
+.tepa-winner-rays {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 160vmax;
+  height: 160vmax;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, 0.035) 0deg 6deg, transparent 6deg 18deg);
+  -webkit-mask: radial-gradient(closest-side, #000 0%, transparent 55%);
+  mask: radial-gradient(closest-side, #000 0%, transparent 55%);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  pointer-events: none;
+  animation: tepaRaysSpin 90s linear infinite;
+}
+
+.tepa-winner-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: min(1200px, 100%);
+}
+
+.tepa-winner-trophy {
+  width: clamp(64px, 9vh, 104px);
+  height: clamp(64px, 9vh, 104px);
+  margin-bottom: clamp(10px, 1.6vh, 18px);
+  filter: drop-shadow(0 10px 28px rgba(255, 210, 57, 0.35));
+}
+
+.tepa-winner-trophy svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tepa-winner-eyebrow {
+  font-size: clamp(12px, 1.5vh, 15px);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tepa-winner-kicker {
+  margin: clamp(10px, 1.8vh, 18px) 0 0;
+  font-size: clamp(30px, 5.2vh, 58px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.tepa-winner-divider {
+  width: clamp(120px, 16vw, 220px);
+  height: 3px;
+  border-radius: 999px;
+  margin: clamp(16px, 2.6vh, 28px) 0 clamp(14px, 2.2vh, 24px);
+  background: var(--tepa-grad-rainbow);
+  transform-origin: center;
+}
+
+.tepa-winner-cat {
+  font-size: clamp(13px, 1.8vh, 18px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F77B39;
+}
+
+.tepa-winner-name {
+  margin-top: clamp(8px, 1.2vh, 14px);
+  font-size: clamp(40px, 8.4vh, 96px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  color: #FFFFFF;
+  text-wrap: balance;
+  text-shadow: 0 6px 40px rgba(255, 210, 57, 0.18);
+}
+
+.tepa-winner-team {
+  margin-top: clamp(10px, 1.4vh, 16px);
+  font-size: clamp(16px, 2.2vh, 22px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.tepa-winner-stats {
+  margin-top: clamp(22px, 3.6vh, 40px);
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 44px);
+  padding: clamp(14px, 2vh, 20px) clamp(26px, 3.4vw, 44px);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+.tepa-winner-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.tepa-winner-stat strong {
+  font-size: clamp(30px, 5.4vh, 58px);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #FFFFFF;
+}
+
+.tepa-winner-stat strong.is-gold {
+  color: #FFD239;
+}
+
+.tepa-winner-stat span {
+  font-size: clamp(11px, 1.4vh, 14px);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.tepa-winner-stat-sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tepa-winner-waiting {
+  font-size: clamp(16px, 2.2vh, 22px);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Staged entrance timeline */
+.tepa-menti-stage-body .tepa-winner-stage .w-anim {
+  animation: tepaHeroRise 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tepa-menti-stage-body .tepa-winner-stage .tepa-winner-trophy.w-anim {
+  animation: tepaTrophyIn 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tepa-menti-stage-body .tepa-winner-stage .w-anim-title {
   animation: tepaHeroTitle 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(1) { animation-delay: 60ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(2) { animation-delay: 180ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(3) { animation-delay: 420ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(4) { animation-delay: 540ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(5) { animation-delay: 660ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(6) { animation-delay: 780ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) { animation-delay: 1000ms; }
-
-.tepa-menti-stage-body .tepa-menti-spotlight .tepa-anim-enter {
-  animation: tepaHeroRise 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.tepa-menti-stage-body .tepa-winner-stage .w-anim-line {
+  animation: tepaHeroLine 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) .tepa-anim-enter:nth-child(1) { animation-delay: 1080ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) .tepa-anim-enter:nth-child(2) { animation-delay: 1200ms; }
-.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) .tepa-anim-enter:nth-child(3) { animation-delay: 1320ms; }
+.tepa-menti-stage-body .tepa-winner-stage .w-anim-name {
+  animation: tepaHeroName 1000ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tepa-winner-stage .w-d1 { animation-delay: 80ms !important; }
+.tepa-winner-stage .w-d2 { animation-delay: 260ms !important; }
+.tepa-winner-stage .w-d3 { animation-delay: 380ms !important; }
+.tepa-winner-stage .w-d4 { animation-delay: 620ms !important; }
+.tepa-winner-stage .w-d5 { animation-delay: 760ms !important; }
+.tepa-winner-stage .w-d6 { animation-delay: 880ms !important; }
+.tepa-winner-stage .w-d7 { animation-delay: 1120ms !important; }
+.tepa-winner-stage .w-d8 { animation-delay: 1260ms !important; }
 
 /* One-shot celebratory confetti layer (removed automatically after ~2.6s) */
 .tepa-menti-confetti {
@@ -2489,8 +2700,12 @@ body:not(.wp-admin) a,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tepa-menti-stage-body .tepa-menti-spotlight > *,
-  .tepa-menti-stage-body .tepa-menti-spotlight .tepa-anim-enter,
+  .tepa-winner-stage .w-anim,
+  .tepa-winner-stage .w-anim-title,
+  .tepa-winner-stage .w-anim-line,
+  .tepa-winner-stage .w-anim-name,
+  .tepa-winner-glow,
+  .tepa-winner-rays,
   .tepa-menti-sidebar,
   .tepa-menti-workspace {
     animation: none !important;
