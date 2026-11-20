@@ -1371,14 +1371,7 @@
               '<h2 style="margin:6px 0 6px;font-size:20px;">' + esc(votedProj.project_title) + '</h2>' +
               ((!isSimple && votedProj.team_name) ? '<div style="font-size:12.5px;color:#C7C9D9;">' + esc(votedProj.team_name) + '</div>' : '')
             : '<h2 style="margin:6px 0;">Option #' + esc(state.receipt.project_id) + '</h2>') +
-          '      <div class="tepa-unique-id-box" style="margin-bottom:4px;">' +
-          '        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Vote Receipt Code</div>' +
-          '        <div class="tepa-unique-id-code" style="font-size:22px;">' + esc(state.receipt.vote_code) + '</div>' +
-          '        <div style="font-size:11.5px;color:#C7C9D9;">Live bars are updating on the Auditorium Screen</div>' +
-          '        <div class="tepa-receipt-actions" style="margin-top:10px;">' +
-          '          <button type="button" class="tepa-stage-btn is-pdf" data-action="download-vote-pdf">' + PDF_ICON_SVG + '<span>Save PDF Receipt</span></button>' +
-          '        </div>' +
-          '      </div>' +
+          '      <p style="margin:12px 0 2px;font-size:12.5px;color:#C7C9D9;">Live bars are updating on the Auditorium Screen</p>' +
           '    </div>' +
           '    <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' +
           '      <a href="' + esc(quizUrl) + '" class="tepa-btn-rainbow-outline is-pill" style="width:100%;">Go to Welcome Quiz</a>' +
@@ -1439,46 +1432,6 @@
         } finally {
           state.submitting = false;
           render('next');
-        }
-      } else if (action === 'download-vote-pdf') {
-        if (state.receipt && !btn.disabled) {
-          var origVotePdfHtml = btn.innerHTML;
-          btn.disabled = true;
-          btn.textContent = 'Saving PDF...';
-          try {
-            var votedOption = state.projects.find(function (p) {
-              return Number(p.id) === Number(state.receipt.project_id);
-            });
-            var choiceTitle = votedOption
-              ? votedOption.project_title
-              : ('Option #' + state.receipt.project_id);
-            var choiceMeta = '';
-            if (votedOption && !isSimpleMode()) {
-              var metaParts = [];
-              if (votedOption.category_name) {
-                metaParts.push(pad2(votedOption.slot_number) + ' · ' + votedOption.category_name);
-              }
-              if (votedOption.team_name) {
-                metaParts.push(votedOption.team_name);
-              }
-              choiceMeta = metaParts.join(' — ');
-            }
-            await downloadReceiptPdf({
-              kind: 'vote',
-              code: state.receipt.vote_code,
-              choiceTitle: choiceTitle,
-              choiceMeta: choiceMeta,
-              eventTitle: (state.activePoll && state.activePoll.title) || 'TEPA Performance Award 2026',
-              createdAt: state.receipt.created_at
-            });
-            btn.textContent = 'PDF Saved ✓';
-          } catch (e) {
-            btn.textContent = 'Retry PDF';
-          }
-          setTimeout(function () {
-            btn.disabled = false;
-            btn.innerHTML = origVotePdfHtml;
-          }, 2000);
         }
       } else if (action === 'sim-new-voter') {
         Store.rotateSimulatedDeviceId();
