@@ -902,7 +902,7 @@
       if (typeof onChange !== 'function') return function () {};
       var timer = null;
       var lastFire = 0;
-      var MIN_INTERVAL_MS = 180;
+      var MIN_INTERVAL_MS = 220;
       function trigger() {
         if (timer) return;
         var elapsed = Date.now() - lastFire;

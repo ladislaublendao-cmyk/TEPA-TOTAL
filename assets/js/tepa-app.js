@@ -574,41 +574,49 @@
       return true;
     }
 
-    var firstTops = new Map();
+    var firstRects = new Map();
     orderedEls.forEach(function (el) {
-      firstTops.set(el, el.getBoundingClientRect().top);
+      firstRects.set(el, el.getBoundingClientRect());
+      if (el._flipTimer) {
+        clearTimeout(el._flipTimer);
+        el._flipTimer = 0;
+      }
+      if (el._flipRaf) {
+        cancelAnimationFrame(el._flipRaf);
+        el._flipRaf = 0;
+      }
     });
 
     orderedEls.forEach(function (el) {
+      el.style.transition = 'none';
+      el.style.transform = 'none';
       parentEl.appendChild(el);
     });
 
     var moved = [];
     orderedEls.forEach(function (el) {
-      var prevTop = firstTops.get(el);
-      var newTop = el.getBoundingClientRect().top;
-      var dy = prevTop - newTop;
-      if (Math.abs(dy) > 1) {
-        el.style.transition = 'none';
-        el.style.transform = 'translateY(' + dy + 'px)';
+      var prev = firstRects.get(el);
+      var next = el.getBoundingClientRect();
+      var dx = prev.left - next.left;
+      var dy = prev.top - next.top;
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+        el.style.transform = 'translate3d(' + dx.toFixed(1) + 'px, ' + dy.toFixed(1) + 'px, 0)';
         moved.push(el);
       }
     });
 
     if (moved.length) {
       void parentEl.offsetHeight;
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          moved.forEach(function (el) {
-            el.style.transition = 'transform 600ms cubic-bezier(0.22, 1, 0.36, 1)';
-            el.style.transform = 'translateY(0)';
-          });
-          setTimeout(function () {
-            moved.forEach(function (el) {
-              el.style.transition = '';
-              el.style.transform = '';
-            });
-          }, 640);
+      moved.forEach(function (el) {
+        el._flipRaf = requestAnimationFrame(function () {
+          el._flipRaf = 0;
+          el.style.transition = 'transform 500ms cubic-bezier(0.22, 1, 0.36, 1)';
+          el.style.transform = 'translate3d(0, 0, 0)';
+          el._flipTimer = setTimeout(function () {
+            el._flipTimer = 0;
+            el.style.transition = '';
+            el.style.transform = '';
+          }, 530);
         });
       });
     }
@@ -1601,33 +1609,37 @@
         var v = Number(p.votes || 0);
         var sharePct = (!state.hideResults && totalVotes > 0) ? Math.round((v / totalVotes) * 100) : 0;
         var isZero = !state.hideResults && v === 0;
-        var barPct = isZero ? 0 : ((!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(3, Math.round((v / maxVotes) * 100)) : 1);
+        var barPct = isZero ? 0 : ((!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(2.5, (v / maxVotes) * 100) : 1);
+        var barPctStr = isZero ? '0' : barPct.toFixed(2);
 
         var rankEl = row.querySelector('.tepa-menti-hrank');
         if (rankEl) rankEl.textContent = (idx + 1) + '.';
         var titleEl = row.querySelector('.tepa-menti-htitle');
-        if (titleEl) titleEl.textContent = p.project_title;
+        if (titleEl && titleEl.textContent !== p.project_title) titleEl.textContent = p.project_title;
         var catEl = row.querySelector('.tepa-menti-hcat');
-        if (catEl) catEl.textContent = formatStageCat(p);
+        var nextCat = formatStageCat(p);
+        if (catEl && catEl.textContent !== nextCat) catEl.textContent = nextCat;
 
         var numEl = row.querySelector('.tepa-hnum');
         var pctEl = row.querySelector('.tepa-menti-hpct');
         if (numEl) {
           if (state.hideResults) numEl.textContent = '••';
-          else animateNumber(numEl, v, function (n) { return String(Math.round(n)); }, 480);
+          else animateNumber(numEl, v, function (n) { return String(Math.round(n)); }, 380);
         }
         if (pctEl) {
           if (state.hideResults) pctEl.textContent = '';
-          else animateNumber(pctEl, sharePct, function (n) { return '(' + Math.round(n) + '%)'; }, 480);
+          else animateNumber(pctEl, sharePct, function (n) { return '(' + Math.round(n) + '%)'; }, 380);
         }
 
         var fillEl = row.querySelector('.tepa-menti-hfill');
         if (fillEl) {
           fillEl.classList.toggle('is-zero', isZero);
-          fillEl.setAttribute('data-target-pct', String(barPct));
           fillEl.style.transitionDelay = '0ms';
-          fillEl.style.width = barPct + '%';
           fillEl.style.backgroundColor = colorFor(p);
+          if (fillEl.getAttribute('data-target-pct') !== barPctStr) {
+            fillEl.setAttribute('data-target-pct', barPctStr);
+            fillEl.style.width = barPctStr + '%';
+          }
         }
       });
 
@@ -1642,7 +1654,7 @@
           : totalVotes + (totalVotes === 1 ? ' vote received' : ' votes received');
       }
       var countPill = root.querySelector('#tepa-menti-total-pill');
-      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 480);
+      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
       return true;
     }
 
@@ -1651,55 +1663,75 @@
       var labelsWrap = root.querySelector('.tepa-menti-vlabels');
       if (!barsWrap || !labelsWrap) return false;
 
+      var existingCols = Array.from(barsWrap.querySelectorAll('[data-project-id]'));
+      var existingLbls = Array.from(labelsWrap.querySelectorAll('[data-label-id]'));
+      if (existingCols.length !== visibleCols.length || existingLbls.length !== visibleCols.length) return false;
+
       var colNodes = {};
-      barsWrap.querySelectorAll('[data-project-id]').forEach(function (el) {
-        colNodes[el.getAttribute('data-project-id')] = el;
-      });
       var lblNodes = {};
-      labelsWrap.querySelectorAll('[data-label-id]').forEach(function (el) {
-        lblNodes[el.getAttribute('data-label-id')] = el;
-      });
-      if (Object.keys(colNodes).length !== visibleCols.length) return false;
+      existingCols.forEach(function (el) { colNodes[el.getAttribute('data-project-id')] = el; });
+      existingLbls.forEach(function (el) { lblNodes[el.getAttribute('data-label-id')] = el; });
+
+      var wantedIds = {};
+      visibleCols.forEach(function (p) { wantedIds[String(p.id)] = true; });
+      var spareCols = existingCols.filter(function (el) { return !wantedIds[el.getAttribute('data-project-id')]; });
+      var spareLbls = existingLbls.filter(function (el) { return !wantedIds[el.getAttribute('data-label-id')]; });
 
       var orderedCols = [];
       var orderedLbls = [];
       visibleCols.forEach(function (p) {
-        var col = colNodes[String(p.id)];
-        var lbl = lblNodes[String(p.id)];
+        var pidStr = String(p.id);
+        var col = colNodes[pidStr];
+        var lbl = lblNodes[pidStr];
+        var repurposed = false;
+        if ((!col || !lbl) && spareCols.length && spareLbls.length) {
+          col = spareCols.shift();
+          lbl = spareLbls.shift();
+          col.setAttribute('data-project-id', pidStr);
+          lbl.setAttribute('data-label-id', pidStr);
+          repurposed = true;
+        }
         if (!col || !lbl) return;
+
         orderedCols.push(col);
         orderedLbls.push(lbl);
         var v = Number(p.votes || 0);
         var sharePct = (!state.hideResults && totalVotes > 0) ? Math.round((v / totalVotes) * 100) : 0;
-        var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, Math.round((v / maxVotes) * 82)) : 3;
+        var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, (v / maxVotes) * 82) : 3;
+        var barHStr = barH.toFixed(2);
+
+        if (repurposed && lbl.children.length >= 2) {
+          lbl.children[0].textContent = p.project_title;
+          lbl.children[1].textContent = formatStageCat(p);
+        }
 
         var numEl = col.querySelector('.tepa-vnum');
         var pctEl = col.querySelector('.tepa-menti-vcount-pct');
         if (numEl) {
+          if (repurposed) numEl._tepaNumVal = v;
           if (state.hideResults) numEl.textContent = '•';
-          else animateNumber(numEl, v, function (n) { return String(Math.round(n)); }, 480);
+          else animateNumber(numEl, v, function (n) { return String(Math.round(n)); }, 380);
         }
         if (pctEl) {
+          if (repurposed) pctEl._tepaNumVal = sharePct;
           if (state.hideResults) pctEl.textContent = '';
-          else animateNumber(pctEl, sharePct, function (n) { return Math.round(n) + '%'; }, 480);
+          else animateNumber(pctEl, sharePct, function (n) { return Math.round(n) + '%'; }, 380);
         }
 
         var barEl = col.querySelector('.tepa-menti-vbar');
         if (barEl) {
-          barEl.setAttribute('data-target-pct', String(barH));
           barEl.style.transitionDelay = '0ms';
-          barEl.style.height = barH + '%';
           barEl.style.backgroundColor = colorFor(p);
+          if (barEl.getAttribute('data-target-pct') !== barHStr) {
+            barEl.setAttribute('data-target-pct', barHStr);
+            barEl.style.height = barHStr + '%';
+          }
         }
       });
 
       if (orderedCols.length === visibleCols.length) {
-        var colCurrent = Array.from(barsWrap.children);
-        var sameCols = colCurrent.length === orderedCols.length && colCurrent.every(function (el, i) { return el === orderedCols[i]; });
-        if (!sameCols) {
-          orderedCols.forEach(function (el) { barsWrap.appendChild(el); });
-          orderedLbls.forEach(function (el) { labelsWrap.appendChild(el); });
-        }
+        flipReorderChildren(barsWrap, orderedCols);
+        flipReorderChildren(labelsWrap, orderedLbls);
       }
 
       var waitEl = root.querySelector('#tepa-menti-wait-text');
@@ -1709,8 +1741,45 @@
           : totalVotes + (totalVotes === 1 ? ' vote received' : ' votes received');
       }
       var countPill = root.querySelector('#tepa-menti-total-pill');
-      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 480);
+      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
       return true;
+    }
+
+    function updateQuizQrInPlace(qs, quizWinnersRevealed, totalVotes) {
+      var partEl = root.querySelector('#tepa-quiz-stage-participants');
+      if (!partEl) return false;
+      animateNumber(partEl, Number(qs.total_participants || 0), function (n) { return String(Math.round(n)); }, 380);
+      var vouchEl = root.querySelector('#tepa-quiz-stage-vouchers');
+      if (vouchEl) {
+        vouchEl.textContent = quizWinnersRevealed
+          ? ((qs.vouchers_awarded || 0) + ' / ' + (qs.max_vouchers || 10))
+          : ('Top ' + (qs.max_vouchers || 10));
+      }
+      var countPill = root.querySelector('#tepa-menti-total-pill');
+      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
+      return true;
+    }
+
+    function updateWinnerRevealInPlace(topWinner, runners, totalVotes) {
+      var votesEl = root.querySelector('#tepa-reveal-votes');
+      var pctEl = root.querySelector('#tepa-reveal-pct');
+      if (topWinner && totalVotes > 0 && votesEl && pctEl) {
+        var topVotes = Number(topWinner.votes || 0);
+        var topShare = Math.round((topVotes / totalVotes) * 100);
+        animateNumber(votesEl, topVotes, function (n) { return String(Math.round(n)); }, 380);
+        animateNumber(pctEl, topShare, function (n) { return Math.round(n) + '%'; }, 380);
+        (runners || []).forEach(function (rn, idx) {
+          var rEl = root.querySelector('[data-runner-idx="' + idx + '"]');
+          if (rEl) {
+            var rVotes = Number(rn.votes || 0);
+            var rPct = Math.round((rVotes / totalVotes) * 100);
+            rEl.textContent = rVotes + ' votes (' + rPct + '%)';
+          }
+        });
+      }
+      var countPill = root.querySelector('#tepa-menti-total-pill');
+      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
+      return Boolean(root.querySelector('.tepa-menti-spotlight'));
     }
 
     function render() {
@@ -1763,6 +1832,8 @@
       }).join(';');
       var topWinnerForKey = ranked[0] || {};
       var effHeadline = (activePoll && activePoll.voting_headline) || settings.voting_headline || '';
+      var quizWinnersRevealedForKey = Boolean(settings.reveal_quiz_winners || qsForKey.reveal_quiz_winners);
+      var runnerIdsSig = ranked.slice(1, 4).map(function (r) { return r.id; }).join(',');
       var renderKey = [
         stageMode, state.theme, state.chartType, state.verticalScope,
         state.showQrSidebar, state.hideResults, state.sortMode, mode,
@@ -1770,12 +1841,12 @@
         (activePoll && activePoll.title) || '',
         projects.length, projectsMetaSig, effHeadline, settings.event_title || '',
         (activeQuiz && activeQuiz.title) || '', (activeQuiz && activeQuiz.voucher_title) || '',
-        Boolean(settings.reveal_quiz_winners || qsForKey.reveal_quiz_winners),
-        qsForKey.total_participants || 0,
-        qsForKey.vouchers_awarded || 0,
-        qsForKey.max_vouchers || 10,
-        winnersSig,
-        stageMode === 'winner_reveal' ? ((topWinnerForKey.id || 0) + ':' + (topWinnerForKey.votes || 0) + ':' + totalVotes) : ''
+        stageMode === 'quiz_qr'
+          ? (quizWinnersRevealedForKey + ':' + (qsForKey.max_vouchers || 10) + ':' + (quizWinnersRevealedForKey ? winnersSig : ''))
+          : '',
+        stageMode === 'winner_reveal'
+          ? ((totalVotes > 0 ? '1' : '0') + ':' + (topWinnerForKey.id || 0) + ':' + runnerIdsSig)
+          : ''
       ].join('|');
 
       var existingStageEl = root.querySelector('.tepa-menti-stage');
@@ -1785,10 +1856,10 @@
             ? updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes)
             : updateVerticalInPlace(visibleCols, totalVotes, maxVotes);
           if (updated) return;
-        } else {
-          var countPillSame = root.querySelector('#tepa-menti-total-pill');
-          if (countPillSame) countPillSame.textContent = String(totalVotes);
-          return;
+        } else if (stageMode === 'quiz_qr') {
+          if (updateQuizQrInPlace(qsForKey, quizWinnersRevealedForKey, totalVotes)) return;
+        } else if (stageMode === 'winner_reveal') {
+          if (updateWinnerRevealInPlace(ranked[0], ranked.slice(1, 4), totalVotes)) return;
         }
       }
 
@@ -1888,8 +1959,8 @@
           '  </div>' +
           '  <div style="min-width:0;">' +
           '    <div class="tepa-menti-kpi-row">' +
-          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val">' + esc(qs.total_participants) + '</div><div class="tepa-menti-kpi-lbl">Participants</div></div>' +
-          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" style="color:#F77B39;">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded) + ' / ' + esc(qs.max_vouchers)) : ('Top ' + esc(qs.max_vouchers))) + '</div><div class="tepa-menti-kpi-lbl">' + (quizWinnersRevealed ? 'Winners Announced' : 'Prizes Available') + '</div></div>' +
+          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" id="tepa-quiz-stage-participants">' + esc(qs.total_participants) + '</div><div class="tepa-menti-kpi-lbl">Participants</div></div>' +
+          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" id="tepa-quiz-stage-vouchers" style="color:#F77B39;">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded) + ' / ' + esc(qs.max_vouchers)) : ('Top ' + esc(qs.max_vouchers))) + '</div><div class="tepa-menti-kpi-lbl">' + (quizWinnersRevealed ? 'Winners Announced' : 'Prizes Available') + '</div></div>' +
           '    </div>' +
           '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;">' +
           '      <h3 style="margin:0;font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:var(--m-muted);">' + esc(prizeTitle) + ' Winners</h3>' +
@@ -1931,7 +2002,7 @@
                   '<div class="tepa-anim-enter" style="animation-delay:' + ((idx + 1) * 90) + 'ms;flex:1;min-width:210px;background:var(--m-bg);border:1px solid var(--m-border);border-radius:16px;padding:14px 16px;text-align:left;">' +
                   '  <div style="font-size:11.5px;color:var(--m-muted);font-weight:600;">#' + (idx + 2) + (rn.category_name ? (' · ' + esc(rn.category_name)) : '') + '</div>' +
                   '  <div style="font-size:15px;font-weight:600;margin:4px 0;">' + esc(rn.project_title) + '</div>' +
-                  '  <div style="font-size:13px;color:#F77B39;font-weight:600;">' + esc(rn.votes) + ' votes (' + rPct + '%)</div>' +
+                  '  <div style="font-size:13px;color:#F77B39;font-weight:600;" data-runner-idx="' + idx + '">' + esc(rn.votes) + ' votes (' + rPct + '%)</div>' +
                   '</div>'
                 );
               }).join('') +
@@ -1945,11 +2016,12 @@
           var vColsHtml = visibleCols.map(function (p) {
             var v = Number(p.votes || 0);
             var sharePct = (!state.hideResults && totalVotes > 0) ? Math.round((v / totalVotes) * 100) : 0;
-            var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, Math.round((v / maxVotes) * 82)) : 3;
+            var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, (v / maxVotes) * 82) : 3;
+            var barHStr = barH.toFixed(2);
             return (
               '<div class="tepa-menti-vcol" data-project-id="' + p.id + '">' +
               '  <div class="tepa-menti-vcount"><span class="tepa-vnum">' + (state.hideResults ? '•' : v) + '</span>' + (state.hideResults ? '' : '<span class="tepa-menti-vcount-pct">' + sharePct + '%</span>') + '</div>' +
-              '  <div class="tepa-menti-vbar" data-target-pct="' + barH + '" style="height:' + barH + '%;background-color:' + colorFor(p) + ';"></div>' +
+              '  <div class="tepa-menti-vbar" data-target-pct="' + barHStr + '" style="height:' + barHStr + '%;background-color:' + colorFor(p) + ';"></div>' +
               '</div>'
             );
           }).join('');
@@ -1975,7 +2047,8 @@
             var v = Number(p.votes || 0);
             var sharePct = (!state.hideResults && totalVotes > 0) ? Math.round((v / totalVotes) * 100) : 0;
             var isZero = !state.hideResults && v === 0;
-            var barPct = isZero ? 0 : ((!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(3, Math.round((v / maxVotes) * 100)) : 1);
+            var barPct = isZero ? 0 : ((!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(2.5, (v / maxVotes) * 100) : 1);
+            var barPctStr = isZero ? '0' : barPct.toFixed(2);
             return (
               '<div class="tepa-menti-hrow" data-project-id="' + p.id + '">' +
               '  <div class="tepa-menti-hrank">' + (idx + 1) + '.</div>' +
@@ -1988,7 +2061,7 @@
               '      <span class="tepa-menti-hvotes"><span class="tepa-hnum">' + (state.hideResults ? '••' : v) + '</span>' + (state.hideResults ? '' : '<span class="tepa-menti-hpct">(' + sharePct + '%)</span>') + '</span>' +
               '    </div>' +
               '    <div class="tepa-menti-htrack">' +
-              '      <div class="tepa-menti-hfill' + (isZero ? ' is-zero' : '') + '" data-target-pct="' + barPct + '" style="width:' + barPct + '%;background-color:' + colorFor(p) + ';"></div>' +
+              '      <div class="tepa-menti-hfill' + (isZero ? ' is-zero' : '') + '" data-target-pct="' + barPctStr + '" style="width:' + barPctStr + '%;background-color:' + colorFor(p) + ';"></div>' +
               '    </div>' +
               '  </div>' +
               '</div>'
