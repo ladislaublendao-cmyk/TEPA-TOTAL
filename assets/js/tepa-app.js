@@ -610,13 +610,13 @@
       moved.forEach(function (el) {
         el._flipRaf = requestAnimationFrame(function () {
           el._flipRaf = 0;
-          el.style.transition = 'transform 500ms cubic-bezier(0.22, 1, 0.36, 1)';
+          el.style.transition = 'transform 680ms cubic-bezier(0.22, 1, 0.36, 1)';
           el.style.transform = 'translate3d(0, 0, 0)';
           el._flipTimer = setTimeout(function () {
             el._flipTimer = 0;
             el.style.transition = '';
             el.style.transform = '';
-          }, 530);
+          }, 710);
         });
       });
     }
@@ -1501,7 +1501,7 @@
     var stageAnimBars = new Map();
     var stageAnimNums = new Map();
     var lastReorderAt = 0;
-    var REORDER_COOLDOWN_MS = 750;
+    var REORDER_COOLDOWN_MS = 900;
 
     function stopStageAnimator() {
       if (stageAnimRaf) {
@@ -1517,8 +1517,10 @@
       if (!stageAnimLastTs) stageAnimLastTs = now;
       var dt = Math.min(0.05, Math.max(0.004, (now - stageAnimLastTs) / 1000));
       stageAnimLastTs = now;
-      var alpha = prefersReducedMotion() ? 1 : (1 - Math.exp(-dt * 5.8));
+      var alpha = prefersReducedMotion() ? 1 : (1 - Math.exp(-dt * 4.5));
       var keepGoing = false;
+      var vBarsWrap = root.querySelector('.tepa-menti-vbars');
+      var vWrapH = vBarsWrap ? Math.max(0, vBarsWrap.clientHeight - 46) : 0;
 
       stageAnimBars.forEach(function (b, el) {
         if (!el || !el.isConnected) {
@@ -1526,18 +1528,26 @@
           return;
         }
         var diff = b.target - b.cur;
+        var growing = Math.abs(diff) > 0.35 && alpha < 1;
         if (Math.abs(diff) < 0.04 || alpha >= 1) {
           b.cur = b.target;
+          growing = false;
         } else {
           b.cur += diff * alpha;
           keepGoing = true;
         }
         el._tepaBarCur = b.cur;
+        el.classList.toggle('is-growing', growing);
         if (b.mode === 'h') {
           var tx = b.isZero ? 'calc(-100% + 6px)' : ('-' + Math.max(0, 100 - b.cur).toFixed(2) + '%');
           el.style.transform = 'translate3d(' + tx + ', 0, 0)';
         } else {
-          el.style.height = b.cur.toFixed(2) + '%';
+          var ty = Math.max(0, 100 - b.cur).toFixed(2);
+          el.style.transform = 'translate3d(0, ' + ty + '%, 0)';
+          if (b.countEl && vWrapH > 0) {
+            var countOffset = (b.cur / 100) * vWrapH + 6;
+            b.countEl.style.transform = 'translate3d(0, -' + countOffset.toFixed(1) + 'px, 0)';
+          }
         }
       });
 
@@ -1573,27 +1583,36 @@
       }
     }
 
-    function setAnimatedBar(el, targetPct, mode, isZero, startFromZero) {
+    function setAnimatedBar(el, targetPct, mode, isZero, startFromZero, countEl) {
       if (!el) return;
       var target = Number(targetPct) || 0;
       var entry = stageAnimBars.get(el);
       if (!entry) {
         var initCur = startFromZero ? 0 : (el._tepaBarCur !== undefined ? el._tepaBarCur : target);
-        entry = { cur: initCur, target: target, mode: mode, isZero: Boolean(isZero) };
+        entry = { cur: initCur, target: target, mode: mode, isZero: Boolean(isZero), countEl: countEl || null };
         stageAnimBars.set(el, entry);
       } else {
         entry.target = target;
         entry.mode = mode;
         entry.isZero = Boolean(isZero);
+        if (countEl) entry.countEl = countEl;
       }
       if (prefersReducedMotion()) {
         entry.cur = target;
         el._tepaBarCur = target;
+        el.classList.remove('is-growing');
         if (mode === 'h') {
           var tx = entry.isZero ? 'calc(-100% + 6px)' : ('-' + Math.max(0, 100 - target).toFixed(2) + '%');
           el.style.transform = 'translate3d(' + tx + ', 0, 0)';
         } else {
-          el.style.height = target.toFixed(2) + '%';
+          el.style.transform = 'translate3d(0, ' + Math.max(0, 100 - target).toFixed(2) + '%, 0)';
+          if (entry.countEl) {
+            var vBarsWrap = root.querySelector('.tepa-menti-vbars');
+            var vWrapH = vBarsWrap ? Math.max(0, vBarsWrap.clientHeight - 46) : 0;
+            if (vWrapH > 0) {
+              entry.countEl.style.transform = 'translate3d(0, -' + ((target / 100) * vWrapH + 6).toFixed(1) + 'px, 0)';
+            }
+          }
         }
         return;
       }
@@ -1671,7 +1690,8 @@
             state.theme = s.live_theme;
             try { global.localStorage.setItem(THEME_KEY, state.theme); } catch (e) {}
           }
-          if (s.live_chart_type === 'vertical' || s.live_chart_type === 'horizontal') {
+          var explicitChartParam = urlParams.get('chart');
+          if (explicitChartParam !== 'vertical' && explicitChartParam !== 'horizontal' && (s.live_chart_type === 'vertical' || s.live_chart_type === 'horizontal')) {
             state.chartType = s.live_chart_type;
           }
           if (s.live_vertical_scope === 'top5' || s.live_vertical_scope === 'all15') {
@@ -1834,7 +1854,7 @@
         orderedLbls.push(lbl);
         var v = Number(p.votes || 0);
         var sharePct = (!state.hideResults && totalVotes > 0) ? Math.round((v / totalVotes) * 100) : 0;
-        var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, (v / maxVotes) * 82) : 3;
+        var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, (v / maxVotes) * 96) : 3;
         var barHStr = barH.toFixed(2);
 
         if (repurposed && lbl.children.length >= 2) {
@@ -1865,7 +1885,7 @@
         if (barEl) {
           barEl.style.backgroundColor = colorFor(p);
           barEl.setAttribute('data-target-pct', barHStr);
-          setAnimatedBar(barEl, barH, 'v', false, false);
+          setAnimatedBar(barEl, barH, 'v', false, false, col.querySelector('.tepa-menti-vcount'));
         }
       });
 
@@ -2042,6 +2062,7 @@
         (stageMode === 'live_voting'
           ? '<button type="button" class="tepa-menti-icon-circle" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '">' + sortIcon + '</button>'
           : '') +
+        '    <span class="tepa-menti-top-count">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
         '  </div>' +
         '  <div class="tepa-menti-brand-right">' +
         '    <div class="tepa-menti-lu-wrap"><img class="tepa-menti-lu-logo" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP"></div>' +
@@ -2163,12 +2184,14 @@
           var vColsHtml = visibleCols.map(function (p) {
             var v = Number(p.votes || 0);
             var sharePct = (!state.hideResults && totalVotes > 0) ? Math.round((v / totalVotes) * 100) : 0;
-            var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, (v / maxVotes) * 82) : 3;
+            var barH = (!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(4, (v / maxVotes) * 96) : 3;
             var barHStr = barH.toFixed(2);
             return (
               '<div class="tepa-menti-vcol" data-project-id="' + p.id + '">' +
               '  <div class="tepa-menti-vcount"><span class="tepa-vnum">' + (state.hideResults ? '•' : v) + '</span>' + (state.hideResults ? '' : '<span class="tepa-menti-vcount-pct">' + sharePct + '%</span>') + '</div>' +
-              '  <div class="tepa-menti-vbar" data-target-pct="' + barHStr + '" style="height:' + barHStr + '%;background-color:' + colorFor(p) + ';"></div>' +
+              '  <div class="tepa-menti-vbar-wrap">' +
+              '    <div class="tepa-menti-vbar" data-target-pct="' + barHStr + '" style="background-color:' + colorFor(p) + ';"></div>' +
+              '  </div>' +
               '</div>'
             );
           }).join('');
@@ -2237,27 +2260,6 @@
         workspaceHtml = '<div class="tepa-menti-workspace">' + chartHtml + qrSidebar + '</div>';
       }
 
-      var dockBar =
-        '<footer class="tepa-menti-dockbar">' +
-        '  <div class="tepa-menti-dock-group">' +
-        '    <button type="button" class="tepa-menti-pill-btn ' + (stageMode === 'quiz_qr' ? 'is-active' : '') + '" data-stage="quiz_qr">Welcome Quiz</button>' +
-        '    <button type="button" class="tepa-menti-pill-btn ' + (stageMode === 'live_voting' ? 'is-active' : '') + '" data-stage="live_voting">Live Voting</button>' +
-        '    <button type="button" class="tepa-menti-pill-btn ' + (stageMode === 'winner_reveal' ? 'is-active' : '') + '" data-stage="winner_reveal">Best of the Best</button>' +
-        '    <button type="button" class="tepa-menti-icon-circle" data-action="toggle-theme" title="Switch Light / Dark Mode">' + bulbIcon + '</button>' +
-        '  </div>' +
-        (stageMode === 'live_voting'
-          ? '<div class="tepa-menti-center-dock">' +
-            '  <button type="button" class="tepa-menti-dock-tool ' + (state.chartType === 'horizontal' ? 'is-active' : '') + '" data-chart="horizontal" title="Ranked List">' + hChartIcon + '<span>List</span></button>' +
-            '  <button type="button" class="tepa-menti-dock-tool ' + (state.chartType === 'vertical' ? 'is-active' : '') + '" data-chart="vertical" title="Columns">' + vChartIcon + '<span>Columns</span></button>' +
-            '  <button type="button" class="tepa-menti-dock-tool ' + (state.showQrSidebar ? 'is-active' : '') + '" data-action="toggle-qr" title="Toggle QR Card">' + qrIcon + '<span>QR</span></button>' +
-            '  <button type="button" class="tepa-menti-dock-tool ' + (state.hideResults ? 'is-active' : '') + '" data-action="toggle-hide-results" title="Hide / Show Results">' + eyeIcon + '<span>' + (state.hideResults ? 'Show' : 'Hide') + '</span></button>' +
-            '</div>'
-          : '<div></div>') +
-        '  <div class="tepa-menti-dock-group">' +
-        '    <span class="tepa-menti-pill-btn" style="cursor:default;">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
-        '  </div>' +
-        '</footer>';
-
       var stageEl = root.querySelector('.tepa-menti-stage');
       var onlyThemeSwitch = prevKey && prevKey !== renderKey && prevKey.replace(/\|(light|dark)\|/, '|X|') === renderKey.replace(/\|(light|dark)\|/, '|X|');
       if (stageEl && onlyThemeSwitch) {
@@ -2271,7 +2273,6 @@
         topBar +
         headlineRow +
         workspaceHtml +
-        dockBar +
         '</div>';
 
       if (stageMode === 'quiz_qr') {
@@ -2286,7 +2287,9 @@
           });
         } else {
           root.querySelectorAll('.tepa-menti-vbar').forEach(function (el) {
-            setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'v', false, true);
+            var colEl = el.closest ? el.closest('.tepa-menti-vcol') : null;
+            var cntEl = colEl ? colEl.querySelector('.tepa-menti-vcount') : null;
+            setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'v', false, true, cntEl);
           });
         }
       } else if (stageMode === 'winner_reveal' && ranked[0] && totalVotes > 0) {

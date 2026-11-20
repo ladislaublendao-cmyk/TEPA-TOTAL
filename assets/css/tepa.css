@@ -1601,6 +1601,21 @@ body:not(.wp-admin) a,
   transform: translateY(-1px);
 }
 
+.tepa-menti-top-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--m-border);
+  background: var(--m-pill);
+  color: var(--m-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .tepa-menti-brand-right {
   display: flex;
   align-items: center;
@@ -1887,12 +1902,36 @@ body:not(.wp-admin) a,
   width: 100%;
   height: 100%;
   border-radius: inherit;
+  position: relative;
+  overflow: hidden;
   will-change: transform;
   transform: translate3d(-100%, 0, 0);
 }
 
 .tepa-menti-hfill.is-zero {
   opacity: 0.45;
+}
+
+.tepa-menti-hfill::after,
+.tepa-menti-vbar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
+  transform: translate3d(-100%, 0, 0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tepa-menti-hfill.is-growing::after,
+.tepa-menti-vbar.is-growing::after {
+  opacity: 1;
+  animation: tepaBarShimmer 1.05s linear infinite;
+}
+
+@keyframes tepaBarShimmer {
+  0% { transform: translate3d(-100%, 0, 0); }
+  100% { transform: translate3d(100%, 0, 0); }
 }
 
 /* Ref 1: Adaptive Vertical Column Chart */
@@ -1913,7 +1952,7 @@ body:not(.wp-admin) a,
   gap: clamp(8px, 1.8vw, 28px);
   align-items: end;
   border-bottom: 1.5px solid var(--m-border);
-  padding: 24px 6px 0;
+  padding: 46px 6px 0;
 }
 
 .tepa-menti-vchart[data-v-constrained="1"] .tepa-menti-vbars,
@@ -1931,6 +1970,7 @@ body:not(.wp-admin) a,
 }
 
 .tepa-menti-vcol {
+  position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -1940,16 +1980,23 @@ body:not(.wp-admin) a,
 }
 
 .tepa-menti-vcount {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
   font-size: clamp(18px, 2.3vw, 32px);
   font-weight: 500;
   color: var(--m-text);
-  margin-bottom: 6px;
+  margin-bottom: 0;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   display: flex;
   align-items: baseline;
   gap: 6px;
   flex-wrap: wrap;
+  will-change: transform;
 }
 
 .tepa-menti-vcount-pct {
@@ -1976,20 +2023,31 @@ body:not(.wp-admin) a,
   font-size: clamp(13px, 1.35vw, 19px);
 }
 
-.tepa-menti-vbar {
+.tepa-menti-vbar-wrap {
   width: 100%;
-  min-height: 6px;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
   border-radius: 6px 22px 2px 2px;
-  will-change: height;
 }
 
-.tepa-menti-vchart[data-v-density="xl"] .tepa-menti-vbar {
+.tepa-menti-vchart[data-v-density="xl"] .tepa-menti-vbar-wrap {
   border-radius: 8px 28px 4px 4px;
 }
 
-.tepa-menti-vchart.is-15 .tepa-menti-vbar,
-.tepa-menti-vchart[data-v-density="sm"] .tepa-menti-vbar {
+.tepa-menti-vchart.is-15 .tepa-menti-vbar-wrap,
+.tepa-menti-vchart[data-v-density="sm"] .tepa-menti-vbar-wrap {
   border-radius: 4px 12px 2px 2px;
+}
+
+.tepa-menti-vbar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+  transform: translate3d(0, 100%, 0);
 }
 
 .tepa-menti-vlabels {
