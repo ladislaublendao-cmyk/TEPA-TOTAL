@@ -391,8 +391,10 @@
       var quizSub = (state.activeQuiz && state.activeQuiz.subtitle) ||
         'Test your knowledge about the TEPA Performance Award and show that you are up to date with this experience!';
 
-      shell.classList.toggle('is-scrollable', state.step === 'name' || state.step === 'questions' || state.step === 'result');
+      shell.setAttribute('data-player-step', state.step);
+      shell.classList.toggle('is-scrollable', state.step !== 'loading');
       footer.style.display = state.step === 'questions' ? 'none' : '';
+      if (stepChanged) shell.scrollTop = 0;
 
       if (state.loading || state.step === 'loading') {
         stage.innerHTML =
@@ -408,7 +410,7 @@
           '<div class="tepa-quiz-cover-body ' + animClass + '">' +
           '  <img class="tepa-lightup-logo is-lg" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '  <div class="tepa-rainbow-line"></div>' +
-          '  <h1 class="tepa-quiz-mega-title" style="' + (quizTitle.length > 10 ? 'font-size:clamp(34px,5.6vh,48px);' : '') + '">' + esc(quizTitle) + '</h1>' +
+          '  <h1 class="tepa-quiz-mega-title' + (quizTitle.length > 10 ? ' is-long-title' : '') + '">' + esc(quizTitle) + '</h1>' +
           '  <p class="tepa-cover-subtitle">' + esc(quizSub) + '</p>' +
           (state.quizOpen
             ? ''
@@ -473,17 +475,19 @@
             errBox.textContent = state.error || '';
             errBox.style.display = state.error ? '' : 'none';
           }
+          if (state.lastPage !== state.page) shell.scrollTop = 0;
           state.lastPage = state.page;
           return;
         }
 
+        if (state.lastPage !== state.page) shell.scrollTop = 0;
         state.lastPage = state.page;
         stage.innerHTML =
-          '<div class="tepa-quiz-step-wrap ' + animClass + '" style="padding-top:26px;padding-bottom:24px;">' +
+          '<div class="tepa-quiz-step-wrap is-questions ' + animClass + '">' +
           '  <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '  <h1 class="tepa-step-heading tepa-rainbow-text" style="margin-top:14px;">' + (hasMc ? esc(quizTitle.toUpperCase()) : 'YES OR NO') + '</h1>' +
           '  <div class="tepa-progress-row">' +
-          '    <span>' + esc(state.fullName) + ' · <span id="tepa-quiz-page-label">' + (state.page + 1) + '/' + totalPages + '</span></span>' +
+          '    <span class="tepa-progress-meta"><span class="tepa-progress-user">' + esc(state.fullName) + '</span><span class="tepa-progress-sep">·</span><span id="tepa-quiz-page-label">' + (state.page + 1) + '/' + totalPages + '</span></span>' +
           '    <div class="tepa-progress-track"><div class="tepa-progress-fill" id="tepa-quiz-progress-fill" style="width:' + prog.pct + '%;"></div></div>' +
           '    <span class="tepa-progress-pct" id="tepa-quiz-progress-pct">' + prog.pct + '%</span>' +
           '  </div>' +
@@ -527,7 +531,7 @@
         }
 
         stage.innerHTML =
-          '<div class="tepa-quiz-step-wrap ' + animClass + '" style="padding-top:26px;">' +
+          '<div class="tepa-quiz-step-wrap is-result ' + animClass + '">' +
           '  <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '  <p style="margin:12px 0 12px;font-size:13px;color:#C7C9D9;text-align:center;">Score: <strong style="color:#FFFFFF;">' + esc(r.score) + ' / ' + esc(r.total_questions) + '</strong></p>' +
           voucherHtml +
@@ -810,12 +814,15 @@
       var shell = root.querySelector('#tepa-vote-shell');
       if (!shell) return;
 
+      var stepChanged = state.lastStep !== state.step;
       var animCls = 'tepa-anim-enter';
       if (directionHint === 'prev') animCls = 'tepa-anim-slide-prev';
       else if (directionHint === 'next') animCls = 'tepa-anim-slide-next';
       state.lastStep = state.step;
 
-      shell.classList.toggle('is-scrollable', state.step === 'receipt');
+      shell.setAttribute('data-player-step', state.step);
+      shell.classList.toggle('is-scrollable', state.step === 'cover' || state.step === 'receipt');
+      if (stepChanged) shell.scrollTop = 0;
 
       if (state.loading || state.step === 'loading') {
         shell.innerHTML =
@@ -909,7 +916,7 @@
         shell.innerHTML =
           '<div class="tepa-bulb-watermark" style="background-image:url(\'' + esc(assetUrl('lightbulb-hero.jpg')) + '\');"></div>' +
           '<div class="tepa-mobile-content ' + animCls + '">' +
-          '  <div class="tepa-quiz-step-wrap" style="padding-top:34px;">' +
+          '  <div class="tepa-quiz-step-wrap is-receipt">' +
           '    <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '    <h1 class="tepa-step-heading tepa-rainbow-text" style="margin-top:20px;">Vote Recorded!</h1>' +
           '    <p class="tepa-step-sub">' + (isSimple ? ('Thank you for participating in ' + esc(pollLabel) + '.') : 'Thank you for voting in the TEPA Performance Award 2026.') + '</p>' +
