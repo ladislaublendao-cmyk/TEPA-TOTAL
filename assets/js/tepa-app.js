@@ -1502,6 +1502,9 @@
     var stageAnimNums = new Map();
     var lastReorderAt = 0;
     var REORDER_COOLDOWN_MS = 900;
+    var stageSwapTimer = 0;
+    var stageSwapRaf = 0;
+    var pendingStageMount = null;
 
     function stopStageAnimator() {
       if (stageAnimRaf) {
@@ -2055,9 +2058,7 @@
         '<header class="tepa-menti-topbar">' +
         '  <div class="tepa-menti-top-actions">' +
         '    <button type="button" class="tepa-menti-icon-circle" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
-        (stageMode === 'live_voting'
-          ? '<button type="button" class="tepa-menti-icon-circle" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '">' + sortIcon + '</button>'
-          : '') +
+        '    <button type="button" class="tepa-menti-icon-circle" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '"' + (stageMode === 'live_voting' ? '' : ' style="display:none;"') + '>' + sortIcon + '</button>' +
         '    <span class="tepa-menti-top-count">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
         '  </div>' +
         '  <div class="tepa-menti-brand-right">' +
@@ -2257,40 +2258,113 @@
       }
 
       var stageEl = root.querySelector('.tepa-menti-stage');
+      var bodyEl = root.querySelector('.tepa-menti-stage-body');
       var onlyThemeSwitch = prevKey && prevKey !== renderKey && prevKey.replace(/\|(light|dark)\|/, '|X|') === renderKey.replace(/\|(light|dark)\|/, '|X|');
       if (stageEl && onlyThemeSwitch) {
         stageEl.setAttribute('data-live-theme', state.theme);
         return;
       }
 
+      var stageSnap = {
+        stageMode: stageMode,
+        chartType: state.chartType,
+        showQrSidebar: state.showQrSidebar,
+        quizTargetUrl: quizTargetUrl,
+        voteTargetUrl: voteTargetUrl,
+        topVotes: ranked[0] ? Number(ranked[0].votes || 0) : 0,
+        totalVotes: totalVotes,
+        bodyHtml: headlineRow + workspaceHtml
+      };
+
+      function mountStageBody(targetEl, snap) {
+        targetEl.innerHTML = snap.bodyHtml;
+        if (snap.stageMode === 'quiz_qr') {
+          renderQR(targetEl.querySelector('#tepa-stage-quiz-qr'), snap.quizTargetUrl);
+        } else if (snap.stageMode === 'live_voting') {
+          if (snap.showQrSidebar) {
+            renderQR(targetEl.querySelector('#tepa-stage-vote-qr'), snap.voteTargetUrl);
+          }
+          if (snap.chartType === 'horizontal') {
+            targetEl.querySelectorAll('.tepa-menti-hfill').forEach(function (el) {
+              setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'h', el.classList.contains('is-zero'), true);
+            });
+          } else {
+            targetEl.querySelectorAll('.tepa-menti-vbar').forEach(function (el) {
+              var colEl = el.closest ? el.closest('.tepa-menti-vcol') : null;
+              var cntEl = colEl ? colEl.querySelector('.tepa-menti-vcount') : null;
+              setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'v', false, true, cntEl);
+            });
+          }
+        } else if (snap.stageMode === 'winner_reveal' && snap.totalVotes > 0) {
+          animateNumber(targetEl.querySelector('#tepa-reveal-votes'), snap.topVotes, function (n) { return String(Math.round(n)); }, 720, 0);
+          animateNumber(targetEl.querySelector('#tepa-reveal-pct'), Math.round((snap.topVotes / snap.totalVotes) * 100), function (n) { return Math.round(n) + '%'; }, 720, 0);
+        }
+      }
+
+      if (stageEl && bodyEl) {
+        stageEl.setAttribute('data-live-theme', state.theme);
+        var sortToggleBtn = stageEl.querySelector('[data-action="toggle-sort"]');
+        if (sortToggleBtn) {
+          sortToggleBtn.style.display = stageMode === 'live_voting' ? '' : 'none';
+          sortToggleBtn.title = 'Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order');
+        }
+        var topPillEl = stageEl.querySelector('#tepa-menti-total-pill');
+        if (topPillEl) setAnimatedNum(topPillEl, totalVotes, function (n) { return String(Math.round(n)); });
+
+        pendingStageMount = stageSnap;
+        if (prefersReducedMotion()) {
+          if (stageSwapTimer) { clearTimeout(stageSwapTimer); stageSwapTimer = 0; }
+          stopStageAnimator();
+          bodyEl.classList.remove('is-leaving', 'is-entering');
+          mountStageBody(bodyEl, stageSnap);
+          pendingStageMount = null;
+          return;
+        }
+
+        bodyEl.classList.remove('is-entering');
+        bodyEl.classList.add('is-leaving');
+        if (!stageSwapTimer) {
+          stageSwapTimer = setTimeout(function () {
+            stageSwapTimer = 0;
+            var latestSnap = pendingStageMount;
+            pendingStageMount = null;
+            var curBody = root.querySelector('.tepa-menti-stage-body');
+            if (!curBody || !latestSnap) return;
+            stopStageAnimator();
+            curBody.classList.remove('is-leaving');
+            curBody.classList.add('is-entering');
+            mountStageBody(curBody, latestSnap);
+            void curBody.offsetHeight;
+            if (stageSwapRaf) cancelAnimationFrame(stageSwapRaf);
+            stageSwapRaf = requestAnimationFrame(function () {
+              stageSwapRaf = 0;
+              curBody.classList.remove('is-entering');
+            });
+          }, 210);
+        }
+        return;
+      }
+
+      if (stageSwapTimer) { clearTimeout(stageSwapTimer); stageSwapTimer = 0; }
+      if (stageSwapRaf) { cancelAnimationFrame(stageSwapRaf); stageSwapRaf = 0; }
+      pendingStageMount = null;
       stopStageAnimator();
       root.innerHTML =
         '<div class="tepa-menti-stage" data-live-theme="' + esc(state.theme) + '">' +
         topBar +
-        headlineRow +
-        workspaceHtml +
+        '<div class="tepa-menti-stage-body' + (prefersReducedMotion() ? '' : ' is-entering') + '"></div>' +
         '</div>';
 
-      if (stageMode === 'quiz_qr') {
-        renderQR(root.querySelector('#tepa-stage-quiz-qr'), quizTargetUrl);
-      } else if (stageMode === 'live_voting') {
-        if (state.showQrSidebar) {
-          renderQR(root.querySelector('#tepa-stage-vote-qr'), voteTargetUrl);
-        }
-        if (state.chartType === 'horizontal') {
-          root.querySelectorAll('.tepa-menti-hfill').forEach(function (el) {
-            setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'h', el.classList.contains('is-zero'), true);
-          });
-        } else {
-          root.querySelectorAll('.tepa-menti-vbar').forEach(function (el) {
-            var colEl = el.closest ? el.closest('.tepa-menti-vcol') : null;
-            var cntEl = colEl ? colEl.querySelector('.tepa-menti-vcount') : null;
-            setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'v', false, true, cntEl);
+      var freshBody = root.querySelector('.tepa-menti-stage-body');
+      if (freshBody) {
+        mountStageBody(freshBody, stageSnap);
+        if (!prefersReducedMotion()) {
+          void freshBody.offsetHeight;
+          stageSwapRaf = requestAnimationFrame(function () {
+            stageSwapRaf = 0;
+            freshBody.classList.remove('is-entering');
           });
         }
-      } else if (stageMode === 'winner_reveal' && ranked[0] && totalVotes > 0) {
-        animateNumber(root.querySelector('#tepa-reveal-votes'), ranked[0].votes, function (n) { return String(Math.round(n)); }, 720, 0);
-        animateNumber(root.querySelector('#tepa-reveal-pct'), Math.round((ranked[0].votes / totalVotes) * 100), function (n) { return Math.round(n) + '%'; }, 720, 0);
       }
     }
 
@@ -2345,6 +2419,8 @@
     });
     safetyPoll = setInterval(refresh, 3000);
     global.addEventListener('beforeunload', function () {
+      if (stageSwapTimer) clearTimeout(stageSwapTimer);
+      if (stageSwapRaf) cancelAnimationFrame(stageSwapRaf);
       stopStageAnimator();
       if (unsubscribe) unsubscribe();
       if (safetyPoll) clearInterval(safetyPoll);
