@@ -383,6 +383,7 @@
   }
 
   async function broadcastSupabaseSignal(eventName) {
+    notifyLocalAndTabs(eventName, { ts: Date.now() });
     var sb = getSupabase();
     if (!sb || !_sbChannel) return;
     try {
@@ -678,6 +679,16 @@
         timer = setTimeout(function () { onChange(); }, 90);
       }
 
+      function onBcMsg() { trigger(); }
+      function onStorage(ev) {
+        if (!ev || ev.key === STORAGE_STATE_KEY) trigger();
+      }
+      function onLocal() { trigger(); }
+
+      if (_bc) _bc.addEventListener('message', onBcMsg);
+      global.addEventListener('storage', onStorage);
+      global.addEventListener('tepa:realtime', onLocal);
+
       if (isSupabaseConfigured()) {
         var cancelled = false;
         var sbRef = null;
@@ -702,21 +713,14 @@
         return function () {
           cancelled = true;
           clearTimeout(timer);
+          if (_bc) _bc.removeEventListener('message', onBcMsg);
+          global.removeEventListener('storage', onStorage);
+          global.removeEventListener('tepa:realtime', onLocal);
           if (sbRef && chRef) {
             try { sbRef.removeChannel(chRef); } catch (e) {}
           }
         };
       }
-
-      function onBcMsg() { trigger(); }
-      function onStorage(ev) {
-        if (!ev || ev.key === STORAGE_STATE_KEY) trigger();
-      }
-      function onLocal() { trigger(); }
-
-      if (_bc) _bc.addEventListener('message', onBcMsg);
-      global.addEventListener('storage', onStorage);
-      global.addEventListener('tepa:realtime', onLocal);
 
       return function () {
         clearTimeout(timer);

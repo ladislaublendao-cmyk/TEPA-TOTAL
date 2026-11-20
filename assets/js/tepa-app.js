@@ -1008,6 +1008,7 @@
     var unsubscribe = null;
     var safetyPoll = null;
     var prevServerStage = null;
+    var prevQuizReveal = null;
 
     function colorFor(project) {
       var idx = Math.max(0, Number(project.slot_number || project.id || 1) - 1);
@@ -1030,10 +1031,15 @@
         var nextServerStage = (nextDash && nextDash.settings && nextDash.settings.reveal_winner)
           ? 'winner_reveal'
           : (nextDash && nextDash.settings && nextDash.settings.stage_mode) || 'live_voting';
+        var nextQuizReveal = Boolean(nextDash && nextDash.settings && nextDash.settings.reveal_quiz_winners);
         if (prevServerStage && prevServerStage !== nextServerStage) {
           state.localStageOverride = null;
         }
+        if (prevQuizReveal !== null && prevQuizReveal !== nextQuizReveal && nextQuizReveal) {
+          state.localStageOverride = null;
+        }
         prevServerStage = nextServerStage;
+        prevQuizReveal = nextQuizReveal;
         state.dash = nextDash;
       } catch (e) {
       } finally {
@@ -1561,7 +1567,7 @@
     unsubscribe = Store.subscribeRealtime(function () {
       refresh();
     });
-    safetyPoll = setInterval(refresh, 10000);
+    safetyPoll = setInterval(refresh, 3000);
     global.addEventListener('beforeunload', function () {
       if (unsubscribe) unsubscribe();
       if (safetyPoll) clearInterval(safetyPoll);
@@ -3420,6 +3426,10 @@
         var key = ev.target.getAttribute('data-key');
         var payload = {};
         payload[key] = Boolean(ev.target.checked);
+        if (key === 'reveal_quiz_winners' && payload[key]) {
+          payload.stage_mode = 'quiz_qr';
+          payload.reveal_winner = false;
+        }
         var tRes = await Store.adminAction(pin, 'update_settings', payload);
         if (tRes && tRes.ok) {
           await loadAdmin(false);
