@@ -1843,6 +1843,18 @@
       return (p && p.category_name) ? (pad2(p.slot_number) + ' · ' + p.category_name) : '';
     }
 
+    function applyLeaderState(leaderId, active) {
+      var stageCard = root.querySelector('.tepa-vote-stage');
+      if (!stageCard) return;
+      var isActive = Boolean(active) && leaderId !== null && leaderId !== undefined;
+      stageCard.classList.toggle('has-leader', isActive);
+      var idStr = isActive ? String(leaderId) : '';
+      stageCard.querySelectorAll('.tepa-menti-hrow[data-project-id], .tepa-menti-vcol[data-project-id], .tepa-menti-vlabel[data-label-id]').forEach(function (el) {
+        var pid = el.getAttribute('data-project-id') || el.getAttribute('data-label-id');
+        el.classList.toggle('is-leader', isActive && pid === idStr);
+      });
+    }
+
     function updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes) {
       var listEl = root.querySelector('.tepa-menti-hlist');
       if (!listEl) return false;
@@ -2126,7 +2138,10 @@
           var updated = state.chartType === 'horizontal'
             ? updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes)
             : updateVerticalInPlace(visibleCols, totalVotes, maxVotes);
-          if (updated) return;
+          if (updated) {
+            applyLeaderState(ranked[0] ? ranked[0].id : null, Boolean(ranked[0] && totalVotes > 0 && !state.hideResults && Number(ranked[0].votes) > 0));
+            return;
+          }
         } else if (stageMode === 'quiz_qr') {
           if (updateQuizQrInPlace(qsForKey, quizWinnersRevealedForKey, totalVotes)) return;
         } else if (stageMode === 'winner_reveal') {
@@ -2178,9 +2193,12 @@
           ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
           : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
 
-      var headlineRow = (stageMode === 'winner_reveal' || stageMode === 'quiz_qr') ? '' :
-        '<div class="tepa-menti-headline-row tepa-anim-enter">' +
-        '  <h1 class="tepa-menti-headline">' + headlineTitle + '</h1>' +
+      var voteHeaderHtml =
+        '<div class="tepa-vote-stage-head">' +
+        '  <div class="tepa-vote-stage-titles">' +
+        '    <div class="tepa-vote-stage-eyebrow"><span class="tepa-vote-live-dot"></span>Live Voting</div>' +
+        '    <h1 class="tepa-menti-headline tepa-vote-stage-title">' + headlineTitle + '</h1>' +
+        '  </div>' +
         (stageMode === 'live_voting' && state.chartType === 'vertical' && projects.length > 5
           ? '<div class="tepa-menti-sub-toggle">' +
             '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'top5' ? 'is-active' : '') + '" data-vscope="top5">Top 5</button>' +
@@ -2188,6 +2206,7 @@
             '</div>'
           : '') +
         '</div>';
+      var headlineRow = '';
 
       var workspaceHtml = '';
 
@@ -2377,7 +2396,12 @@
           '  </div>' +
           '</aside>';
 
-        workspaceHtml = '<div class="tepa-menti-workspace' + (state.showQrSidebar ? '' : ' is-qr-hidden') + '">' + chartHtml + qrSidebar + '</div>';
+        workspaceHtml =
+          '<div class="tepa-vote-stage">' +
+          '  <div class="tepa-winner-glow" aria-hidden="true"></div>' +
+          voteHeaderHtml +
+          '  <div class="tepa-menti-workspace' + (state.showQrSidebar ? '' : ' is-qr-hidden') + '">' + chartHtml + qrSidebar + '</div>' +
+          '</div>';
       }
 
       var stageEl = root.querySelector('.tepa-menti-stage');
@@ -2396,6 +2420,8 @@
         voteTargetUrl: voteTargetUrl,
         topVotes: ranked[0] ? Number(ranked[0].votes || 0) : 0,
         totalVotes: totalVotes,
+        leaderId: ranked[0] ? ranked[0].id : null,
+        leaderActive: Boolean(ranked[0] && totalVotes > 0 && !state.hideResults && Number(ranked[0].votes) > 0),
         bodyHtml: headlineRow + workspaceHtml
       };
 
@@ -2405,6 +2431,7 @@
           renderQR(targetEl.querySelector('#tepa-stage-quiz-qr'), snap.quizTargetUrl);
         } else if (snap.stageMode === 'live_voting') {
           renderQR(targetEl.querySelector('#tepa-stage-vote-qr'), snap.voteTargetUrl);
+          applyLeaderState(snap.leaderId, snap.leaderActive);
           if (snap.chartType === 'horizontal') {
             targetEl.querySelectorAll('.tepa-menti-hfill').forEach(function (el) {
               setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'h', el.classList.contains('is-zero'), true);
