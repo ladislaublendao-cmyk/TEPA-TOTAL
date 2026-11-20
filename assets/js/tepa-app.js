@@ -1713,6 +1713,12 @@
       if (!active || !root.contains(active)) return false;
       if (active.id === 'tepa-admin-search' || active.id === 'tepa-proj-search') return false;
       var tag = (active.tagName || '').toUpperCase();
+      if (tag === 'INPUT') {
+        var inpType = (active.type || '').toLowerCase();
+        if (inpType === 'checkbox' || inpType === 'radio' || inpType === 'button' || inpType === 'submit') {
+          return false;
+        }
+      }
       return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA';
     }
 
@@ -3422,28 +3428,6 @@
       if (!ev.target) return;
       var pin = state.pin || '2026';
 
-      if (ev.target.getAttribute('data-action') === 'toggle-setting') {
-        var key = ev.target.getAttribute('data-key');
-        var payload = {};
-        payload[key] = Boolean(ev.target.checked);
-        if (key === 'reveal_quiz_winners' && payload[key]) {
-          payload.stage_mode = 'quiz_qr';
-          payload.reveal_winner = false;
-        }
-        var tRes = await Store.adminAction(pin, 'update_settings', payload);
-        if (tRes && tRes.ok) {
-          await loadAdmin(false);
-          if (key === 'reveal_quiz_winners') {
-            flash(payload[key] ? 'Quiz Winners ANNOUNCED on 16:9 Live Screen!' : 'Quiz Winners HIDDEN on 16:9 Live Screen');
-          } else {
-            flash((key === 'quiz_open' ? 'Welcome Quiz ' : 'Final Voting ') + (payload[key] ? 'OPENED' : 'CLOSED'));
-          }
-        } else {
-          flash((tRes && tRes.error) || 'Failed to update setting.', true);
-        }
-        return;
-      }
-
       var metaForm = ev.target.closest('#tepa-quiz-meta-form');
       if (metaForm && ev.target.hasAttribute('data-qmeta')) {
         var qzId = metaForm.getAttribute('data-quiz-id');
@@ -3557,6 +3541,28 @@
         });
         await loadAdmin(false);
         flash('Stage switched to ' + stageVal.replace('_', ' '));
+        return;
+      }
+
+      if (act === 'toggle-setting' && btn.tagName === 'INPUT') {
+        var tKey = btn.getAttribute('data-key');
+        var tPayload = {};
+        tPayload[tKey] = Boolean(btn.checked);
+        if (tKey === 'reveal_quiz_winners' && tPayload[tKey]) {
+          tPayload.stage_mode = 'quiz_qr';
+          tPayload.reveal_winner = false;
+        }
+        var tResClick = await Store.adminAction(pin, 'update_settings', tPayload);
+        if (tResClick && tResClick.ok) {
+          await loadAdmin(false);
+          if (tKey === 'reveal_quiz_winners') {
+            flash(tPayload[tKey] ? 'Quiz Winners ANNOUNCED on 16:9 Live Screen!' : 'Quiz Winners HIDDEN on 16:9 Live Screen');
+          } else {
+            flash((tKey === 'quiz_open' ? 'Welcome Quiz ' : 'Final Voting ') + (tPayload[tKey] ? 'OPENED' : 'CLOSED'));
+          }
+        } else {
+          flash((tResClick && tResClick.error) || 'Failed to update setting.', true);
+        }
         return;
       }
 
