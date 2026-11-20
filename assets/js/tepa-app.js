@@ -657,6 +657,7 @@
     var state = {
       step: 'loading', // 'loading' | 'cover' | 'select' | 'receipt'
       lastStep: null,
+      activePoll: null,
       projects: [],
       votingSubtitle: 'You have 15 finalist projects<br>Choose one for Best of the Best',
       selectedProjectId: null,
@@ -674,9 +675,15 @@
         '<div class="tepa-mobile-viewport"><div class="tepa-mobile-shell" id="tepa-vote-shell"></div></div>';
     }
 
-    function formatCoverSubtitle(raw, count) {
+    function isSimpleMode() {
+      return Boolean(state.activePoll && state.activePoll.poll_type === 'simple');
+    }
+
+    function formatCoverSubtitle(raw, count, isSimple) {
       var n = Number(count || 0);
-      var dynamicDefault = 'You have ' + n + ' finalist project' + (n === 1 ? '' : 's') + '<br>Choose one for Best of the Best';
+      var dynamicDefault = isSimple
+        ? ('You have ' + n + ' option' + (n === 1 ? '' : 's') + '<br>Choose your preferred choice')
+        : ('You have ' + n + ' finalist project' + (n === 1 ? '' : 's') + '<br>Choose one for Best of the Best');
       var str = String(raw || '').trim();
       if (!str || str === 'You have 15 finalist projects · Choose one for Best of the Best') {
         return dynamicDefault;
@@ -693,20 +700,24 @@
       render();
       try {
         var dash = await Store.getDashboardState();
+        state.activePoll = (dash && dash.active_poll) || null;
         state.projects = (dash && dash.projects_with_votes) || [];
         var settings = (dash && dash.settings) || {};
         state.votingOpen = settings.voting_open !== undefined ? Boolean(settings.voting_open) : true;
-        state.votingSubtitle = formatCoverSubtitle(settings.voting_subtitle, state.projects.length);
+        var subRaw = (state.activePoll && state.activePoll.voting_subtitle) || settings.voting_subtitle;
+        state.votingSubtitle = formatCoverSubtitle(subRaw, state.projects.length, isSimpleMode());
         var voteEpoch = Number(settings.vote_epoch || 1);
-        var cached = Store.getCachedVoteReceipt(voteEpoch);
+        var activePollId = (state.activePoll && state.activePoll.id) || settings.active_poll_id || null;
+        var cached = Store.getCachedVoteReceipt(voteEpoch, activePollId);
         if (cached && cached.project_id) {
           state.receipt = cached;
           state.step = 'receipt';
         } else {
+          state.receipt = null;
           state.step = 'cover';
         }
       } catch (err) {
-        state.error = (err && err.message) || 'Could not load finalist projects.';
+        state.error = (err && err.message) || 'Could not load voting options.';
         state.step = 'cover';
       } finally {
         state.loading = false;
@@ -768,16 +779,21 @@
         return;
       }
 
+      var isSimple = isSimpleMode();
+      var catLine = selectedProj.category_name
+        ? ('Category: <strong>' + esc(selectedProj.category_name) + '</strong><br>')
+        : '';
+
       var wrap = document.createElement('div');
       wrap.className = 'tepa-modal-backdrop';
       wrap.id = 'tepa-vote-modal-backdrop';
       wrap.innerHTML =
         '<div class="tepa-modal-card">' +
-        '  <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#FFD239;font-weight:700;margin-bottom:6px;">Confirm Final Vote</div>' +
+        '  <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#FFD239;font-weight:700;margin-bottom:6px;">Confirm Your Vote</div>' +
         '  <h2 style="margin:0 0 8px;font-size:20px;">' + esc(selectedProj.project_title) + '</h2>' +
         '  <p style="margin:0 0 18px;font-size:13px;color:#C7C9D9;line-height:1.45;">' +
-        '    Category: <strong>' + esc(selectedProj.category_name) + '</strong><br>' +
-        '    Each employee can submit only <strong>1 vote</strong> for Best of the Best.' +
+        catLine +
+        '    Each participant can submit only <strong>1 vote</strong>' + (isSimple ? ' in this poll.' : ' for Best of the Best.') +
         '  </p>' +
         '  <div style="display:flex;flex-direction:column;gap:10px;">' +
         '    <button type="button" class="tepa-btn-cta is-pill" id="tepa-vote-confirm-btn" data-action="confirm-vote" ' + (state.submitting ? 'disabled' : '') + '>' +
@@ -810,6 +826,8 @@
         return;
       }
 
+      var isSimple = isSimpleMode();
+
       if (state.step === 'cover') {
         shell.innerHTML =
           '<div class="tepa-vote-ambient-glow" style="background-image:url(\'' + esc(assetUrl('lightbulb-hero.jpg')) + '\');"></div>' +
@@ -832,12 +850,18 @@
       } else if (state.step === 'select') {
         var listHtml = state.projects.map(function (p, idx) {
           var isSel = state.selectedProjectId === p.id;
+          var catHtml = (!isSimple && p.category_name)
+            ? '<div class="tepa-project-cat">' + esc(pad2(p.slot_number)) + ' · ' + esc(p.category_name) + '</div>'
+            : (p.category_name ? '<div class="tepa-project-cat">' + esc(p.category_name) + '</div>' : '');
+          var teamHtml = (!isSimple && p.team_name)
+            ? '<div class="tepa-project-team">' + esc(p.team_name) + '</div>'
+            : '';
           return (
             '<button type="button" class="tepa-project-row ' + (isSel ? 'is-selected' : '') + '" style="--stagger:' + idx + ';" data-action="pick-project" data-id="' + p.id + '" role="radio" aria-checked="' + (isSel ? 'true' : 'false') + '">' +
             '  <div class="tepa-project-meta">' +
-            '    <div class="tepa-project-cat">' + esc(pad2(p.slot_number)) + ' · ' + esc(p.category_name) + '</div>' +
+            catHtml +
             '    <div class="tepa-project-title">' + esc(p.project_title) + '</div>' +
-            (p.team_name ? '<div class="tepa-project-team">' + esc(p.team_name) + '</div>' : '') +
+            teamHtml +
             '  </div>' +
             '  <div class="tepa-radio-circle" aria-hidden="true"></div>' +
             '</button>'
@@ -845,7 +869,7 @@
         }).join('');
 
         if (!state.projects.length) {
-          listHtml = '<p style="text-align:center;color:#626476;padding:28px 16px;font-size:14px;">No finalist projects available.</p>';
+          listHtml = '<p style="text-align:center;color:#626476;padding:28px 16px;font-size:14px;">' + (isSimple ? 'No poll options available.' : 'No finalist projects available.') + '</p>';
         }
 
         var backIconSvg =
@@ -863,9 +887,9 @@
           '</header>' +
           '<main class="tepa-sheet-body tepa-anim-sheet">' +
           '  <div class="tepa-sheet-toolbar">' +
-          '    <span class="tepa-cat-pill">Categories</span>' +
+          '    <span class="tepa-cat-pill">' + (isSimple ? 'Options' : 'Categories') + '</span>' +
           '  </div>' +
-          '  <div class="tepa-project-list" data-count-tier="' + countTier + '" role="radiogroup" aria-label="Finalist Projects">' +
+          '  <div class="tepa-project-list" data-count-tier="' + countTier + '" role="radiogroup" aria-label="Voting Options">' +
           listHtml +
           '  </div>' +
           '  <div class="tepa-sheet-sticky-footer">' +
@@ -878,20 +902,24 @@
       } else if (state.step === 'receipt' && state.receipt) {
         var votedProj = state.projects.find(function (p) { return p.id === state.receipt.project_id; });
         var quizUrl = Store.getConfig().quizUrl || 'quiz.html';
+        var pollLabel = (state.activePoll && state.activePoll.title) || 'TEPA Performance Award 2026';
+        var receiptCat = votedProj && votedProj.category_name
+          ? '<div style="font-size:12px;color:#FFD239;font-weight:700;text-transform:uppercase;margin-top:4px;">' + esc(pad2(votedProj.slot_number)) + ' · ' + esc(votedProj.category_name) + '</div>'
+          : '';
         shell.innerHTML =
           '<div class="tepa-bulb-watermark" style="background-image:url(\'' + esc(assetUrl('lightbulb-hero.jpg')) + '\');"></div>' +
           '<div class="tepa-mobile-content ' + animCls + '">' +
           '  <div class="tepa-quiz-step-wrap" style="padding-top:34px;">' +
           '    <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '    <h1 class="tepa-step-heading tepa-rainbow-text" style="margin-top:20px;">Vote Recorded!</h1>' +
-          '    <p class="tepa-step-sub">Thank you for voting in the TEPA Performance Award 2026.</p>' +
+          '    <p class="tepa-step-sub">' + (isSimple ? ('Thank you for participating in ' + esc(pollLabel) + '.') : 'Thank you for voting in the TEPA Performance Award 2026.') + '</p>' +
           '    <div class="tepa-voucher-card" style="text-align:center;">' +
-          '      <div class="tepa-voucher-badge">✓ Best of the Best Vote</div>' +
+          '      <div class="tepa-voucher-badge">' + (isSimple ? '✓ Vote Confirmed' : '✓ Best of the Best Vote') + '</div>' +
           (votedProj
-            ? '<div style="font-size:12px;color:#FFD239;font-weight:700;text-transform:uppercase;margin-top:4px;">' + esc(pad2(votedProj.slot_number)) + ' · ' + esc(votedProj.category_name) + '</div>' +
+            ? receiptCat +
               '<h2 style="margin:6px 0 6px;font-size:20px;">' + esc(votedProj.project_title) + '</h2>' +
-              (votedProj.team_name ? '<div style="font-size:12.5px;color:#C7C9D9;">' + esc(votedProj.team_name) + '</div>' : '')
-            : '<h2 style="margin:6px 0;">Project #' + esc(state.receipt.project_id) + '</h2>') +
+              ((!isSimple && votedProj.team_name) ? '<div style="font-size:12.5px;color:#C7C9D9;">' + esc(votedProj.team_name) + '</div>' : '')
+            : '<h2 style="margin:6px 0;">Option #' + esc(state.receipt.project_id) + '</h2>') +
           '      <div class="tepa-unique-id-box" style="margin-bottom:4px;">' +
           '        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Vote Receipt Code</div>' +
           '        <div class="tepa-unique-id-code" style="font-size:22px;">' + esc(state.receipt.vote_code) + '</div>' +
@@ -1093,6 +1121,10 @@
       return n <= 3 ? 'xl' : (n <= 6 ? 'lg' : (n <= 10 ? 'md' : 'sm'));
     }
 
+    function formatStageCat(p) {
+      return (p && p.category_name) ? (pad2(p.slot_number) + ' · ' + p.category_name) : '';
+    }
+
     function updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes) {
       var listEl = root.querySelector('.tepa-menti-hlist');
       if (!listEl) return false;
@@ -1117,7 +1149,7 @@
         var titleEl = row.querySelector('.tepa-menti-htitle');
         if (titleEl) titleEl.textContent = p.project_title;
         var catEl = row.querySelector('.tepa-menti-hcat');
-        if (catEl) catEl.textContent = pad2(p.slot_number) + ' · ' + p.category_name;
+        if (catEl) catEl.textContent = formatStageCat(p);
 
         var numEl = row.querySelector('.tepa-hnum');
         var pctEl = row.querySelector('.tepa-menti-hpct');
@@ -1237,6 +1269,8 @@
       var dash = state.dash;
       var settings = dash.settings || {};
       var activeQuiz = dash.active_quiz || null;
+      var activePoll = dash.active_poll || null;
+      var isSimplePoll = Boolean(activePoll && activePoll.poll_type === 'simple');
       var stageMode = currentStageMode();
       var cfg = Store.getConfig();
       var quizTargetUrl = absUrl(cfg.quizUrl || 'quiz.html');
@@ -1265,11 +1299,17 @@
       var winnersSig = (qsForKey.winners || []).map(function (w) {
         return (w.winner_rank || '') + ':' + (w.code_suffix || '');
       }).join(',');
+      var projectsMetaSig = projects.map(function (p) {
+        return p.id + ':' + (p.slot_number || 0) + ':' + (p.project_title || '') + ':' + (p.category_name || '');
+      }).join(';');
       var topWinnerForKey = ranked[0] || {};
+      var effHeadline = (activePoll && activePoll.voting_headline) || settings.voting_headline || '';
       var renderKey = [
         stageMode, state.theme, state.chartType, state.verticalScope,
         state.showQrSidebar, state.hideResults, state.sortMode, mode,
-        projects.length, settings.voting_headline || '', settings.event_title || '',
+        (activePoll && activePoll.id) || '', (activePoll && activePoll.poll_type) || 'projects',
+        (activePoll && activePoll.title) || '',
+        projects.length, projectsMetaSig, effHeadline, settings.event_title || '',
         (activeQuiz && activeQuiz.title) || '', (activeQuiz && activeQuiz.voucher_title) || '',
         Boolean(settings.reveal_quiz_winners || qsForKey.reveal_quiz_winners),
         qsForKey.total_participants || 0,
@@ -1323,7 +1363,7 @@
         '  <div class="tepa-menti-top-actions">' +
         '    <button type="button" class="tepa-menti-icon-circle" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
         (stageMode === 'live_voting'
-          ? '<button type="button" class="tepa-menti-icon-circle" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : '#01-15') + '">' + sortIcon + '</button>'
+          ? '<button type="button" class="tepa-menti-icon-circle" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '">' + sortIcon + '</button>'
           : '') +
         '  </div>' +
         '  <div class="tepa-menti-brand-right">' +
@@ -1335,8 +1375,8 @@
       var headlineTitle = stageMode === 'quiz_qr'
         ? esc((activeQuiz && activeQuiz.title && activeQuiz.title !== 'Quiz' ? activeQuiz.title : 'Welcome Quiz') + ' — Scan to Join & Win!')
         : (stageMode === 'winner_reveal'
-          ? esc((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best')
-          : esc(settings.voting_headline || 'Which finalist project deserves the Best of the Best?'));
+          ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
+          : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
 
       var headlineRow =
         '<div class="tepa-menti-headline-row tepa-anim-enter">' +
@@ -1408,12 +1448,16 @@
 
         workspaceHtml =
           '<div class="tepa-menti-spotlight tepa-anim-enter">' +
-          '  <div class="tepa-voucher-badge" style="font-size:13px;padding:7px 18px;">★ TEPA Performance Award 2026</div>' +
-          '  <h2 class="tepa-rainbow-text" style="font-size:clamp(38px, 4.4vw, 60px);font-weight:800;margin:8px 0 12px;letter-spacing:-0.025em;">BEST OF THE BEST</h2>' +
+          '  <div class="tepa-voucher-badge" style="font-size:13px;padding:7px 18px;">★ ' + (isSimplePoll ? esc((activePoll && activePoll.title) || 'Live Poll Results') : esc(settings.event_title || 'TEPA Performance Award 2026')) + '</div>' +
+          '  <h2 class="tepa-rainbow-text" style="font-size:clamp(38px, 4.4vw, 60px);font-weight:800;margin:8px 0 12px;letter-spacing:-0.025em;">' + (isSimplePoll ? 'WINNING CHOICE' : 'BEST OF THE BEST') + '</h2>' +
           (topWinner && totalVotes > 0
-            ? '<div style="font-size:15px;color:#F77B39;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Category ' + esc(pad2(topWinner.slot_number)) + ' · ' + esc(topWinner.category_name) + '</div>' +
+            ? (topWinner.category_name
+                ? '<div style="font-size:15px;color:#F77B39;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;">Category ' + esc(pad2(topWinner.slot_number)) + ' · ' + esc(topWinner.category_name) + '</div>'
+                : '') +
               '<div style="font-size:clamp(26px, 3vw, 42px);font-weight:700;margin:8px 0 6px;">' + esc(topWinner.project_title) + '</div>' +
-              (topWinner.team_name ? '<div style="font-size:16px;color:var(--m-muted);margin-bottom:18px;">Team: ' + esc(topWinner.team_name) + '</div>' : '') +
+              ((!isSimplePoll && topWinner.team_name)
+                ? '<div style="font-size:16px;color:var(--m-muted);margin-bottom:18px;">Team: ' + esc(topWinner.team_name) + '</div>'
+                : '<div style="margin-bottom:14px;"></div>') +
               '<div style="display:inline-flex;gap:18px;padding:12px 24px;border-radius:999px;background:var(--m-bg);border:1px solid var(--m-border);">' +
               '  <span><strong id="tepa-reveal-votes" style="font-size:24px;">' + esc(topWinner.votes) + '</strong> votes</span>' +
               '  <span>·</span>' +
@@ -1426,7 +1470,7 @@
                 var rPct = totalVotes > 0 ? Math.round((rn.votes / totalVotes) * 100) : 0;
                 return (
                   '<div class="tepa-anim-enter" style="animation-delay:' + ((idx + 1) * 90) + 'ms;flex:1;min-width:210px;background:var(--m-bg);border:1px solid var(--m-border);border-radius:16px;padding:14px 16px;text-align:left;">' +
-                  '  <div style="font-size:11.5px;color:var(--m-muted);font-weight:600;">#' + (idx + 2) + ' · ' + esc(rn.category_name) + '</div>' +
+                  '  <div style="font-size:11.5px;color:var(--m-muted);font-weight:600;">#' + (idx + 2) + (rn.category_name ? (' · ' + esc(rn.category_name)) : '') + '</div>' +
                   '  <div style="font-size:15px;font-weight:600;margin:4px 0;">' + esc(rn.project_title) + '</div>' +
                   '  <div style="font-size:13px;color:#F77B39;font-weight:600;">' + esc(rn.votes) + ' votes (' + rPct + '%)</div>' +
                   '</div>'
@@ -1454,7 +1498,7 @@
             return (
               '<div class="tepa-menti-vlabel" data-label-id="' + p.id + '">' +
               '  <span>' + esc(p.project_title) + '</span>' +
-              '  <span class="tepa-menti-vcat">' + esc(pad2(p.slot_number) + ' · ' + p.category_name) + '</span>' +
+              '  <span class="tepa-menti-vcat">' + esc(formatStageCat(p)) + '</span>' +
               '</div>'
             );
           }).join('');
@@ -1480,7 +1524,7 @@
               '    <div class="tepa-menti-hmeta">' +
               '      <div class="tepa-menti-htitle-wrap">' +
               '        <span class="tepa-menti-htitle">' + esc(p.project_title) + '</span>' +
-              '        <span class="tepa-menti-hcat">' + esc(pad2(p.slot_number) + ' · ' + p.category_name) + '</span>' +
+              '        <span class="tepa-menti-hcat">' + esc(formatStageCat(p)) + '</span>' +
               '      </div>' +
               '      <span class="tepa-menti-hvotes"><span class="tepa-hnum">' + (state.hideResults ? '••' : v) + '</span>' + (state.hideResults ? '' : '<span class="tepa-menti-hpct">(' + sharePct + '%)</span>') + '</span>' +
               '    </div>' +
@@ -1692,9 +1736,11 @@
       projSearch: '',
       search: '',
       selectedQuizId: null,
+      selectedPollId: null,
       previewScreen: 'cover', // 'cover' | 'questions'
       previewQIdx: 0,
       quizDrafts: {},
+      pollDrafts: {},
       pollCopyDraft: null,
       data: null,
       loading: true,
@@ -1728,8 +1774,8 @@
       },
       projects: {
         iconName: 'trophy',
-        title: 'Voting & Finalist Projects',
-        desc: 'Manage "Best of the Best" finalist projects, 16:9 stage visibility, order, and voting poll headlines.'
+        title: 'Voting Studio & Polls',
+        desc: 'Create multiple voting polls or finalist showcases, switch 16:9 poll formats, and manage options live.'
       },
       submissions: {
         iconName: 'gift',
@@ -1802,6 +1848,23 @@
       return d ? Object.assign({}, orig, d) : orig;
     }
 
+    function ensureSelectedPoll(data) {
+      var polls = (data && data.polls) || [];
+      if (!polls.length) return null;
+      var found = polls.find(function (pl) { return pl.id === state.selectedPollId; });
+      if (found) return found;
+      var activeId = data && data.settings && data.settings.active_poll_id;
+      var activePoll = polls.find(function (pl) { return pl.id === activeId; }) || polls[0];
+      state.selectedPollId = activePoll.id;
+      return activePoll;
+    }
+
+    function getPollDraft(orig) {
+      if (!orig) return null;
+      var d = state.pollDrafts[orig.id];
+      return d ? Object.assign({}, orig, d) : orig;
+    }
+
     function getProjectDraft(orig) {
       var dirty = state.dirtyProjects[orig.id];
       return dirty ? Object.assign({}, orig, dirty) : orig;
@@ -1819,7 +1882,12 @@
       var s = (data && data.settings) || {};
       var subs = (data && data.submissions) || [];
       var projects = (data && data.projects) || [];
-      var activeProjects = projects.filter(function (p) { return getProjectDraft(p).is_active !== false; });
+      var polls = (data && data.polls) || [];
+      var activePoll = polls.find(function (pl) { return pl.id === s.active_poll_id; }) || polls[0] || null;
+      var pollProjects = activePoll
+        ? projects.filter(function (p) { return !p.poll_id || p.poll_id === activePoll.id; })
+        : projects;
+      var activeProjects = pollProjects.filter(function (p) { return getProjectDraft(p).is_active !== false; });
       var quizzes = (data && data.quizzes) || [];
       var activeQuiz = quizzes.find(function (q) { return q.id === s.active_quiz_id; }) || quizzes[0] || null;
       var totalVotes = activeProjects.reduce(function (acc, p) { return acc + (Number(p.votes) || 0); }, 0);
@@ -1837,6 +1905,10 @@
         s: s,
         subs: subs,
         projects: projects,
+        pollProjects: pollProjects,
+        polls: polls,
+        activePoll: activePoll,
+        isSimpleActivePoll: Boolean(activePoll && activePoll.poll_type === 'simple'),
         activeProjects: activeProjects,
         quizzes: quizzes,
         activeQuiz: activeQuiz,
@@ -1865,7 +1937,7 @@
         el.className = 'tepa-bo-badge ' + (k.s.voting_open ? 'is-green' : 'is-red');
       }
       el = root.querySelector('[data-kpi-votes-sub]');
-      if (el) el.textContent = 'Round #' + (k.s.vote_epoch || 1) + ' · ' + k.activeProjects.length + ' active finalists';
+      if (el) el.textContent = 'Round #' + (k.s.vote_epoch || 1) + ' · ' + k.activeProjects.length + (k.isSimpleActivePoll ? ' active options' : ' active finalists');
 
       el = root.querySelector('[data-kpi-leader]');
       if (el) {
@@ -1873,7 +1945,11 @@
         el.title = k.leader ? k.leader.project_title : '';
       }
       el = root.querySelector('[data-kpi-leader-sub]');
-      if (el) el.textContent = k.leader ? ((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%) · ' + k.leader.category_name) : 'Waiting for first vote';
+      if (el) {
+        el.textContent = k.leader
+          ? ((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%)' + (k.leader.category_name ? (' · ' + k.leader.category_name) : ''))
+          : 'Waiting for first vote';
+      }
 
       el = root.querySelector('[data-kpi-quiz]');
       if (el) animateNumber(el, k.subs.length, function (n) { return String(Math.round(n)); }, 520, initFromZero);
@@ -1908,7 +1984,7 @@
       var isProj = pCount > 0 && (state.tab === 'projects' || qCount === 0);
       var count = isProj ? pCount : qCount;
       var label = isProj
-        ? (count + ' project edit' + (count > 1 ? 's' : '') + ' unsaved')
+        ? (count + ' option/project edit' + (count > 1 ? 's' : '') + ' unsaved')
         : (count + ' question edit' + (count > 1 ? 's' : '') + ' unsaved');
       var discardAct = isProj ? 'discard-projects' : 'discard-questions';
       var saveAct = isProj ? 'save-all-projects' : 'save-all-questions';
@@ -1932,10 +2008,14 @@
       var quizQs = selQuiz
         ? allQs.filter(function (q) { return !q.quiz_id || q.quiz_id === selQuiz.id; })
         : allQs;
+      var selPoll = ensureSelectedPoll(data);
       var projects = (data && data.projects) || [];
-      var activeProjCount = projects.filter(function (p) { return getProjectDraft(p).is_active !== false; }).length;
+      var selProjs = selPoll
+        ? projects.filter(function (p) { return !p.poll_id || p.poll_id === selPoll.id; })
+        : projects;
+      var activeProjCount = selProjs.filter(function (p) { return getProjectDraft(p).is_active !== false; }).length;
       var subCount = ((data && data.submissions) || []).length;
-      var dirtyProjCount = Object.keys(state.dirtyProjects).length;
+      var dirtyProjCount = selProjs.filter(function (p) { return Boolean(state.dirtyProjects[p.id]); }).length;
       var dirtyQCount = quizQs.filter(function (q) { return Boolean(state.dirtyQuestions[q.id]); }).length;
       var s = (data && data.settings) || {};
 
@@ -1968,7 +2048,7 @@
       }
       var pc = root.querySelector('[data-tab-count="projects"]');
       if (pc) {
-        pc.textContent = (activeProjCount === projects.length ? String(projects.length) : (activeProjCount + '/' + projects.length)) + (dirtyProjCount ? '*' : '');
+        pc.textContent = (activeProjCount === selProjs.length ? String(selProjs.length) : (activeProjCount + '/' + selProjs.length)) + (dirtyProjCount ? '*' : '');
         pc.classList.toggle('is-dirty', dirtyProjCount > 0);
       }
       var sc = root.querySelector('[data-tab-count="submissions"]');
@@ -2343,10 +2423,10 @@
           '    </div>' +
           '    <div class="tepa-bo-gate-row">' +
           '      <div>' +
-          '        <div class="tepa-bo-stage-title">Final "Best of the Best" Voting</div>' +
+          '        <div class="tepa-bo-stage-title">' + (k.isSimpleActivePoll ? 'Live Poll Voting Intake' : 'Final "Best of the Best" Voting') + '</div>' +
           '        <div class="tepa-bo-stage-desc">' + (s.voting_open ? 'Audience can cast 1 vote per device.' : 'Voting intake is locked on mobile devices.') + '</div>' +
           '      </div>' +
-          '      <label class="tepa-bo-switch" aria-label="Toggle Final Voting Open">' +
+          '      <label class="tepa-bo-switch" aria-label="Toggle Voting Open">' +
           '        <input type="checkbox" class="tepa-bo-switch-input" data-action="toggle-setting" data-key="voting_open" ' + (s.voting_open ? 'checked' : '') + '>' +
           '        <span class="tepa-bo-switch-track"><span class="tepa-bo-switch-thumb"></span></span>' +
           '      </label>' +
@@ -2377,9 +2457,9 @@
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
           '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('trophy', 15) + '</span><h2 class="tepa-bo-card-title">Live Top 5 Standings</h2></div>' +
-          '        <p class="tepa-bo-card-desc">Real-time ranking across active finalist projects.</p>' +
+          '        <p class="tepa-bo-card-desc">Real-time ranking across ' + (k.isSimpleActivePoll ? 'active poll options.' : 'active finalist projects.') + '</p>' +
           '      </div>' +
-          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="projects"><span>Manage Projects</span>' + icon('arrowRight', 13) + '</button>' +
+          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="projects"><span>' + (k.isSimpleActivePoll ? 'Manage Polls' : 'Manage Projects') + '</span>' + icon('arrowRight', 13) + '</button>' +
           '    </div>' +
           '    <div class="tepa-bo-leader-list">' +
           (top5.length
@@ -2393,7 +2473,7 @@
                   '  <div class="tepa-bo-leader-meta">' +
                   '    <div class="tepa-bo-leader-left">' +
                   '      <span class="tepa-bo-rank-pill' + rankCls + '">#' + (idx + 1) + '</span>' +
-                  '      <div class="tepa-bo-leader-title-wrap"><strong>' + esc(p.project_title) + '</strong> <span style="color:#64748B;">· ' + esc(p.category_name) + '</span></div>' +
+                  '      <div class="tepa-bo-leader-title-wrap"><strong>' + esc(p.project_title) + '</strong>' + (p.category_name ? ' <span style="color:#64748B;">· ' + esc(p.category_name) + '</span>' : '') + '</div>' +
                   '    </div>' +
                   '    <span class="tepa-bo-leader-votes-pill">' + v + ' <span style="color:#64748B;font-weight:500;">(' + pct + '%)</span></span>' +
                   '  </div>' +
@@ -2401,7 +2481,7 @@
                   '</div>'
                 );
               }).join('')
-            : '<p style="color:#64748B;">No active projects enabled.</p>') +
+            : '<p style="color:#64748B;">No active options enabled.</p>') +
           '    </div>' +
           '  </div>' +
           '  <div class="tepa-bo-card">' +
@@ -2452,17 +2532,17 @@
           : (s.event_title || 'TEPA Performance Award 2026');
         var vHeadVal = (state.pollCopyDraft && state.pollCopyDraft.voting_headline !== undefined)
           ? state.pollCopyDraft.voting_headline
-          : (s.voting_headline || 'Which finalist project deserves the Best of the Best?');
+          : ((k.activePoll && k.activePoll.voting_headline) || s.voting_headline || 'Which finalist project deserves the Best of the Best?');
 
         var stageNameMap = {
           quiz_qr: 'Scene 1 · Welcome Quiz QR & Official Winners',
           live_voting: 'Scene 2 · Live Voting Ranking + QR',
-          winner_reveal: 'Scene 3 · Best of the Best Winner Spotlight'
+          winner_reveal: k.isSimpleActivePoll ? 'Scene 3 · Winning Choice Spotlight' : 'Scene 3 · Best of the Best Winner Spotlight'
         };
         var monitorHeadline = curStage === 'quiz_qr'
           ? ((k.activeQuiz && k.activeQuiz.title && k.activeQuiz.title !== 'Quiz' ? k.activeQuiz.title : 'Welcome Quiz') + ' — Scan to Join & Win!')
           : (curStage === 'winner_reveal'
-            ? (evTitleVal + ' — Best of the Best')
+            ? (k.isSimpleActivePoll ? (vHeadVal || (k.activePoll && k.activePoll.title) || 'Poll Results') : (evTitleVal + ' — Best of the Best'))
             : vHeadVal);
 
         var monitorBodyHtml = '';
@@ -2482,9 +2562,9 @@
         } else if (curStage === 'winner_reveal') {
           monitorBodyHtml =
             '<div style="padding:10px 14px;border-radius:12px;background:rgba(247,123,57,0.12);border:1px solid rgba(247,123,57,0.3);">' +
-            '  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#F77B39;">★ Best of the Best Spotlight</div>' +
+            '  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#F77B39;">' + (k.isSimpleActivePoll ? '★ Leading Poll Option' : '★ Best of the Best Spotlight') + '</div>' +
             '  <div style="font-size:15px;font-weight:800;margin-top:2px;">' + esc(k.leader ? k.leader.project_title : 'Waiting for votes...') + '</div>' +
-            (k.leader ? '<div style="font-size:12px;opacity:0.8;margin-top:2px;">' + esc(k.leader.votes) + ' votes (' + esc(k.leaderPct) + '%) · ' + esc(k.leader.category_name) + '</div>' : '') +
+            (k.leader ? '<div style="font-size:12px;opacity:0.8;margin-top:2px;">' + esc(k.leader.votes) + ' votes (' + esc(k.leaderPct) + '%)' + (k.leader.category_name ? (' · ' + esc(k.leader.category_name)) : '') + '</div>' : '') +
             '</div>';
         } else {
           var topPreview = k.sortedProjects.slice(0, 3);
@@ -2528,15 +2608,15 @@
           '        <span class="tepa-bo-stage-num">' + icon('barChart', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
           '          <span class="tepa-bo-stage-title">Scene 2 · Live Voting Ranking + QR</span>' +
-          '          <span class="tepa-bo-stage-desc">Mentimeter-style horizontal list or vertical columns across ' + esc(k.activeProjects.length) + ' active finalists (' + esc(k.totalVotes) + ' votes).</span>' +
+          '          <span class="tepa-bo-stage-desc">Mentimeter-style horizontal list or vertical columns across ' + esc(k.activeProjects.length) + (k.isSimpleActivePoll ? ' active options (' : ' active finalists (') + esc(k.totalVotes) + ' votes).</span>' +
           '        </span>' +
           (curStage === 'live_voting' ? '<span class="tepa-bo-badge is-green">● ON AIR</span>' : '') +
           '      </button>' +
           '      <button type="button" class="tepa-bo-stage-card ' + (curStage === 'winner_reveal' ? 'is-active' : '') + '" data-action="set-stage" data-val="winner_reveal">' +
           '        <span class="tepa-bo-stage-num">' + icon('trophy', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
-          '          <span class="tepa-bo-stage-title">Scene 3 · Best of the Best Winner Spotlight</span>' +
-          '          <span class="tepa-bo-stage-desc">Grand ceremony reveal of #1 winner (' + esc(k.leader ? k.leader.project_title : 'No votes yet') + ') + runners-up.</span>' +
+          '          <span class="tepa-bo-stage-title">' + (k.isSimpleActivePoll ? 'Scene 3 · Winning Choice Spotlight' : 'Scene 3 · Best of the Best Winner Spotlight') + '</span>' +
+          '          <span class="tepa-bo-stage-desc">Grand reveal of #1 leader (' + esc(k.leader ? k.leader.project_title : 'No votes yet') + ') + runners-up.</span>' +
           '        </span>' +
           (curStage === 'winner_reveal' ? '<span class="tepa-bo-badge is-green">● ON AIR</span>' : '') +
           '      </button>' +
@@ -2595,14 +2675,14 @@
           '        <div class="tepa-bo-ctrl-box-lbl">' + icon('trophy', 13) + '<span>3. Vertical Columns Scope</span></div>' +
           '        <div class="tepa-bo-seg">' +
           '          <button type="button" class="tepa-bo-seg-btn ' + (curScope === 'top5' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_vertical_scope" data-val="top5">Top 5 Leaders</button>' +
-          '          <button type="button" class="tepa-bo-seg-btn ' + (curScope === 'all15' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_vertical_scope" data-val="all15">All ' + esc(k.activeProjects.length) + ' Projects</button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curScope === 'all15' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_vertical_scope" data-val="all15">All ' + esc(k.activeProjects.length) + (k.isSimpleActivePoll ? ' Options' : ' Projects') + '</button>' +
           '        </div>' +
           '      </div>' +
           '      <div class="tepa-bo-ctrl-box">' +
-          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('arrowDown', 13) + '<span>4. Project Sort Order</span></div>' +
+          '        <div class="tepa-bo-ctrl-box-lbl">' + icon('arrowDown', 13) + '<span>4. Poll / Project Sort Order</span></div>' +
           '        <div class="tepa-bo-seg">' +
           '          <button type="button" class="tepa-bo-seg-btn ' + (curSort === 'votes' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_sort_mode" data-val="votes">By Most Votes</button>' +
-          '          <button type="button" class="tepa-bo-seg-btn ' + (curSort === 'slot' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_sort_mode" data-val="slot">By Slot #01–15</button>' +
+          '          <button type="button" class="tepa-bo-seg-btn ' + (curSort === 'slot' ? 'is-active' : '') + '" data-action="set-live-pref" data-key="live_sort_mode" data-val="slot">Original Order</button>' +
           '        </div>' +
           '      </div>' +
           '      <div class="tepa-bo-ctrl-box">' +
@@ -2625,7 +2705,7 @@
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
           '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('gift', 15) + '</span><h2 class="tepa-bo-card-title">Live Ceremony Announcements &amp; Screen Headlines</h2></div>' +
-          '        <p class="tepa-bo-card-desc">Reveal Quiz winners or Best of the Best champion on the 16:9 screen with 1 click.</p>' +
+          '        <p class="tepa-bo-card-desc">Reveal Quiz winners or winning poll result on the 16:9 screen with 1 click.</p>' +
           '      </div>' +
           '    </div>' +
           '    <div class="tepa-bo-reveal-banner ' + (curQuizReveal ? 'is-live' : 'is-hidden') + '" style="margin-bottom:12px;">' +
@@ -2642,13 +2722,13 @@
           '    <div class="tepa-bo-reveal-banner ' + (curStage === 'winner_reveal' ? 'is-live' : '') + '" style="margin-bottom:16px;">' +
           '      <div style="min-width:0;flex:1;">' +
           '        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">' +
-          '          <strong style="font-size:14px;color:#0F172A;">Best of the Best Grand Winner Reveal</strong>' +
+          '          <strong style="font-size:14px;color:#0F172A;">' + (k.isSimpleActivePoll ? 'Winning Poll Option Spotlight Reveal' : 'Best of the Best Grand Winner Reveal') + '</strong>' +
           '          <span class="tepa-bo-badge ' + (curStage === 'winner_reveal' ? 'is-green' : 'is-blue') + '">' + (curStage === 'winner_reveal' ? '● ON AIR' : 'STANDBY') + '</span>' +
           '        </div>' +
           '        <div style="font-size:12.5px;color:#475569;">Current #1: <strong>' + esc(k.leader ? k.leader.project_title : 'No votes yet') + '</strong>' + (k.leader ? (' (' + esc(k.leader.votes) + ' votes · ' + esc(k.leaderPct) + '%)') : '') + '</div>' +
           '      </div>' +
           '      <button type="button" class="tepa-bo-btn ' + (curStage === 'winner_reveal' ? 'tepa-bo-btn-dark' : 'tepa-bo-btn-primary') + '" data-action="set-stage" data-val="' + (curStage === 'winner_reveal' ? 'live_voting' : 'winner_reveal') + '">' +
-          icon('trophy', 14) + '<span>' + (curStage === 'winner_reveal' ? 'Back to Voting Chart' : 'Reveal Best of the Best') + '</span></button>' +
+          icon('trophy', 14) + '<span>' + (curStage === 'winner_reveal' ? 'Back to Voting Chart' : (k.isSimpleActivePoll ? 'Reveal Winning Option' : 'Reveal Best of the Best')) + '</span></button>' +
           '    </div>' +
           '    <form id="tepa-live-headlines-form" style="padding-top:12px;border-top:1px solid #E2E8F0;">' +
           '      <div class="tepa-bo-field">' +
@@ -2872,19 +2952,24 @@
       }
 
       if (state.tab === 'projects') {
-        var dirtyProjCount = Object.keys(state.dirtyProjects).length;
-        var pollHeadline = (state.pollCopyDraft && state.pollCopyDraft.voting_headline !== undefined)
-          ? state.pollCopyDraft.voting_headline
-          : (s.voting_headline || 'Which finalist project deserves the Best of the Best?');
-        var pollSub = (state.pollCopyDraft && state.pollCopyDraft.voting_subtitle !== undefined)
-          ? state.pollCopyDraft.voting_subtitle
-          : (s.voting_subtitle || 'You have 15 finalist projects · Choose one for Best of the Best');
+        var polls = k.polls || [];
+        var selPoll = ensureSelectedPoll(state.data);
+        var pDraft = getPollDraft(selPoll);
+        var isLivePoll = Boolean(selPoll && s.active_poll_id === selPoll.id);
+        var isSimple = Boolean(pDraft && pDraft.poll_type === 'simple');
+        var pollProjects = selPoll
+          ? projects.filter(function (p) { return !p.poll_id || p.poll_id === selPoll.id; })
+          : projects;
+        var pollTotalVotes = pollProjects
+          .filter(function (orig) { return getProjectDraft(orig).is_active !== false; })
+          .reduce(function (acc, orig) { return acc + (Number(orig.votes) || 0); }, 0);
 
-        var activeCnt = projects.filter(function (orig) { return getProjectDraft(orig).is_active !== false; }).length;
-        var hiddenCnt = projects.length - activeCnt;
+        var dirtyProjCount = Object.keys(state.dirtyProjects).length;
+        var activeCnt = pollProjects.filter(function (orig) { return getProjectDraft(orig).is_active !== false; }).length;
+        var hiddenCnt = pollProjects.length - activeCnt;
         var pNeedle = state.projSearch.trim().toLowerCase();
 
-        var filteredProjects = projects.filter(function (orig) {
+        var filteredProjects = pollProjects.filter(function (orig) {
           var p = getProjectDraft(orig);
           var isAct = p.is_active !== false;
           if (state.projFilter === 'active' && !isAct) return false;
@@ -2897,22 +2982,39 @@
           );
         });
 
+        var pollPillsHtml = polls.map(function (pl) {
+          var isSel = selPoll && pl.id === selPoll.id;
+          var isLive = s.active_poll_id === pl.id;
+          var optCnt = projects.filter(function (p) { return !p.poll_id || p.poll_id === pl.id; }).length;
+          var fmtLbl = pl.poll_type === 'simple' ? 'Simple Poll' : 'Projects';
+          return (
+            '<button type="button" class="tepa-bo-quiz-pill ' + (isSel ? 'is-active' : '') + '" data-action="select-poll" data-id="' + esc(pl.id) + '">' +
+            '  <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;">' +
+            '    <strong style="font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(pl.title) + '</strong>' +
+            (isLive ? '<span class="tepa-bo-badge is-green">LIVE</span>' : '<span class="tepa-bo-badge is-muted">Draft</span>') +
+            '  </div>' +
+            '  <span style="font-size:11.5px;color:#64748B;">' + optCnt + ' ' + (pl.poll_type === 'simple' ? 'option' : 'project') + (optCnt === 1 ? '' : 's') + ' · ' + fmtLbl + '</span>' +
+            '</button>'
+          );
+        }).join('') +
+        '<button type="button" class="tepa-bo-quiz-pill is-new" data-action="create-poll" data-polltype="simple">' + icon('plus', 15) + '<span>Create New Poll</span></button>';
+
         var projRows = filteredProjects.map(function (orig, idx) {
           var p = getProjectDraft(orig);
           var isDirty = Boolean(state.dirtyProjects[orig.id]);
           var isAct = p.is_active !== false;
           var v = Number(orig.votes || 0);
-          var pct = (isAct && k.totalVotes > 0) ? Math.round((v / k.totalVotes) * 100) : 0;
+          var pct = (isAct && pollTotalVotes > 0) ? Math.round((v / pollTotalVotes) * 100) : 0;
           return (
-            '<div class="tepa-bo-proj-row ' + (isDirty ? 'is-dirty' : '') + ' ' + (!isAct ? 'is-inactive' : '') + '" data-proj-row="' + orig.id + '">' +
+            '<div class="tepa-bo-proj-row ' + (isSimple ? 'is-simple ' : '') + (isDirty ? 'is-dirty' : '') + ' ' + (!isAct ? 'is-inactive' : '') + '" data-proj-row="' + orig.id + '">' +
             '  <div class="tepa-bo-slot-group">' +
             '    <span class="tepa-bo-slot-pill">#' + pad2(orig.slot_number) + '</span>' +
             '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move Up">' + icon('arrowUp', 13) + '</button>' +
             '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="1" ' + (idx === filteredProjects.length - 1 ? 'disabled' : '') + ' title="Move Down">' + icon('arrowDown', 13) + '</button>' +
             '  </div>' +
-            '  <input class="tepa-bo-input" data-field="category_name" value="' + esc(p.category_name) + '" placeholder="Category">' +
-            '  <input class="tepa-bo-input" data-field="project_title" value="' + esc(p.project_title) + '" placeholder="Project Title">' +
-            '  <input class="tepa-bo-input" data-field="team_name" value="' + esc(p.team_name || '') + '" placeholder="Team / Dept">' +
+            (isSimple ? '' : '  <input class="tepa-bo-input" data-field="category_name" value="' + esc(p.category_name || '') + '" placeholder="Category">') +
+            '  <input class="tepa-bo-input" data-field="project_title" value="' + esc(p.project_title) + '" placeholder="' + (isSimple ? 'Option label (shown on 16:9 & mobile)' : 'Project Title') + '">' +
+            (isSimple ? '' : '  <input class="tepa-bo-input" data-field="team_name" value="' + esc(p.team_name || '') + '" placeholder="Team / Dept">') +
             '  <div class="tepa-bo-votes-col">' +
             '    <div class="tepa-bo-votes-pill">' + v + ' <span style="color:#64748B;font-weight:500;">(' + (isAct ? (pct + '%') : 'Hidden') + ')</span></div>' +
             '    <div class="tepa-bo-proj-bar-track"><div class="tepa-bo-proj-bar-fill" data-target-pct="' + Math.max(v > 0 && isAct ? 4 : 0, pct) + '" style="width:' + pct + '%;"></div></div>' +
@@ -2923,62 +3025,90 @@
             '  </label>' +
             '  <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">' +
             '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (isDirty ? 'tepa-bo-btn-dark' : '') + '" data-action="save-project" data-id="' + orig.id + '">' + icon('check', 12) + '<span>Save</span></button>' +
-            '    <button type="button" class="tepa-bo-icon-btn is-danger" data-action="open-confirm-modal" data-modal-kind="archive_project" data-id="' + orig.id + '" title="Remove Project">' + icon('trash', 13) + '</button>' +
+            '    <button type="button" class="tepa-bo-icon-btn is-danger" data-action="open-confirm-modal" data-modal-kind="archive_project" data-id="' + orig.id + '" title="Remove Option">' + icon('trash', 13) + '</button>' +
             '  </div>' +
             '</div>'
           );
         }).join('');
 
         return (
-          '<div class="tepa-bo-card" style="margin-bottom:16px;">' +
-          '  <div class="tepa-bo-card-head" style="margin-bottom:12px;">' +
-          '    <div>' +
-          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('monitor', 15) + '</span><h2 class="tepa-bo-card-title">Voting Poll Headlines</h2></div>' +
-          '      <p class="tepa-bo-card-desc">Customize the prompt shown on the Auditorium 16:9 Screen and on employees\' mobile cover.</p>' +
-          '    </div>' +
-          '  </div>' +
-          '  <form id="tepa-poll-copy-form">' +
-          '    <div class="tepa-bo-form-row">' +
-          '      <div>' +
-          '        <label class="tepa-bo-label" for="tepa-poll-headline">16:9 Stage Question Headline</label>' +
-          '        <input id="tepa-poll-headline" class="tepa-bo-input" type="text" maxlength="160" value="' + esc(pollHeadline) + '">' +
-          '      </div>' +
-          '      <div>' +
-          '        <label class="tepa-bo-label" for="tepa-poll-sub">Mobile Cover Subtitle (use · to split lines)</label>' +
-          '        <input id="tepa-poll-sub" class="tepa-bo-input" type="text" maxlength="180" value="' + esc(pollSub) + '">' +
-          '      </div>' +
-          '      <div style="max-width:170px;">' +
-          '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">' + icon('check', 14) + '<span>Save Prompt</span></button>' +
-          '      </div>' +
-          '    </div>' +
-          '  </form>' +
-          '</div>' +
+          '<div class="tepa-bo-quiz-pills">' + pollPillsHtml + '</div>' +
+          (pDraft
+            ? '<div class="tepa-bo-card" style="margin-bottom:16px;">' +
+              '  <div class="tepa-bo-card-head">' +
+              '    <div>' +
+              '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('sliders', 15) + '</span><h2 class="tepa-bo-card-title">Voting Poll Setup &amp; Format</h2></div>' +
+              '      <p class="tepa-bo-card-desc">Switch between multi-event Simple Polls or Full Finalist Projects, and activate any poll live on 16:9 &amp; mobile.</p>' +
+              '    </div>' +
+              '    <div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+              (!isLivePoll
+                ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary" data-action="activate-poll" data-id="' + esc(pDraft.id) + '" data-reset="false">' + icon('radio', 13) + '<span>Set Live</span></button>' +
+                  '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="activate-poll" data-id="' + esc(pDraft.id) + '" data-reset="true">' + icon('refresh', 13) + '<span>Set Live + New Round</span></button>'
+                : '<span class="tepa-bo-badge is-green" style="height:31px;padding:0 12px;">● Currently Live on Stage &amp; Mobile</span>') +
+              '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="duplicate-poll" data-id="' + esc(pDraft.id) + '">' + icon('copy', 12) + '<span>Duplicate</span></button>' +
+              (polls.length > 1
+                ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="archive_poll" data-id="' + esc(pDraft.id) + '">' + icon('trash', 12) + '<span>Delete</span></button>'
+                : '') +
+              '    </div>' +
+              '  </div>' +
+              '  <form id="tepa-poll-meta-form" data-poll-id="' + esc(pDraft.id) + '">' +
+              '    <div class="tepa-bo-form-row" style="margin-bottom:12px;">' +
+              '      <div>' +
+              '        <label class="tepa-bo-label" for="tepa-pm-title">Poll Name (Admin Studio)</label>' +
+              '        <input id="tepa-pm-title" class="tepa-bo-input" data-pmeta="title" type="text" maxlength="100" value="' + esc(pDraft.title || '') + '" required>' +
+              '      </div>' +
+              '      <div>' +
+              '        <label class="tepa-bo-label" for="tepa-pm-type">Option Display Format</label>' +
+              '        <select id="tepa-pm-type" class="tepa-bo-select" data-pmeta="poll_type">' +
+              '          <option value="simple" ' + (isSimple ? 'selected' : '') + '>Simple Poll Options (Text Only · Mentimeter style)</option>' +
+              '          <option value="projects" ' + (!isSimple ? 'selected' : '') + '>Finalist Projects (Category + Title + Team)</option>' +
+              '        </select>' +
+              '      </div>' +
+              '    </div>' +
+              '    <div class="tepa-bo-form-row">' +
+              '      <div>' +
+              '        <label class="tepa-bo-label" for="tepa-pm-head">16:9 Stage Question Headline</label>' +
+              '        <input id="tepa-pm-head" class="tepa-bo-input" data-pmeta="voting_headline" type="text" maxlength="160" value="' + esc(pDraft.voting_headline || '') + '">' +
+              '      </div>' +
+              '      <div>' +
+              '        <label class="tepa-bo-label" for="tepa-pm-sub">Mobile Cover Subtitle (use · to split lines)</label>' +
+              '        <input id="tepa-pm-sub" class="tepa-bo-input" data-pmeta="voting_subtitle" type="text" maxlength="180" value="' + esc(pDraft.voting_subtitle || '') + '">' +
+              '      </div>' +
+              '      <div style="max-width:190px;">' +
+              '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">' + icon('check', 14) + '<span>Save Poll Settings</span></button>' +
+              '      </div>' +
+              '    </div>' +
+              '  </form>' +
+              '</div>'
+            : '') +
           '<div class="tepa-bo-card">' +
           '  <div class="tepa-bo-toolbar">' +
           '    <div>' +
-          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('trophy', 15) + '</span><h2 class="tepa-bo-card-title">Finalist Projects &amp; Poll Options (' + projects.length + ')</h2></div>' +
+          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('trophy', 15) + '</span><h2 class="tepa-bo-card-title">' + (isSimple ? 'Poll Options' : 'Finalist Projects') + ' (' + pollProjects.length + ')</h2></div>' +
           '      <p class="tepa-bo-card-desc">' + activeCnt + ' active on 16:9 stage &amp; mobile voting · ' + hiddenCnt + ' hidden.</p>' +
           '    </div>' +
           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '      <span data-dirty-proj-badge class="tepa-bo-badge ' + (dirtyProjCount ? 'is-gold' : 'is-green') + '">' + (dirtyProjCount ? (dirtyProjCount + ' unsaved edit' + (dirtyProjCount > 1 ? 's' : '')) : 'All synced') + '</span>' +
           '      <button type="button" class="tepa-bo-btn" data-action="discard-projects" style="' + (dirtyProjCount ? '' : 'display:none;') + '">Discard</button>' +
-          (hiddenCnt > 0 ? '<button type="button" class="tepa-bo-btn" data-action="enable-all-projects">' + icon('check', 13) + '<span>Enable All (' + projects.length + ')</span></button>' : '') +
-          '      <button type="button" class="tepa-bo-btn" data-action="create-project">' + icon('plus', 13) + '<span>Add Project / Option</span></button>' +
-          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-projects" ' + (state.saving ? 'disabled' : '') + '>' + icon('check', 14) + '<span>Save All Projects</span></button>' +
+          (hiddenCnt > 0 ? '<button type="button" class="tepa-bo-btn" data-action="enable-all-projects">' + icon('check', 13) + '<span>Enable All (' + pollProjects.length + ')</span></button>' : '') +
+          '      <button type="button" class="tepa-bo-btn" data-action="create-project">' + icon('plus', 13) + '<span>' + (isSimple ? 'Add Option' : 'Add Project') + '</span></button>' +
+          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-projects" ' + (state.saving ? 'disabled' : '') + '>' + icon('check', 14) + '<span>' + (isSimple ? 'Save All Options' : 'Save All Projects') + '</span></button>' +
           '    </div>' +
           '  </div>' +
           '  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">' +
           '    <div class="tepa-bo-filter-pills">' +
-          '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'all' ? 'is-active' : '') + '" data-projfilter="all">All (' + projects.length + ')</button>' +
+          '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'all' ? 'is-active' : '') + '" data-projfilter="all">All (' + pollProjects.length + ')</button>' +
           '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'active' ? 'is-active' : '') + '" data-projfilter="active">Active on Stage (' + activeCnt + ')</button>' +
           '      <button type="button" class="tepa-bo-filter-pill ' + (state.projFilter === 'hidden' ? 'is-active' : '') + '" data-projfilter="hidden">Hidden (' + hiddenCnt + ')</button>' +
           '    </div>' +
-          '    <input id="tepa-proj-search" class="tepa-bo-input" style="width:240px;height:34px;min-height:34px;" type="search" placeholder="Filter by category, title, team..." value="' + esc(state.projSearch) + '">' +
+          '    <input id="tepa-proj-search" class="tepa-bo-input" style="width:240px;height:34px;min-height:34px;" type="search" placeholder="' + (isSimple ? 'Filter options...' : 'Filter by category, title, team...') + '" value="' + esc(state.projSearch) + '">' +
           '  </div>' +
-          '  <div class="tepa-bo-proj-head">' +
-          '    <span>Order</span><span>Category</span><span>Project / Option</span><span>Team</span><span style="text-align:right;">Votes &amp; %</span><span>Active</span><span style="text-align:right;">Actions</span>' +
+          '  <div class="tepa-bo-proj-head' + (isSimple ? ' is-simple' : '') + '">' +
+          (isSimple
+            ? '    <span>Order</span><span>Option Label</span><span style="text-align:right;">Votes &amp; %</span><span>Active</span><span style="text-align:right;">Actions</span>'
+            : '    <span>Order</span><span>Category</span><span>Project Title</span><span>Team</span><span style="text-align:right;">Votes &amp; %</span><span>Active</span><span style="text-align:right;">Actions</span>') +
           '  </div>' +
-          '  <div class="tepa-bo-proj-list">' + (projRows || '<p style="text-align:center;padding:24px;color:#64748B;">No finalist projects match this filter.</p>') + '</div>' +
+          '  <div class="tepa-bo-proj-list">' + (projRows || '<p style="text-align:center;padding:24px;color:#64748B;">No poll options match this filter.</p>') + '</div>' +
           '</div>'
         );
       }
@@ -3082,11 +3212,11 @@
           },
           {
             ok: Boolean(activeProjs.length >= 2),
-            title: '4. Finalist Projects & Adaptive Scale (' + activeProjs.length + ' active)',
-            desc: activeProjs.length + ' of ' + projects.length + ' projects visible on 16:9 stage & mobile voting. Share percentages calculated across ' + k.totalVotes + ' active votes (100% sum).',
+            title: '4. Active Voting Poll ("' + (k.activePoll ? k.activePoll.title : 'Default') + '" · ' + activeProjs.length + ' active)',
+            desc: activeProjs.length + ' of ' + k.pollProjects.length + (k.isSimpleActivePoll ? ' options' : ' finalist projects') + ' visible on 16:9 stage & mobile voting. Share percentages calculated across ' + k.totalVotes + ' active votes (100% sum).',
             badge: activeProjs.length + ' ACTIVE',
             actionTab: 'projects',
-            actionLbl: 'Projects'
+            actionLbl: 'Voting Studio'
           },
           {
             ok: Boolean(s.quiz_open && s.voting_open),
@@ -3353,6 +3483,9 @@
       var selQuiz = ensureSelectedQuiz(state.data);
       var allQs = state.data.questions || [];
       var quizQs = selQuiz ? allQs.filter(function (q) { return !q.quiz_id || q.quiz_id === selQuiz.id; }) : allQs;
+      var selPoll = ensureSelectedPoll(state.data);
+      var selProjs = selPoll ? projects.filter(function (p) { return !p.poll_id || p.poll_id === selPoll.id; }) : projects;
+      var activeSelProjCount = selProjs.filter(function (p) { return getProjectDraft(p).is_active !== false; }).length;
       var voteScreenUrl = cfg.homeUrl || cfg.voteUrl || 'vote.html';
       var quizScreenUrl = cfg.quizUrl || 'quiz.html';
       var liveScreenUrl = cfg.liveUrl || 'live.html';
@@ -3392,7 +3525,7 @@
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'projects' ? 'is-active' : '') + '" data-tab="projects">' +
         '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('trophy', 15) + '</span><span>Voting &amp; Projects</span></span>' +
-        '        <span class="tepa-bo-nav-badge" data-tab-count="projects">' + (k.activeProjects.length === projects.length ? projects.length : (k.activeProjects.length + '/' + projects.length)) + '</span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="projects">' + (activeSelProjCount === selProjs.length ? selProjs.length : (activeSelProjCount + '/' + selProjs.length)) + '</span>' +
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'submissions' ? 'is-active' : '') + '" data-tab="submissions">' +
         '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('gift', 15) + '</span><span>Winners &amp; Desk</span></span>' +
@@ -3463,23 +3596,23 @@
           : '') +
         (state.error ? '<div class="tepa-bo-alert is-error"><div><strong>Action notice:</strong> ' + esc(state.error) + '</div></div>' : '') +
         '      <section class="tepa-bo-kpis">' +
-        '        <div class="tepa-bo-kpi-card" data-tab="projects" title="Click to manage finalist projects">' +
+        '        <div class="tepa-bo-kpi-card" data-tab="projects" title="Click to manage polls &amp; projects">' +
         '          <div class="tepa-bo-kpi-head">' +
         '            <span class="tepa-bo-kpi-icon is-orange">' + icon('barChart', 18) + '</span>' +
         '            <span data-kpi-votes-badge class="tepa-bo-badge ' + (s.voting_open ? 'is-green' : 'is-red') + '">' + (s.voting_open ? 'Voting Open' : 'Voting Closed') + '</span>' +
         '          </div>' +
         '          <div class="tepa-bo-kpi-label">Total Votes Cast</div>' +
         '          <div class="tepa-bo-kpi-value" data-kpi-votes>' + esc(k.totalVotes) + '</div>' +
-        '          <div class="tepa-bo-kpi-sub" data-kpi-votes-sub>Round #' + esc(s.vote_epoch || 1) + ' · ' + esc(k.activeProjects.length) + ' active finalists</div>' +
+        '          <div class="tepa-bo-kpi-sub" data-kpi-votes-sub>Round #' + esc(s.vote_epoch || 1) + ' · ' + esc(k.activeProjects.length) + (k.isSimpleActivePoll ? ' active options' : ' active finalists') + '</div>' +
         '        </div>' +
         '        <div class="tepa-bo-kpi-card" data-tab="stage" title="Click to view Live Top 5 Standings">' +
         '          <div class="tepa-bo-kpi-head">' +
         '            <span class="tepa-bo-kpi-icon is-blue">' + icon('trophy', 18) + '</span>' +
-        '            <span class="tepa-bo-badge is-blue">Best of the Best</span>' +
+        '            <span class="tepa-bo-badge is-blue">' + (k.isSimpleActivePoll ? 'Top Choice' : 'Best of the Best') + '</span>' +
         '          </div>' +
         '          <div class="tepa-bo-kpi-label">Current Leader</div>' +
         '          <div class="tepa-bo-kpi-value is-text" data-kpi-leader title="' + esc(k.leader ? k.leader.project_title : '') + '">' + esc(k.leader ? k.leader.project_title : 'No votes yet') + '</div>' +
-        '          <div class="tepa-bo-kpi-sub" data-kpi-leader-sub>' + (k.leader ? esc((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%) · ' + k.leader.category_name) : 'Waiting for first vote') + '</div>' +
+        '          <div class="tepa-bo-kpi-sub" data-kpi-leader-sub>' + (k.leader ? esc((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%)' + (k.leader.category_name ? (' · ' + k.leader.category_name) : '')) : 'Waiting for first vote') + '</div>' +
         '        </div>' +
         '        <div class="tepa-bo-kpi-card" data-tab="questions" title="Click to open Quiz Studio">' +
         '          <div class="tepa-bo-kpi-head">' +
@@ -3537,6 +3670,27 @@
         is_active: qRow.querySelector('[data-field="is_active"]').checked
       };
       state.dirtyQuestions[qid] = draft;
+      return draft;
+    }
+
+    function readProjectRowToDirty(projRow) {
+      if (!projRow || !state.data) return null;
+      var pid = Number(projRow.getAttribute('data-proj-row'));
+      var origP = (state.data.projects || []).find(function (p) { return p.id === pid; });
+      if (!origP) return null;
+      var curP = getProjectDraft(origP);
+      var catInp = projRow.querySelector('[data-field="category_name"]');
+      var titleInp = projRow.querySelector('[data-field="project_title"]');
+      var teamInp = projRow.querySelector('[data-field="team_name"]');
+      var actInp = projRow.querySelector('[data-field="is_active"]');
+      var draft = {
+        id: pid,
+        category_name: catInp ? catInp.value : (curP.category_name || ''),
+        project_title: titleInp ? titleInp.value : (curP.project_title || ''),
+        team_name: teamInp ? teamInp.value : (curP.team_name || ''),
+        is_active: actInp ? actInp.checked : (curP.is_active !== false)
+      };
+      state.dirtyProjects[pid] = draft;
       return draft;
     }
 
@@ -3604,20 +3758,26 @@
         return;
       }
 
-      if (ev.target.id === 'tepa-poll-copy-form') {
+      if (ev.target.id === 'tepa-poll-meta-form') {
         ev.preventDefault();
-        var pHeadline = ((root.querySelector('#tepa-poll-headline') || {}).value || '').trim();
-        var pSub = ((root.querySelector('#tepa-poll-sub') || {}).value || '').trim();
-        var pcRes = await Store.adminAction(state.pin || '2026', 'update_settings', {
-          voting_headline: pHeadline,
-          voting_subtitle: pSub
+        var plId = ev.target.getAttribute('data-poll-id');
+        var plTitle = ((ev.target.querySelector('[data-pmeta="title"]') || {}).value || '').trim();
+        var plType = ((ev.target.querySelector('[data-pmeta="poll_type"]') || {}).value || 'projects');
+        var plHead = ((ev.target.querySelector('[data-pmeta="voting_headline"]') || {}).value || '').trim();
+        var plSub = ((ev.target.querySelector('[data-pmeta="voting_subtitle"]') || {}).value || '').trim();
+        var plRes = await Store.adminAction(state.pin || '2026', 'save_poll', {
+          id: plId,
+          title: plTitle,
+          poll_type: plType === 'simple' ? 'simple' : 'projects',
+          voting_headline: plHead,
+          voting_subtitle: plSub
         });
-        if (pcRes && pcRes.ok) {
-          state.pollCopyDraft = null;
+        if (plRes && plRes.ok) {
+          delete state.pollDrafts[plId];
           await loadAdmin(false);
-          flash('Voting prompt updated!');
+          flash('Voting poll settings saved!');
         } else {
-          flash((pcRes && pcRes.error) || 'Failed to save prompt.', true);
+          flash((plRes && plRes.error) || 'Failed to save poll settings.', true);
         }
         return;
       }
@@ -3691,11 +3851,12 @@
         return;
       }
 
-      if (ev.target.id === 'tepa-poll-headline' || ev.target.id === 'tepa-poll-sub') {
-        state.pollCopyDraft = {
-          voting_headline: ((root.querySelector('#tepa-poll-headline') || {}).value || ''),
-          voting_subtitle: ((root.querySelector('#tepa-poll-sub') || {}).value || '')
-        };
+      var pollMetaForm = ev.target.closest('#tepa-poll-meta-form');
+      if (pollMetaForm && ev.target.hasAttribute('data-pmeta')) {
+        var plMetaId = pollMetaForm.getAttribute('data-poll-id');
+        if (!state.pollDrafts[plMetaId]) state.pollDrafts[plMetaId] = {};
+        var pKey = ev.target.getAttribute('data-pmeta');
+        state.pollDrafts[plMetaId][pKey] = ev.target.value;
         return;
       }
 
@@ -3711,19 +3872,10 @@
 
       var projRow = ev.target.closest('[data-proj-row]');
       if (projRow && state.data) {
-        var pid = Number(projRow.getAttribute('data-proj-row'));
-        var origP = (state.data.projects || []).find(function (p) { return p.id === pid; });
-        if (origP) {
-          var isAct = projRow.querySelector('[data-field="is_active"]').checked;
-          state.dirtyProjects[pid] = {
-            id: pid,
-            category_name: projRow.querySelector('[data-field="category_name"]').value,
-            project_title: projRow.querySelector('[data-field="project_title"]').value,
-            team_name: projRow.querySelector('[data-field="team_name"]').value,
-            is_active: isAct
-          };
+        var draftedP = readProjectRowToDirty(projRow);
+        if (draftedP) {
           projRow.classList.add('is-dirty');
-          projRow.classList.toggle('is-inactive', !isAct);
+          projRow.classList.toggle('is-inactive', !draftedP.is_active);
           var rowBtn = projRow.querySelector('[data-action="save-project"]');
           if (rowBtn) rowBtn.classList.add('tepa-bo-btn-dark');
           updateDirtyCountersInPlace();
@@ -3746,6 +3898,16 @@
       if (!ev.target) return;
       var pin = state.pin || '2026';
 
+      var pollMetaForm = ev.target.closest('#tepa-poll-meta-form');
+      if (pollMetaForm && ev.target.hasAttribute('data-pmeta')) {
+        var plMetaId = pollMetaForm.getAttribute('data-poll-id');
+        if (!state.pollDrafts[plMetaId]) state.pollDrafts[plMetaId] = {};
+        var pKey = ev.target.getAttribute('data-pmeta');
+        state.pollDrafts[plMetaId][pKey] = ev.target.value;
+        if (pKey === 'poll_type') render(false);
+        return;
+      }
+
       var metaForm = ev.target.closest('#tepa-quiz-meta-form');
       if (metaForm && ev.target.hasAttribute('data-qmeta')) {
         var qzId = metaForm.getAttribute('data-quiz-id');
@@ -3758,20 +3920,14 @@
 
       var projRow = ev.target.closest('[data-proj-row]');
       if (projRow && ev.target.getAttribute('data-field') === 'is_active') {
-        var pid = Number(projRow.getAttribute('data-proj-row'));
-        var isAct = ev.target.checked;
-        state.dirtyProjects[pid] = {
-          id: pid,
-          category_name: projRow.querySelector('[data-field="category_name"]').value,
-          project_title: projRow.querySelector('[data-field="project_title"]').value,
-          team_name: projRow.querySelector('[data-field="team_name"]').value,
-          is_active: isAct
-        };
-        projRow.classList.add('is-dirty');
-        projRow.classList.toggle('is-inactive', !isAct);
-        var rowBtn = projRow.querySelector('[data-action="save-project"]');
-        if (rowBtn) rowBtn.classList.add('tepa-bo-btn-dark');
-        updateDirtyCountersInPlace();
+        var draftedCh = readProjectRowToDirty(projRow);
+        if (draftedCh) {
+          projRow.classList.add('is-dirty');
+          projRow.classList.toggle('is-inactive', !draftedCh.is_active);
+          var rowBtnCh = projRow.querySelector('[data-action="save-project"]');
+          if (rowBtnCh) rowBtnCh.classList.add('tepa-bo-btn-dark');
+          updateDirtyCountersInPlace();
+        }
         return;
       }
 
@@ -3912,12 +4068,14 @@
       }
 
       if (act === 'enable-all-projects' && state.data) {
+        var selEnPoll = ensureSelectedPoll(state.data);
         (state.data.projects || []).forEach(function (p) {
+          if (selEnPoll && p.poll_id && p.poll_id !== selEnPoll.id) return;
           if (p.is_active === false || (state.dirtyProjects[p.id] && state.dirtyProjects[p.id].is_active === false)) {
             var cur = getProjectDraft(p);
             state.dirtyProjects[p.id] = {
               id: p.id,
-              category_name: cur.category_name,
+              category_name: cur.category_name || '',
               project_title: cur.project_title,
               team_name: cur.team_name || '',
               is_active: true
@@ -3925,7 +4083,7 @@
           }
         });
         render(false);
-        flash('All projects marked active — click Save All Projects to apply.');
+        flash('All poll options marked active — click Save to apply.');
         return;
       }
 
@@ -3973,6 +4131,14 @@
             action: 'archive_quiz',
             payload: { id: itemId }
           };
+        } else if (kind === 'archive_poll') {
+          state.confirmModal = {
+            title: 'Delete This Voting Poll?',
+            message: 'This removes the selected voting poll from the studio list. If it is currently live, another poll will automatically become active.',
+            confirmLabel: 'Delete Poll',
+            action: 'archive_poll',
+            payload: { id: itemId }
+          };
         } else if (kind === 'archive_question') {
           state.confirmModal = {
             title: 'Delete This Question?',
@@ -4013,6 +4179,10 @@
           } else if (modalSpec.action === 'archive_quiz' && modalSpec.payload) {
             delete state.quizDrafts[modalSpec.payload.id];
             state.selectedQuizId = null;
+          } else if (modalSpec.action === 'archive_poll' && modalSpec.payload) {
+            delete state.pollDrafts[modalSpec.payload.id];
+            state.selectedPollId = null;
+            state.dirtyProjects = {};
           }
           await loadAdmin(false);
           flash('Updated!');
@@ -4084,6 +4254,71 @@
           flash(resetRound ? 'Quiz activated with fresh round!' : 'Quiz is now LIVE on mobile!');
         } else {
           flash((actRes && actRes.error) || 'Failed to activate quiz.', true);
+        }
+        return;
+      }
+
+      if (act === 'select-poll') {
+        state.selectedPollId = btn.getAttribute('data-id');
+        state.projFilter = 'all';
+        state.projSearch = '';
+        render(true);
+        return;
+      }
+
+      if (act === 'create-poll') {
+        var nextPollIdx = ((state.data && state.data.polls) || []).length + 1;
+        var newPollType = btn.getAttribute('data-polltype') === 'projects' ? 'projects' : 'simple';
+        var cplRes = await Store.adminAction(pin, 'create_poll', {
+          title: 'Event Poll ' + nextPollIdx,
+          poll_type: newPollType,
+          voting_headline: 'What should we prioritize in our next chapter?',
+          voting_subtitle: 'Select one option below'
+        });
+        if (cplRes && cplRes.ok && cplRes.poll) {
+          state.selectedPollId = cplRes.poll.id;
+          state.projFilter = 'all';
+          state.projSearch = '';
+          await loadAdmin(false);
+          flash('New voting poll created!');
+        } else {
+          flash((cplRes && cplRes.error) || 'Could not create poll.', true);
+        }
+        return;
+      }
+
+      if (act === 'duplicate-poll') {
+        var srcPollId = btn.getAttribute('data-id');
+        var srcPoll = ((state.data && state.data.polls) || []).find(function (pl) { return pl.id === srcPollId; });
+        var dupPollRes = await Store.adminAction(pin, 'create_poll', {
+          source_poll_id: srcPollId,
+          poll_type: (srcPoll && srcPoll.poll_type) || 'projects',
+          title: (srcPoll ? srcPoll.title : 'Poll') + ' (Copy)',
+          voting_headline: srcPoll ? srcPoll.voting_headline : '',
+          voting_subtitle: srcPoll ? srcPoll.voting_subtitle : ''
+        });
+        if (dupPollRes && dupPollRes.ok && dupPollRes.poll) {
+          state.selectedPollId = dupPollRes.poll.id;
+          state.projFilter = 'all';
+          state.projSearch = '';
+          await loadAdmin(false);
+          flash('Voting poll duplicated!');
+        } else {
+          flash((dupPollRes && dupPollRes.error) || 'Failed to duplicate poll.', true);
+        }
+        return;
+      }
+
+      if (act === 'activate-poll') {
+        var actPollId = btn.getAttribute('data-id');
+        var resetPollRound = btn.getAttribute('data-reset') === 'true';
+        var actPollRes = await Store.adminAction(pin, 'activate_poll', { id: actPollId, reset_round: resetPollRound });
+        if (actPollRes && actPollRes.ok) {
+          state.pollCopyDraft = null;
+          await loadAdmin(false);
+          flash(resetPollRound ? 'Voting poll is LIVE with fresh round!' : 'Voting poll is now LIVE on 16:9 & mobile!');
+        } else {
+          flash((actPollRes && actPollRes.error) || 'Failed to activate poll.', true);
         }
         return;
       }
@@ -4245,16 +4480,23 @@
       }
 
       if (act === 'create-project') {
+        var selPl = ensureSelectedPoll(state.data);
+        var plDraft = getPollDraft(selPl);
+        var isSimplePl = Boolean(plDraft && plDraft.poll_type === 'simple');
+        var pollOptCount = ((state.data && state.data.projects) || []).filter(function (p) {
+          return !selPl || !p.poll_id || p.poll_id === selPl.id;
+        }).length;
         var cpRes = await Store.adminAction(pin, 'create_project', {
-          category_name: 'New Category',
-          project_title: 'New Finalist Project',
-          team_name: 'TEPA Team'
+          poll_id: selPl ? selPl.id : null,
+          category_name: isSimplePl ? '' : 'New Category',
+          project_title: isSimplePl ? ('Option ' + (pollOptCount + 1)) : 'New Finalist Project',
+          team_name: isSimplePl ? '' : 'TEPA Team'
         });
         if (cpRes && cpRes.ok) {
           await loadAdmin(false);
-          flash('New project added!');
+          flash(isSimplePl ? 'New poll option added!' : 'New project added!');
         } else {
-          flash((cpRes && cpRes.error) || 'Could not add project.', true);
+          flash((cpRes && cpRes.error) || 'Could not add item.', true);
         }
         return;
       }
@@ -4262,7 +4504,10 @@
       if (act === 'move-project' && state.data) {
         var mpId = Number(btn.getAttribute('data-id'));
         var pDir = Number(btn.getAttribute('data-dir') || 0);
-        var pList = (state.data.projects || []).slice();
+        var selMovePoll = ensureSelectedPoll(state.data);
+        var pList = (state.data.projects || []).filter(function (p) {
+          return !selMovePoll || !p.poll_id || p.poll_id === selMovePoll.id;
+        });
         var pIdx = pList.findIndex(function (p) { return p.id === mpId; });
         var pSwap = pIdx + pDir;
         if (pIdx >= 0 && pSwap >= 0 && pSwap < pList.length) {
@@ -4272,7 +4517,7 @@
           ordPIds[pSwap] = pTmp;
           await Store.adminAction(pin, 'reorder_projects', { ordered_ids: ordPIds });
           await loadAdmin(false);
-          flash('Project order updated');
+          flash('Order updated');
         }
         return;
       }
@@ -4281,16 +4526,17 @@
         var pid = Number(btn.getAttribute('data-id'));
         var row = root.querySelector('[data-proj-row="' + pid + '"]');
         if (row) {
-          await Store.adminAction(pin, 'save_project', {
-            id: pid,
-            category_name: row.querySelector('[data-field="category_name"]').value,
-            project_title: row.querySelector('[data-field="project_title"]').value,
-            team_name: row.querySelector('[data-field="team_name"]').value,
-            is_active: row.querySelector('[data-field="is_active"]').checked
-          });
-          delete state.dirtyProjects[pid];
-          await loadAdmin(false);
-          flash('Project #' + pid + ' saved');
+          var draftedSave = readProjectRowToDirty(row);
+          if (draftedSave) {
+            var spRes = await Store.adminAction(pin, 'save_project', draftedSave);
+            if (spRes && spRes.ok) {
+              delete state.dirtyProjects[pid];
+              await loadAdmin(false);
+              flash('Saved #' + pid);
+            } else {
+              flash((spRes && spRes.error) || 'Failed to save item.', true);
+            }
+          }
         }
         return;
       }
@@ -4298,23 +4544,15 @@
       if (act === 'discard-projects') {
         state.dirtyProjects = {};
         render(false);
-        flash('Unsaved project edits discarded');
+        flash('Unsaved edits discarded');
         return;
       }
 
       if (act === 'save-all-projects') {
+        var projRowsAll = Array.from(root.querySelectorAll('[data-proj-row]'));
         var pItems = Object.keys(state.dirtyProjects).length
           ? Object.values(state.dirtyProjects)
-          : Array.from(root.querySelectorAll('[data-proj-row]')).map(function (r) {
-              var id = Number(r.getAttribute('data-proj-row'));
-              return {
-                id: id,
-                category_name: r.querySelector('[data-field="category_name"]').value,
-                project_title: r.querySelector('[data-field="project_title"]').value,
-                team_name: r.querySelector('[data-field="team_name"]').value,
-                is_active: r.querySelector('[data-field="is_active"]').checked
-              };
-            });
+          : projRowsAll.map(readProjectRowToDirty).filter(Boolean);
         state.saving = true;
         render(false);
         try {
@@ -4322,9 +4560,9 @@
           if (pBulkRes && pBulkRes.ok) {
             state.dirtyProjects = {};
             await loadAdmin(false);
-            flash('Saved ' + (pBulkRes.count || pItems.length) + ' projects!');
+            flash('Saved ' + (pBulkRes.count || pItems.length) + ' items!');
           } else {
-            flash((pBulkRes && pBulkRes.error) || 'Failed to save projects.', true);
+            flash((pBulkRes && pBulkRes.error) || 'Failed to save changes.', true);
           }
         } finally {
           state.saving = false;

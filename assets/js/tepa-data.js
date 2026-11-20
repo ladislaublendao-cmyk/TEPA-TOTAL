@@ -13,23 +13,37 @@
   var VOTE_CACHE_KEY = 'tepa_vote_receipt_v1';
   var CHANNEL_NAME = 'tepa_realtime_channel_v1';
   var DEFAULT_QUIZ_ID = '00000000-0000-0000-0000-000000002026';
+  var DEFAULT_POLL_ID = '00000000-0000-0000-0000-000000002027';
+
+  var DEFAULT_POLLS = [
+    {
+      id: DEFAULT_POLL_ID,
+      title: 'TEPA 2026 — Best of the Best',
+      voting_headline: 'Which finalist project deserves the Best of the Best?',
+      voting_subtitle: 'You have 15 finalist projects · Choose one for Best of the Best',
+      poll_type: 'projects',
+      is_archived: false,
+      created_at: '2026-11-18T09:00:00.000Z',
+      updated_at: '2026-11-18T09:00:00.000Z'
+    }
+  ];
 
   var DEFAULT_PROJECTS = [
-    { id: 1,  slot_number: 1,  sort_order: 1,  category_name: 'Safety & HSE',                 project_title: 'Zero Harm Smart Field Monitor',        team_name: 'HSE Operations',    is_active: true, is_archived: false },
-    { id: 2,  slot_number: 2,  sort_order: 2,  category_name: 'Operational Excellence',       project_title: 'Offshore Turnaround FastTrack',        team_name: 'Production Ops',    is_active: true, is_archived: false },
-    { id: 3,  slot_number: 3,  sort_order: 3,  category_name: 'Energy Transition',            project_title: 'Solar Microgrid Hybrid Hub',           team_name: 'New Energies',      is_active: true, is_archived: false },
-    { id: 4,  slot_number: 4,  sort_order: 4,  category_name: 'Digital Innovation',           project_title: 'AI Predictive Valve Guardian',         team_name: 'Digital & IT',      is_active: true, is_archived: false },
-    { id: 5,  slot_number: 5,  sort_order: 5,  category_name: 'Environmental Sustainability', project_title: 'Closed-Loop Water Recovery',           team_name: 'Environment Team',  is_active: true, is_archived: false },
-    { id: 6,  slot_number: 6,  sort_order: 6,  category_name: 'Customer Experience',          project_title: 'Bonjour Express Mobile Order',         team_name: 'Retail Marketing',  is_active: true, is_archived: false },
-    { id: 7,  slot_number: 7,  sort_order: 7,  category_name: 'Supply Chain & Logistics',     project_title: 'Fleet Route & Fuel Optimizer',         team_name: 'Logistics Angola',  is_active: true, is_archived: false },
-    { id: 8,  slot_number: 8,  sort_order: 8,  category_name: 'Retail & Service Stations',    project_title: 'Smart Forecourt EV & Solar Ready',     team_name: 'Retail Network',    is_active: true, is_archived: false },
-    { id: 9,  slot_number: 9,  sort_order: 9,  category_name: 'Cost Optimization',            project_title: 'Procurement Consolidation Engine',     team_name: 'Finance & Supply',  is_active: true, is_archived: false },
-    { id: 10, slot_number: 10, sort_order: 10, category_name: 'Talent & Culture',             project_title: 'NextGen Technical Mentorship',         team_name: 'Human Resources',   is_active: true, is_archived: false },
-    { id: 11, slot_number: 11, sort_order: 11, category_name: 'Asset Integrity',              project_title: 'Drone Corrosion Twin Inspection',      team_name: 'Maintenance Eng.',  is_active: true, is_archived: false },
-    { id: 12, slot_number: 12, sort_order: 12, category_name: 'Community Impact',             project_title: 'Luanda Youth STEM Academy',            team_name: 'CSR & Comms',       is_active: true, is_archived: false },
-    { id: 13, slot_number: 13, sort_order: 13, category_name: 'Process Automation',           project_title: 'Automated Permit-to-Work Flow',        team_name: 'Field Digital',     is_active: true, is_archived: false },
-    { id: 14, slot_number: 14, sort_order: 14, category_name: 'Renewable Solutions',          project_title: 'Off-Grid Clean Power Access',          team_name: 'Renewables Unit',   is_active: true, is_archived: false },
-    { id: 15, slot_number: 15, sort_order: 15, category_name: 'Smart Mobility',               project_title: 'Connected Eco-Fleet Telemetry',        team_name: 'Mobility Services', is_active: true, is_archived: false }
+    { id: 1,  poll_id: DEFAULT_POLL_ID, slot_number: 1,  sort_order: 1,  category_name: 'Safety & HSE',                 project_title: 'Zero Harm Smart Field Monitor',        team_name: 'HSE Operations',    is_active: true, is_archived: false },
+    { id: 2,  poll_id: DEFAULT_POLL_ID, slot_number: 2,  sort_order: 2,  category_name: 'Operational Excellence',       project_title: 'Offshore Turnaround FastTrack',        team_name: 'Production Ops',    is_active: true, is_archived: false },
+    { id: 3,  poll_id: DEFAULT_POLL_ID, slot_number: 3,  sort_order: 3,  category_name: 'Energy Transition',            project_title: 'Solar Microgrid Hybrid Hub',           team_name: 'New Energies',      is_active: true, is_archived: false },
+    { id: 4,  poll_id: DEFAULT_POLL_ID, slot_number: 4,  sort_order: 4,  category_name: 'Digital Innovation',           project_title: 'AI Predictive Valve Guardian',         team_name: 'Digital & IT',      is_active: true, is_archived: false },
+    { id: 5,  poll_id: DEFAULT_POLL_ID, slot_number: 5,  sort_order: 5,  category_name: 'Environmental Sustainability', project_title: 'Closed-Loop Water Recovery',           team_name: 'Environment Team',  is_active: true, is_archived: false },
+    { id: 6,  poll_id: DEFAULT_POLL_ID, slot_number: 6,  sort_order: 6,  category_name: 'Customer Experience',          project_title: 'Bonjour Express Mobile Order',         team_name: 'Retail Marketing',  is_active: true, is_archived: false },
+    { id: 7,  poll_id: DEFAULT_POLL_ID, slot_number: 7,  sort_order: 7,  category_name: 'Supply Chain & Logistics',     project_title: 'Fleet Route & Fuel Optimizer',         team_name: 'Logistics Angola',  is_active: true, is_archived: false },
+    { id: 8,  poll_id: DEFAULT_POLL_ID, slot_number: 8,  sort_order: 8,  category_name: 'Retail & Service Stations',    project_title: 'Smart Forecourt EV & Solar Ready',     team_name: 'Retail Network',    is_active: true, is_archived: false },
+    { id: 9,  poll_id: DEFAULT_POLL_ID, slot_number: 9,  sort_order: 9,  category_name: 'Cost Optimization',            project_title: 'Procurement Consolidation Engine',     team_name: 'Finance & Supply',  is_active: true, is_archived: false },
+    { id: 10, poll_id: DEFAULT_POLL_ID, slot_number: 10, sort_order: 10, category_name: 'Talent & Culture',             project_title: 'NextGen Technical Mentorship',         team_name: 'Human Resources',   is_active: true, is_archived: false },
+    { id: 11, poll_id: DEFAULT_POLL_ID, slot_number: 11, sort_order: 11, category_name: 'Asset Integrity',              project_title: 'Drone Corrosion Twin Inspection',      team_name: 'Maintenance Eng.',  is_active: true, is_archived: false },
+    { id: 12, poll_id: DEFAULT_POLL_ID, slot_number: 12, sort_order: 12, category_name: 'Community Impact',             project_title: 'Luanda Youth STEM Academy',            team_name: 'CSR & Comms',       is_active: true, is_archived: false },
+    { id: 13, poll_id: DEFAULT_POLL_ID, slot_number: 13, sort_order: 13, category_name: 'Process Automation',           project_title: 'Automated Permit-to-Work Flow',        team_name: 'Field Digital',     is_active: true, is_archived: false },
+    { id: 14, poll_id: DEFAULT_POLL_ID, slot_number: 14, sort_order: 14, category_name: 'Renewable Solutions',          project_title: 'Off-Grid Clean Power Access',          team_name: 'Renewables Unit',   is_active: true, is_archived: false },
+    { id: 15, poll_id: DEFAULT_POLL_ID, slot_number: 15, sort_order: 15, category_name: 'Smart Mobility',               project_title: 'Connected Eco-Fleet Telemetry',        team_name: 'Mobility Services', is_active: true, is_archived: false }
   ];
 
   var DEFAULT_QUIZZES = [
@@ -190,6 +204,8 @@
         for (var k = 0; k < distribution[p]; k++) {
           sampleVotes.push({
             id: 'seed-v-' + idx,
+            poll_id: DEFAULT_POLL_ID,
+            epoch: 1,
             project_id: p + 1,
             device_id: 'seed-device-' + idx,
             vote_code: 'VOTE-S' + String(idx).padStart(5, '0'),
@@ -231,6 +247,7 @@
         id: 1,
         event_title: 'TEPA Performance Award 2026',
         active_quiz_id: DEFAULT_QUIZ_ID,
+        active_poll_id: DEFAULT_POLL_ID,
         voting_headline: 'Which finalist project deserves the Best of the Best?',
         voting_subtitle: 'You have 15 finalist projects · Choose one for Best of the Best',
         quiz_open: true,
@@ -251,6 +268,7 @@
         updated_at: new Date().toISOString()
       },
       quizzes: clone(DEFAULT_QUIZZES),
+      polls: clone(DEFAULT_POLLS),
       projects: clone(DEFAULT_PROJECTS),
       questions: clone(DEFAULT_QUESTIONS),
       quiz_submissions: sampleQuiz,
@@ -261,6 +279,7 @@
   function ensureDemoMigrated(state) {
     if (!state.settings) state.settings = {};
     if (!state.settings.active_quiz_id) state.settings.active_quiz_id = DEFAULT_QUIZ_ID;
+    if (!state.settings.active_poll_id) state.settings.active_poll_id = DEFAULT_POLL_ID;
     if (!state.settings.voting_headline) state.settings.voting_headline = 'Which finalist project deserves the Best of the Best?';
     if (!state.settings.voting_subtitle) state.settings.voting_subtitle = 'You have 15 finalist projects · Choose one for Best of the Best';
     if (state.settings.reveal_quiz_winners == null) state.settings.reveal_quiz_winners = false;
@@ -273,8 +292,12 @@
     if (!Array.isArray(state.quizzes) || !state.quizzes.length) {
       state.quizzes = clone(DEFAULT_QUIZZES);
     }
+    if (!Array.isArray(state.polls) || !state.polls.length) {
+      state.polls = clone(DEFAULT_POLLS);
+    }
     if (Array.isArray(state.projects)) {
       state.projects.forEach(function (p, i) {
+        if (!p.poll_id) p.poll_id = state.settings.active_poll_id || DEFAULT_POLL_ID;
         if (p.sort_order == null) p.sort_order = p.slot_number || (i + 1);
         if (p.is_archived == null) p.is_archived = false;
       });
@@ -329,20 +352,31 @@
   }
 
   function computeDemoDashboard(state) {
+    var activePoll = (state.polls || []).find(function (pl) {
+      return !pl.is_archived && pl.id === state.settings.active_poll_id;
+    }) || (state.polls || []).find(function (pl) { return !pl.is_archived; }) || null;
+    var activePollId = activePoll ? activePoll.id : state.settings.active_poll_id;
+    var curVoteEpoch = Number(state.settings.vote_epoch || 1);
+
     var counts = {};
     for (var i = 0; i < state.votes.length; i++) {
-      var pid = state.votes[i].project_id;
+      var vRow = state.votes[i];
+      if ((Number(vRow.epoch || 1)) !== curVoteEpoch) continue;
+      var pid = vRow.project_id;
       counts[pid] = (counts[pid] || 0) + 1;
     }
 
     var projectsWithVotes = state.projects
-      .filter(function (p) { return p.is_active !== false && !p.is_archived; })
+      .filter(function (p) {
+        return p.is_active !== false && !p.is_archived && (!activePollId || p.poll_id === activePollId);
+      })
       .sort(function (a, b) {
         return (a.sort_order || a.slot_number) - (b.sort_order || b.slot_number) || a.slot_number - b.slot_number;
       })
       .map(function (p) {
         return {
           id: p.id,
+          poll_id: p.poll_id || activePollId,
           slot_number: p.slot_number,
           sort_order: p.sort_order || p.slot_number,
           category_name: p.category_name,
@@ -382,6 +416,7 @@
     return {
       settings: clone(state.settings),
       active_quiz: activeQuiz ? clone(activeQuiz) : null,
+      active_poll: activePoll ? clone(activePoll) : null,
       projects_with_votes: projectsWithVotes,
       total_votes: activeVotesTotal,
       quiz_stats: {
@@ -435,7 +470,7 @@
       return null;
     },
 
-    getCachedVoteReceipt: function (expectedEpoch) {
+    getCachedVoteReceipt: function (expectedEpoch, expectedPollId) {
       try {
         var raw = global.localStorage.getItem(VOTE_CACHE_KEY);
         if (!raw) return null;
@@ -443,7 +478,8 @@
         if (
           parsed &&
           parsed.device_id === getDeviceId() &&
-          (!expectedEpoch || Number(parsed.epoch || 1) === Number(expectedEpoch))
+          (!expectedEpoch || Number(parsed.epoch || 1) === Number(expectedEpoch)) &&
+          (!expectedPollId || (parsed.poll_id ? parsed.poll_id === expectedPollId : expectedPollId === DEFAULT_POLL_ID))
         ) {
           return parsed;
         }
@@ -647,16 +683,25 @@
       }
 
       var state = loadDemoState();
-      var existing = state.votes.find(function (v) { return v.device_id === deviceId; });
+      var activePollId = state.settings.active_poll_id || DEFAULT_POLL_ID;
+      var curEpoch = Number(state.settings.vote_epoch || 1);
+      var existing = state.votes.find(function (v) {
+        if (v.device_id !== deviceId || Number(v.epoch || 1) !== curEpoch) return false;
+        if (v.poll_id) return v.poll_id === activePollId;
+        var vp = state.projects.find(function (pr) { return pr.id === v.project_id; });
+        return !vp || !vp.poll_id || vp.poll_id === activePollId;
+      });
       if (existing) {
-        return Object.assign({ ok: true, already_voted: true }, existing);
+        return Object.assign({ ok: true, already_voted: true, poll_id: activePollId, epoch: curEpoch }, existing);
       }
       if (!state.settings.voting_open) {
         return { ok: false, error: 'Voting is currently closed.' };
       }
-      var project = state.projects.find(function (p) { return p.id === pid && p.is_active !== false && !p.is_archived; });
+      var project = state.projects.find(function (p) {
+        return p.id === pid && p.is_active !== false && !p.is_archived && (!activePollId || p.poll_id === activePollId);
+      });
       if (!project) {
-        return { ok: false, error: 'Selected project was not found.' };
+        return { ok: false, error: 'Selected project or option was not found.' };
       }
 
       var voteCode;
@@ -666,6 +711,8 @@
 
       var voteRecord = {
         id: generateUuidLike(),
+        poll_id: activePollId,
+        epoch: curEpoch,
         project_id: pid,
         device_id: deviceId,
         voter_name: voterName || null,
@@ -715,6 +762,7 @@
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tepa_settings' }, trigger)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tepa_projects' }, trigger)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'tepa_quizzes' }, trigger)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tepa_polls' }, trigger)
             .on('broadcast', { event: 'vote_updated' }, trigger)
             .on('broadcast', { event: 'quiz_updated' }, trigger)
             .on('broadcast', { event: 'stage_updated' }, trigger)
@@ -751,7 +799,7 @@
           var sbSim = await ensureSupabaseLoaded();
           var dash = await TepaStore.getDashboardState();
           var activeProjects = (dash && dash.projects_with_votes) || [];
-          if (!activeProjects.length) return { ok: false, error: 'No active projects.' };
+          if (!activeProjects.length) return { ok: false, error: 'No active options or projects.' };
           for (var s = 0; s < count; s++) {
             var pick = activeProjects[Math.floor(Math.random() * activeProjects.length)];
             await sbSim.rpc('submit_project_vote', {
@@ -765,12 +813,18 @@
         }
 
         var stSim = loadDemoState();
-        var activePrj = stSim.projects.filter(function (p) { return p.is_active !== false && !p.is_archived; });
-        if (!activePrj.length) return { ok: false, error: 'No active projects.' };
+        var activeSimPollId = stSim.settings.active_poll_id || DEFAULT_POLL_ID;
+        var simEpoch = Number(stSim.settings.vote_epoch || 1);
+        var activePrj = stSim.projects.filter(function (p) {
+          return p.is_active !== false && !p.is_archived && (!activeSimPollId || p.poll_id === activeSimPollId);
+        });
+        if (!activePrj.length) return { ok: false, error: 'No active options or projects.' };
         for (var j = 0; j < count; j++) {
           var chosen = activePrj[Math.floor(Math.random() * activePrj.length)];
           stSim.votes.push({
             id: generateUuidLike(),
+            poll_id: chosen.poll_id || activeSimPollId,
+            epoch: simEpoch,
             project_id: chosen.id,
             device_id: 'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
             voter_name: null,
@@ -815,7 +869,7 @@
           if (isProjBulk) {
             var pMatch = stBulk.projects.find(function (p) { return p.id === Number(it.id); });
             if (pMatch) {
-              if (it.category_name !== undefined) pMatch.category_name = String(it.category_name).trim() || pMatch.category_name;
+              if (it.category_name !== undefined) pMatch.category_name = String(it.category_name).trim();
               if (it.project_title !== undefined) pMatch.project_title = String(it.project_title).trim() || pMatch.project_title;
               if (it.team_name !== undefined) pMatch.team_name = String(it.team_name).trim();
               if (it.sort_order !== undefined) pMatch.sort_order = Number(it.sort_order) || pMatch.sort_order;
@@ -855,14 +909,18 @@
       // Demo Admin Action Implementation
       var state = loadDemoState();
       if (action === 'get_admin_data') {
+        var curEpoch = Number(state.settings.vote_epoch || 1);
         var voteCounts = {};
         state.votes.forEach(function (v) {
-          voteCounts[v.project_id] = (voteCounts[v.project_id] || 0) + 1;
+          if (Number(v.epoch || 1) === curEpoch) {
+            voteCounts[v.project_id] = (voteCounts[v.project_id] || 0) + 1;
+          }
         });
         return {
           ok: true,
           settings: clone(state.settings),
           quizzes: clone((state.quizzes || []).filter(function (qz) { return !qz.is_archived; })),
+          polls: clone((state.polls || []).filter(function (pl) { return !pl.is_archived; })),
           submissions: clone(state.quiz_submissions).sort(function (a, b) {
             if (a.is_voucher_winner !== b.is_voucher_winner) return a.is_voucher_winner ? -1 : 1;
             return (a.winner_rank || 9999) - (b.winner_rank || 9999);
@@ -896,6 +954,14 @@
           if (actQz) {
             if (payload.min_quiz_score !== undefined) actQz.min_score = Math.max(1, Number(payload.min_quiz_score) || 1);
             if (payload.max_vouchers !== undefined) actQz.max_vouchers = Math.max(1, Number(payload.max_vouchers) || 1);
+          }
+        }
+        if (state.settings.active_poll_id && (payload.voting_headline !== undefined || payload.voting_subtitle !== undefined)) {
+          var actPl = (state.polls || []).find(function (pl) { return pl.id === state.settings.active_poll_id && !pl.is_archived; });
+          if (actPl) {
+            if (payload.voting_headline !== undefined) actPl.voting_headline = state.settings.voting_headline;
+            if (payload.voting_subtitle !== undefined) actPl.voting_subtitle = state.settings.voting_subtitle;
+            actPl.updated_at = new Date().toISOString();
           }
         }
         saveDemoState(state, true);
@@ -1009,6 +1075,129 @@
         return { ok: true };
       }
 
+      if (action === 'create_poll') {
+        var pType = payload.poll_type === 'simple' ? 'simple' : 'projects';
+        var newPoll = {
+          id: generateUuidLike(),
+          title: String(payload.title || '').trim() || 'New Voting Poll',
+          voting_headline: String(payload.voting_headline || '').trim() || 'What should we prioritize moving forward?',
+          voting_subtitle: String(payload.voting_subtitle || '').trim() || 'Choose your preferred option below',
+          poll_type: pType,
+          is_archived: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        state.polls.push(newPoll);
+        var maxPId = state.projects.reduce(function (m, p) { return Math.max(m, Number(p.id) || 0); }, 0);
+        if (payload.source_poll_id) {
+          var srcPrjs = state.projects
+            .filter(function (p) { return p.poll_id === payload.source_poll_id && !p.is_archived; })
+            .sort(function (a, b) { return (a.sort_order || a.slot_number) - (b.sort_order || b.slot_number); });
+          srcPrjs.forEach(function (sp, idx) {
+            maxPId++;
+            state.projects.push({
+              id: maxPId,
+              poll_id: newPoll.id,
+              slot_number: idx + 1,
+              sort_order: idx + 1,
+              category_name: sp.category_name || '',
+              project_title: sp.project_title,
+              team_name: sp.team_name || '',
+              is_active: sp.is_active !== false,
+              is_archived: false
+            });
+          });
+        } else if (pType === 'simple') {
+          ['Option 1', 'Option 2', 'Option 3'].forEach(function (lbl, idx) {
+            maxPId++;
+            state.projects.push({
+              id: maxPId,
+              poll_id: newPoll.id,
+              slot_number: idx + 1,
+              sort_order: idx + 1,
+              category_name: '',
+              project_title: lbl,
+              team_name: '',
+              is_active: true,
+              is_archived: false
+            });
+          });
+        } else {
+          [
+            { cat: 'Safety & HSE', title: 'Finalist Project 1', team: 'Project Team' },
+            { cat: 'Digital Innovation', title: 'Finalist Project 2', team: 'Project Team' }
+          ].forEach(function (it, idx) {
+            maxPId++;
+            state.projects.push({
+              id: maxPId,
+              poll_id: newPoll.id,
+              slot_number: idx + 1,
+              sort_order: idx + 1,
+              category_name: it.cat,
+              project_title: it.title,
+              team_name: it.team,
+              is_active: true,
+              is_archived: false
+            });
+          });
+        }
+        saveDemoState(state, true);
+        return { ok: true, poll: clone(newPoll) };
+      }
+
+      if (action === 'save_poll') {
+        var pl = (state.polls || []).find(function (item) { return item.id === payload.id && !item.is_archived; });
+        if (!pl) return { ok: false, error: 'Selected voting poll was not found.' };
+        if (payload.title !== undefined) pl.title = String(payload.title).trim() || pl.title;
+        if (payload.voting_headline !== undefined) pl.voting_headline = String(payload.voting_headline).trim() || pl.voting_headline;
+        if (payload.voting_subtitle !== undefined) pl.voting_subtitle = String(payload.voting_subtitle).trim() || pl.voting_subtitle;
+        if (payload.poll_type === 'projects' || payload.poll_type === 'simple') pl.poll_type = payload.poll_type;
+        pl.updated_at = new Date().toISOString();
+        if (pl.id === state.settings.active_poll_id) {
+          state.settings.voting_headline = pl.voting_headline;
+          state.settings.voting_subtitle = pl.voting_subtitle;
+        }
+        saveDemoState(state, true);
+        return { ok: true, poll: clone(pl) };
+      }
+
+      if (action === 'activate_poll') {
+        var actP = (state.polls || []).find(function (item) { return item.id === payload.id && !item.is_archived; });
+        if (!actP) return { ok: false, error: 'Selected voting poll was not found.' };
+        state.settings.active_poll_id = actP.id;
+        state.settings.voting_headline = actP.voting_headline;
+        state.settings.voting_subtitle = actP.voting_subtitle;
+        state.settings.reveal_winner = false;
+        if (payload.reset_round) {
+          state.settings.vote_epoch = (state.settings.vote_epoch || 1) + 1;
+          try { global.localStorage.removeItem(VOTE_CACHE_KEY); } catch (e) {}
+        }
+        saveDemoState(state, true);
+        return { ok: true, settings: clone(state.settings) };
+      }
+
+      if (action === 'archive_poll') {
+        var activePolls = (state.polls || []).filter(function (item) { return !item.is_archived; });
+        if (activePolls.length <= 1) {
+          return { ok: false, error: 'At least one voting poll must remain active in the studio.' };
+        }
+        var targetP = activePolls.find(function (item) { return item.id === payload.id; });
+        if (targetP) {
+          targetP.is_archived = true;
+          if (state.settings.active_poll_id === targetP.id) {
+            var nextP = state.polls.find(function (item) { return !item.is_archived; });
+            if (nextP) {
+              state.settings.active_poll_id = nextP.id;
+              state.settings.voting_headline = nextP.voting_headline;
+              state.settings.voting_subtitle = nextP.voting_subtitle;
+            }
+            state.settings.reveal_winner = false;
+          }
+          saveDemoState(state, true);
+        }
+        return { ok: true };
+      }
+
       if (action === 'create_question') {
         var targetQuizId = payload.quiz_id || state.settings.active_quiz_id;
         var nextQNum = state.questions.reduce(function (m, q) { return Math.max(m, Number(q.id) || 0, Number(q.question_number) || 0); }, 0) + 1;
@@ -1069,39 +1258,23 @@
       }
 
       if (action === 'create_project') {
-        var usedSlots = {};
-        state.projects.forEach(function (p) { usedSlots[p.slot_number] = true; });
-        var nextSlot = null;
-        for (var sl = 1; sl <= 50; sl++) {
-          if (!usedSlots[sl]) { nextSlot = sl; break; }
-        }
-        var nextPSort = state.projects.filter(function (p) { return !p.is_archived; })
-          .reduce(function (m, p) { return Math.max(m, Number(p.sort_order) || 0); }, 0) + 1;
-        var createdP = null;
-        if (nextSlot !== null) {
-          var maxPId = state.projects.reduce(function (m, p) { return Math.max(m, Number(p.id) || 0); }, 0);
-          createdP = {
-            id: maxPId + 1,
-            slot_number: nextSlot,
-            sort_order: nextPSort,
-            category_name: String(payload.category_name || '').trim() || 'Innovation',
-            project_title: String(payload.project_title || '').trim() || 'New Finalist Project',
-            team_name: String(payload.team_name || '').trim() || 'TEPA Team',
-            is_active: true,
-            is_archived: false
-          };
-          state.projects.push(createdP);
-        } else {
-          var archivedP = state.projects.find(function (p) { return p.is_archived; });
-          if (!archivedP) return { ok: false, error: 'Maximum of 50 projects reached.' };
-          archivedP.sort_order = nextPSort;
-          archivedP.category_name = String(payload.category_name || '').trim() || 'Innovation';
-          archivedP.project_title = String(payload.project_title || '').trim() || 'New Finalist Project';
-          archivedP.team_name = String(payload.team_name || '').trim() || 'TEPA Team';
-          archivedP.is_active = true;
-          archivedP.is_archived = false;
-          createdP = archivedP;
-        }
+        var targetPollId = payload.poll_id || state.settings.active_poll_id || DEFAULT_POLL_ID;
+        var pollPrjs = state.projects.filter(function (p) { return p.poll_id === targetPollId && !p.is_archived; });
+        var nextSlot = pollPrjs.reduce(function (m, p) { return Math.max(m, Number(p.slot_number) || 0); }, 0) + 1;
+        var nextPSort = pollPrjs.reduce(function (m, p) { return Math.max(m, Number(p.sort_order) || 0); }, 0) + 1;
+        var maxPId2 = state.projects.reduce(function (m, p) { return Math.max(m, Number(p.id) || 0); }, 0);
+        var createdP = {
+          id: maxPId2 + 1,
+          poll_id: targetPollId,
+          slot_number: nextSlot,
+          sort_order: nextPSort,
+          category_name: payload.category_name !== undefined ? String(payload.category_name).trim() : 'Innovation',
+          project_title: String(payload.project_title || '').trim() || 'New Option',
+          team_name: payload.team_name !== undefined ? String(payload.team_name).trim() : '',
+          is_active: true,
+          is_archived: false
+        };
+        state.projects.push(createdP);
         saveDemoState(state, true);
         return { ok: true, project: clone(createdP) };
       }
@@ -1109,7 +1282,7 @@
       if (action === 'save_project') {
         var prj = state.projects.find(function (p) { return p.id === Number(payload.id); });
         if (prj) {
-          if (payload.category_name !== undefined) prj.category_name = String(payload.category_name).trim() || prj.category_name;
+          if (payload.category_name !== undefined) prj.category_name = String(payload.category_name).trim();
           if (payload.project_title !== undefined) prj.project_title = String(payload.project_title).trim() || prj.project_title;
           if (payload.team_name !== undefined) prj.team_name = String(payload.team_name).trim();
           if (payload.sort_order !== undefined) prj.sort_order = Number(payload.sort_order) || prj.sort_order;
