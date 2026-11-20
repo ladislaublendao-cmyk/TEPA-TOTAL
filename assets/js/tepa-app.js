@@ -1492,7 +1492,7 @@
   function mountLiveApp(root) {
     var THEME_KEY = 'tepa_live_theme_v1';
     var MENTI_PALETTE = [
-      '#4E6AF5', '#FF6B6B', '#283272', '#F77B39', '#2194D4',
+      '#4E6AF5', '#FF6B6B', '#8E9BFF', '#F77B39', '#2194D4',
       '#64BD75', '#8F4F9E', '#E72428', '#F4B400', '#00A396',
       '#6C5CE7', '#FF8A5B', '#2E86DE', '#20BF6B', '#D980FA'
     ];
@@ -1884,12 +1884,12 @@
         var numEl = row.querySelector('.tepa-hnum');
         var pctEl = row.querySelector('.tepa-menti-hpct');
         if (numEl) {
-          if (state.hideResults) numEl.textContent = '••';
-          else setAnimatedNum(numEl, v, function (n) { return String(Math.round(n)); });
+          if (state.hideResults) numEl.textContent = '';
+          else setAnimatedNum(numEl, v, function (n) { var r = Math.round(n); return r + (r === 1 ? ' vote' : ' votes'); });
         }
         if (pctEl) {
-          if (state.hideResults) pctEl.textContent = '';
-          else setAnimatedNum(pctEl, sharePct, function (n) { return '(' + Math.round(n) + '%)'; });
+          if (state.hideResults) pctEl.textContent = '••';
+          else setAnimatedNum(pctEl, sharePct, function (n) { return Math.round(n) + '%'; });
         }
 
         var fillEl = row.querySelector('.tepa-menti-hfill');
@@ -2366,7 +2366,7 @@
               '        <span class="tepa-menti-htitle">' + esc(p.project_title) + '</span>' +
               '        <span class="tepa-menti-hcat">' + esc(formatStageCat(p)) + '</span>' +
               '      </div>' +
-              '      <span class="tepa-menti-hvotes"><span class="tepa-hnum">' + (state.hideResults ? '••' : v) + '</span>' + (state.hideResults ? '' : '<span class="tepa-menti-hpct">(' + sharePct + '%)</span>') + '</span>' +
+              '      <span class="tepa-menti-hvotes"><span class="tepa-menti-hpct">' + (state.hideResults ? '••' : (sharePct + '%')) + '</span><span class="tepa-hnum">' + (state.hideResults ? '' : (v + (v === 1 ? ' vote' : ' votes'))) + '</span></span>' +
               '    </div>' +
               '    <div class="tepa-menti-htrack">' +
               '      <div class="tepa-menti-hfill' + (isZero ? ' is-zero' : '') + '" data-target-pct="' + barPctStr + '" style="background-color:' + colorFor(p) + ';"></div>' +
