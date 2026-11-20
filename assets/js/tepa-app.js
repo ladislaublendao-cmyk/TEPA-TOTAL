@@ -1621,7 +1621,7 @@
 
     function stepStageAnimator(now) {
       if (!stageAnimLastTs) stageAnimLastTs = now;
-      var dt = Math.min(0.05, Math.max(0.004, (now - stageAnimLastTs) / 1000));
+      var dt = Math.min(0.25, Math.max(0.004, (now - stageAnimLastTs) / 1000));
       stageAnimLastTs = now;
       var alpha = prefersReducedMotion() ? 1 : (1 - Math.exp(-dt * 4.5));
       var keepGoing = false;
