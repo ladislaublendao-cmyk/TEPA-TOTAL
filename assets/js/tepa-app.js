@@ -1528,16 +1528,13 @@
           return;
         }
         var diff = b.target - b.cur;
-        var growing = Math.abs(diff) > 0.35 && alpha < 1;
         if (Math.abs(diff) < 0.04 || alpha >= 1) {
           b.cur = b.target;
-          growing = false;
         } else {
           b.cur += diff * alpha;
           keepGoing = true;
         }
         el._tepaBarCur = b.cur;
-        el.classList.toggle('is-growing', growing);
         if (b.mode === 'h') {
           var tx = b.isZero ? 'calc(-100% + 6px)' : ('-' + Math.max(0, 100 - b.cur).toFixed(2) + '%');
           el.style.transform = 'translate3d(' + tx + ', 0, 0)';
@@ -1600,7 +1597,6 @@
       if (prefersReducedMotion()) {
         entry.cur = target;
         el._tepaBarCur = target;
-        el.classList.remove('is-growing');
         if (mode === 'h') {
           var tx = entry.isZero ? 'calc(-100% + 6px)' : ('-' + Math.max(0, 100 - target).toFixed(2) + '%');
           el.style.transform = 'translate3d(' + tx + ', 0, 0)';

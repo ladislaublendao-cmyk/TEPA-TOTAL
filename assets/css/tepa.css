@@ -1912,28 +1912,6 @@ body:not(.wp-admin) a,
   opacity: 0.45;
 }
 
-.tepa-menti-hfill::after,
-.tepa-menti-vbar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.28) 50%, transparent 100%);
-  transform: translate3d(-100%, 0, 0);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.tepa-menti-hfill.is-growing::after,
-.tepa-menti-vbar.is-growing::after {
-  opacity: 1;
-  animation: tepaBarShimmer 1.05s linear infinite;
-}
-
-@keyframes tepaBarShimmer {
-  0% { transform: translate3d(-100%, 0, 0); }
-  100% { transform: translate3d(100%, 0, 0); }
-}
-
 /* Ref 1: Adaptive Vertical Column Chart */
 .tepa-menti-vchart {
   flex: 1;
