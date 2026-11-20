@@ -1262,19 +1262,35 @@
         : displayList;
 
       var qsForKey = dash.quiz_stats || {};
+      var winnersSig = (qsForKey.winners || []).map(function (w) {
+        return (w.winner_rank || '') + ':' + (w.code_suffix || '');
+      }).join(',');
+      var topWinnerForKey = ranked[0] || {};
       var renderKey = [
         stageMode, state.theme, state.chartType, state.verticalScope,
         state.showQrSidebar, state.hideResults, state.sortMode, mode,
-        projects.length, settings.voting_headline || '',
-        Boolean(settings.reveal_quiz_winners), qsForKey.total_participants || 0,
-        qsForKey.vouchers_awarded || 0, (qsForKey.winners || []).length
+        projects.length, settings.voting_headline || '', settings.event_title || '',
+        (activeQuiz && activeQuiz.title) || '', (activeQuiz && activeQuiz.voucher_title) || '',
+        Boolean(settings.reveal_quiz_winners || qsForKey.reveal_quiz_winners),
+        qsForKey.total_participants || 0,
+        qsForKey.vouchers_awarded || 0,
+        qsForKey.max_vouchers || 10,
+        winnersSig,
+        stageMode === 'winner_reveal' ? ((topWinnerForKey.id || 0) + ':' + (topWinnerForKey.votes || 0) + ':' + totalVotes) : ''
       ].join('|');
 
-      if (stageMode === 'live_voting' && state.lastRenderKey === renderKey) {
-        var updated = state.chartType === 'horizontal'
-          ? updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes)
-          : updateVerticalInPlace(visibleCols, totalVotes, maxVotes);
-        if (updated) return;
+      var existingStageEl = root.querySelector('.tepa-menti-stage');
+      if (existingStageEl && state.lastRenderKey === renderKey) {
+        if (stageMode === 'live_voting') {
+          var updated = state.chartType === 'horizontal'
+            ? updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes)
+            : updateVerticalInPlace(visibleCols, totalVotes, maxVotes);
+          if (updated) return;
+        } else {
+          var countPillSame = root.querySelector('#tepa-menti-total-pill');
+          if (countPillSame) countPillSame.textContent = String(totalVotes);
+          return;
+        }
       }
 
       var prevKey = state.lastRenderKey;
@@ -2020,7 +2036,7 @@
         if (silent && state.data && (isUserEditingInRoot() || state.confirmModal)) {
           patchKpisInPlace(state.data, false);
         } else {
-          render(true);
+          render(!silent);
         }
       }
     }
