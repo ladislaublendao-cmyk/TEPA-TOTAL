@@ -525,17 +525,14 @@
           '  <div class="tepa-unique-id-box" style="width:100%;">' +
           '    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Unique Participant ID</div>' +
           '    <div class="tepa-unique-id-code" id="tepa-unique-code-val">' + esc(r.unique_code) + '</div>' +
-          '    <div style="font-size:12px;color:#D4D6E6;margin-bottom:8px;">' + esc(r.full_name) + '</div>' +
-          '    <div class="tepa-qr-mini-box" id="tepa-quiz-id-qr"></div>' +
-          '    <button type="button" class="tepa-stage-btn" data-action="copy-code" style="margin-top:8px;">Copy Unique ID</button>' +
+          '    <div style="font-size:12.5px;color:#D4D6E6;margin-bottom:12px;">' + esc(r.full_name) + '</div>' +
+          '    <button type="button" class="tepa-stage-btn" data-action="copy-code">Copy Unique ID</button>' +
           '  </div>' +
           '  <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' +
           '    <a href="' + esc(voteUrl) + '" class="tepa-btn-cta" style="width:100%;">Open Voting Portal</a>' +
           renderDemoResetPill() +
           '  </div>' +
           '</div>';
-
-        renderQR(root.querySelector('#tepa-quiz-id-qr'), r.unique_code + ' | ' + r.full_name);
       }
     }
 
