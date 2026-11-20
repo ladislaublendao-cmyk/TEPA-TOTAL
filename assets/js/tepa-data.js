@@ -730,12 +730,188 @@
       return out;
     },
 
+    simulateParticipantAction: async function (opts) {
+      opts = opts || {};
+      var devId = String(opts.deviceId || ('sim-' + generateUuidLike())).trim();
+      var doVote = opts.doVote !== false && Boolean(opts.projectId);
+      var doQuiz = Boolean(opts.doQuiz);
+      var cleanName = String(opts.fullName || 'Participante TEPA').trim() || 'Participante TEPA';
+
+      if (isSupabaseConfigured()) {
+        var sb = await ensureSupabaseLoaded();
+        var sbOut = { ok: true, vote: null, quiz: null, errors: [] };
+
+        if (doQuiz) {
+          var qRes = await sb.rpc('submit_quiz_attempt', {
+            p_full_name: cleanName,
+            p_device_id: devId,
+            p_answers: opts.answers || {}
+          });
+          if (qRes.error) {
+            sbOut.ok = false;
+            sbOut.errors.push(qRes.error.message || 'Quiz RPC error');
+          } else {
+            sbOut.quiz = qRes.data;
+            if (qRes.data && qRes.data.ok === false) {
+              sbOut.ok = false;
+              sbOut.errors.push(qRes.data.error || 'Quiz rejected');
+            }
+          }
+        }
+
+        if (doVote) {
+          var vRes = await sb.rpc('submit_project_vote', {
+            p_project_id: Number(opts.projectId),
+            p_device_id: devId,
+            p_voter_name: cleanName
+          });
+          if (vRes.error) {
+            sbOut.ok = false;
+            sbOut.errors.push(vRes.error.message || 'Vote RPC error');
+          } else {
+            sbOut.vote = vRes.data;
+            if (vRes.data && vRes.data.ok === false) {
+              sbOut.ok = false;
+              sbOut.errors.push(vRes.data.error || 'Vote rejected');
+            }
+          }
+        }
+
+        if (!opts.skipBroadcast) {
+          notifyLocalAndTabs('sim_updated', { ts: Date.now() });
+        }
+        return sbOut;
+      }
+
+      var state = loadDemoState();
+      var demoOut = { ok: true, vote: null, quiz: null, errors: [] };
+
+      if (doQuiz) {
+        if (!state.settings.quiz_open) {
+          demoOut.ok = false;
+          demoOut.errors.push('Welcome Quiz is currently closed.');
+        } else {
+          var activeQid = state.settings.active_quiz_id;
+          var activeQuiz = (state.quizzes || []).find(function (qz) { return !qz.is_archived && qz.id === activeQid; }) || null;
+          var voucherTitle = (activeQuiz && activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher';
+          var activeQs = state.questions
+            .filter(function (q) {
+              return q.is_active !== false && !q.is_archived && (!activeQid || q.quiz_id === activeQid);
+            })
+            .sort(function (a, b) {
+              return (a.sort_order || a.question_number) - (b.sort_order || b.question_number);
+            });
+
+          if (!activeQs.length) {
+            demoOut.ok = false;
+            demoOut.errors.push('No active quiz questions found.');
+          } else {
+            var answersMap = opts.answers || {};
+            var score = 0;
+            for (var qi = 0; qi < activeQs.length; qi++) {
+              var q = activeQs[qi];
+              var ans = answersMap[String(q.id)] !== undefined
+                ? answersMap[String(q.id)]
+                : answersMap[String(q.question_number)];
+              if (q.question_type === 'multiple_choice') {
+                if (ans !== undefined && ans !== null && String(ans) !== '' && Number(ans) === Number(q.correct_option || 0)) {
+                  score++;
+                }
+              } else if (typeof ans === 'boolean' && ans === q.correct_answer) {
+                score++;
+              }
+            }
+            var minScoreCfg = (activeQuiz && activeQuiz.min_score) || state.settings.min_quiz_score || 5;
+            var threshold = Math.min(minScoreCfg, activeQs.length);
+            var passed = score >= threshold;
+            var voucherEnabled = activeQuiz ? activeQuiz.voucher_enabled !== false : true;
+            var currentWinners = state.quiz_submissions.filter(function (s) { return s.is_voucher_winner; }).length;
+            var maxVouchers = (activeQuiz && activeQuiz.max_vouchers) || state.settings.max_vouchers || 10;
+            var isWinner = passed && voucherEnabled && currentWinners < maxVouchers;
+            var rank = isWinner ? currentWinners + 1 : null;
+            var code;
+            do {
+              code = randomCode('TEPA', 6);
+            } while (state.quiz_submissions.some(function (s) { return s.unique_code === code; }));
+
+            var qRecord = {
+              id: generateUuidLike(),
+              epoch: state.settings.quiz_epoch || 1,
+              full_name: cleanName,
+              device_id: devId,
+              answers: answersMap,
+              score: score,
+              total_questions: activeQs.length,
+              passed_criteria: passed,
+              is_voucher_winner: isWinner,
+              winner_rank: rank,
+              unique_code: code,
+              voucher_title: voucherTitle,
+              voucher_claimed: false,
+              created_at: new Date().toISOString()
+            };
+            state.quiz_submissions.push(qRecord);
+            demoOut.quiz = Object.assign({ ok: true, already_submitted: false }, qRecord);
+          }
+        }
+      }
+
+      if (doVote) {
+        var activePollId = state.settings.active_poll_id || DEFAULT_POLL_ID;
+        var curEpoch = Number(state.settings.vote_epoch || 1);
+        var pid = Number(opts.projectId);
+        if (!state.settings.voting_open) {
+          demoOut.ok = false;
+          demoOut.errors.push('Voting is currently closed.');
+        } else {
+          var project = state.projects.find(function (p) {
+            return p.id === pid && p.is_active !== false && !p.is_archived && (!activePollId || p.poll_id === activePollId);
+          });
+          if (!project) {
+            demoOut.ok = false;
+            demoOut.errors.push('Selected project or option was not found.');
+          } else {
+            var voteCode;
+            do {
+              voteCode = randomCode('VOTE', 6);
+            } while (state.votes.some(function (v) { return v.vote_code === voteCode; }));
+
+            var vRecord = {
+              id: generateUuidLike(),
+              poll_id: activePollId,
+              epoch: curEpoch,
+              project_id: pid,
+              device_id: devId,
+              voter_name: cleanName,
+              vote_code: voteCode,
+              created_at: new Date().toISOString()
+            };
+            state.votes.push(vRecord);
+            demoOut.vote = Object.assign({ ok: true, already_voted: false }, vRecord);
+          }
+        }
+      }
+
+      if (demoOut.quiz || demoOut.vote) {
+        saveDemoState(state, !opts.skipBroadcast);
+      }
+      return demoOut;
+    },
+
     subscribeRealtime: function (onChange) {
       if (typeof onChange !== 'function') return function () {};
       var timer = null;
+      var lastFire = 0;
+      var MIN_INTERVAL_MS = 180;
       function trigger() {
-        clearTimeout(timer);
-        timer = setTimeout(function () { onChange(); }, 90);
+        if (timer) return;
+        var elapsed = Date.now() - lastFire;
+        var wait = elapsed >= MIN_INTERVAL_MS ? 60 : Math.max(60, MIN_INTERVAL_MS - elapsed);
+        timer = setTimeout(function () {
+          timer = null;
+          lastFire = Date.now();
+          onChange();
+        }, wait);
       }
 
       function onBcMsg() { trigger(); }

@@ -1482,6 +1482,8 @@
     };
     var unsubscribe = null;
     var safetyPoll = null;
+    var refreshInFlight = false;
+    var refreshQueued = false;
     var prevServerStage = null;
     var prevQuizReveal = null;
     var prevRemoteSig = null;
@@ -1502,6 +1504,11 @@
     }
 
     async function refresh() {
+      if (refreshInFlight) {
+        refreshQueued = true;
+        return;
+      }
+      refreshInFlight = true;
       try {
         var nextDash = await Store.getDashboardState();
         var s = (nextDash && nextDash.settings) || {};
@@ -1549,8 +1556,13 @@
         state.dash = nextDash;
       } catch (e) {
       } finally {
+        refreshInFlight = false;
         state.loading = false;
         render();
+        if (refreshQueued) {
+          refreshQueued = false;
+          refresh();
+        }
       }
     }
 
