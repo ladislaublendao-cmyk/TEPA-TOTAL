@@ -47,6 +47,441 @@
     }
   }
 
+  function formatDateTimeReceipt(iso) {
+    try {
+      var d = iso ? new Date(iso) : new Date();
+      if (isNaN(d.getTime())) d = new Date();
+      return d.toLocaleString([], {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function loadImageSafe(src) {
+    return new Promise(function (resolve) {
+      if (!src) {
+        resolve(null);
+        return;
+      }
+      var settled = false;
+      var img = new Image();
+      try {
+        if (/^https?:\/\//i.test(src) && global.location && global.location.origin) {
+          var parsed = new URL(src, global.location.href);
+          if (parsed.origin !== global.location.origin) {
+            img.crossOrigin = 'anonymous';
+          }
+        }
+      } catch (e) {}
+      var timer = setTimeout(function () {
+        if (!settled) {
+          settled = true;
+          resolve(null);
+        }
+      }, 1500);
+      img.onload = function () {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(img);
+        }
+      };
+      img.onerror = function () {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          resolve(null);
+        }
+      };
+      img.src = src;
+    });
+  }
+
+  function drawRoundedRect(ctx, x, y, w, h, r) {
+    var rad = typeof r === 'number'
+      ? { tl: r, tr: r, br: r, bl: r }
+      : Object.assign({ tl: 0, tr: 0, br: 0, bl: 0 }, r || {});
+    ctx.beginPath();
+    ctx.moveTo(x + rad.tl, y);
+    ctx.lineTo(x + w - rad.tr, y);
+    if (rad.tr) ctx.quadraticCurveTo(x + w, y, x + w, y + rad.tr);
+    else ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h - rad.br);
+    if (rad.br) ctx.quadraticCurveTo(x + w, y + h, x + w - rad.br, y + h);
+    else ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x + rad.bl, y + h);
+    if (rad.bl) ctx.quadraticCurveTo(x, y + h, x, y + h - rad.bl);
+    else ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y + rad.tl);
+    if (rad.tl) ctx.quadraticCurveTo(x, y, x + rad.tl, y);
+    else ctx.lineTo(x, y);
+    ctx.closePath();
+  }
+
+  function wrapCanvasText(ctx, text, maxWidth, maxLines) {
+    var words = String(text == null ? '' : text).trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return ['—'];
+    var limit = maxLines || 2;
+    var lines = [];
+    var current = '';
+
+    for (var i = 0; i < words.length; i++) {
+      var word = words[i];
+      var candidate = current ? (current + ' ' + word) : word;
+      if (ctx.measureText(candidate).width <= maxWidth) {
+        current = candidate;
+      } else if (!current) {
+        var chunk = word;
+        while (chunk.length > 1 && ctx.measureText(chunk + '…').width > maxWidth) {
+          chunk = chunk.slice(0, -1);
+        }
+        lines.push(chunk + '…');
+        if (lines.length >= limit) return lines;
+        current = '';
+      } else {
+        lines.push(current);
+        if (lines.length >= limit) {
+          var prev = lines[lines.length - 1];
+          while (prev.length > 1 && ctx.measureText(prev + '…').width > maxWidth) {
+            prev = prev.slice(0, -1);
+          }
+          lines[lines.length - 1] = prev + '…';
+          return lines;
+        }
+        current = word;
+        while (ctx.measureText(current).width > maxWidth && current.length > 1) {
+          current = current.slice(0, -1);
+        }
+      }
+    }
+    if (current) {
+      if (lines.length >= limit) {
+        var tail = lines[limit - 1];
+        while (tail.length > 1 && ctx.measureText(tail + '…').width > maxWidth) {
+          tail = tail.slice(0, -1);
+        }
+        lines[limit - 1] = tail + '…';
+      } else {
+        lines.push(current);
+      }
+    }
+    return lines.slice(0, limit);
+  }
+
+  function strToAsciiBytes(str) {
+    var arr = new Uint8Array(str.length);
+    for (var i = 0; i < str.length; i++) {
+      arr[i] = str.charCodeAt(i) & 0xff;
+    }
+    return arr;
+  }
+
+  function buildJpegPdfBytes(jpegBytes, pxW, pxH) {
+    var parts = [];
+    var offset = 0;
+    function pushBytes(u8) {
+      parts.push(u8);
+      offset += u8.length;
+    }
+    function pushStr(s) {
+      pushBytes(strToAsciiBytes(s));
+    }
+
+    pushBytes(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]));
+
+    var offsets = [0];
+    offsets[1] = offset;
+    pushStr('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+
+    offsets[2] = offset;
+    pushStr('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+
+    offsets[3] = offset;
+    pushStr('3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n');
+
+    offsets[4] = offset;
+    pushStr('4 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + pxW + ' /Height ' + pxH + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpegBytes.length + ' >>\nstream\n');
+    pushBytes(jpegBytes);
+    pushStr('\nendstream\nendobj\n');
+
+    var stream5 = 'q\n595.28 0 0 841.89 0 0 cm\n/Im0 Do\nQ';
+    offsets[5] = offset;
+    pushStr('5 0 obj\n<< /Length ' + stream5.length + ' >>\nstream\n' + stream5 + '\nendstream\nendobj\n');
+
+    var xrefOffset = offset;
+    var xrefLines = ['xref\n0 6\n', '0000000000 65535 f \n'];
+    for (var i = 1; i <= 5; i++) {
+      xrefLines.push(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
+    }
+    pushStr(xrefLines.join(''));
+    pushStr('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xrefOffset + '\n%%EOF\n');
+
+    var out = new Uint8Array(offset);
+    var pos = 0;
+    for (var p = 0; p < parts.length; p++) {
+      out.set(parts[p], pos);
+      pos += parts[p].length;
+    }
+    return out;
+  }
+
+  var PDF_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>';
+
+  async function downloadReceiptPdf(opts) {
+    opts = opts || {};
+    var isQuiz = opts.kind === 'quiz';
+    var fontStack = 'Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    var lightUpLogo = null;
+    var teLogo = null;
+    try {
+      var imgs = await Promise.all([
+        loadImageSafe(assetUrl('light-up-logo.png')),
+        loadImageSafe(assetUrl('totalenergies-logo.png'))
+      ]);
+      lightUpLogo = imgs[0];
+      teLogo = imgs[1];
+    } catch (e) {}
+
+    var canvas = document.createElement('canvas');
+    canvas.width = 1240;
+    canvas.height = 1754;
+    var ctx = canvas.getContext('2d');
+
+    function renderReceiptCanvas(withImages) {
+      var W = canvas.width;
+      var H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#F2F4F8';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(15, 16, 25, 0.14)';
+      ctx.shadowBlur = 38;
+      ctx.shadowOffsetY = 14;
+      drawRoundedRect(ctx, 70, 70, 1100, 1614, 32);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+      ctx.restore();
+
+      // Top dark header
+      drawRoundedRect(ctx, 70, 70, 1100, 300, { tl: 32, tr: 32, br: 0, bl: 0 });
+      ctx.fillStyle = '#0F1019';
+      ctx.fill();
+
+      if (withImages && lightUpLogo && lightUpLogo.naturalWidth > 0) {
+        var luRatio = lightUpLogo.naturalWidth / lightUpLogo.naturalHeight;
+        var luH = 92;
+        var luW = luH * luRatio;
+        if (luW > 380) { luW = 380; luH = luW / luRatio; }
+        ctx.drawImage(lightUpLogo, (W - luW) / 2, 116 + (92 - luH) / 2, luW, luH);
+      } else {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '800 50px ' + fontStack;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('LIGHT UP', W / 2, 164);
+      }
+
+      // Pill badge in header
+      var badgeText = isQuiz ? '✓  QUIZ COMPLETED' : '✓  VOTE CONFIRMED';
+      ctx.font = '700 21px ' + fontStack;
+      var badgeW = Math.max(300, ctx.measureText(badgeText).width + 64);
+      var badgeX = (W - badgeW) / 2;
+      var badgeY = 244;
+      var badgeGrad = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeW, badgeY);
+      badgeGrad.addColorStop(0, '#F27922');
+      badgeGrad.addColorStop(1, '#E72428');
+      drawRoundedRect(ctx, badgeX, badgeY, badgeW, 50, 25);
+      ctx.fillStyle = badgeGrad;
+      ctx.fill();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(badgeText, W / 2, badgeY + 26);
+
+      // 6px rainbow bar
+      var rbGrad = ctx.createLinearGradient(70, 0, 1170, 0);
+      rbGrad.addColorStop(0, '#F77B39');
+      rbGrad.addColorStop(0.28, '#8F4F9E');
+      rbGrad.addColorStop(0.55, '#2194D4');
+      rbGrad.addColorStop(0.78, '#64BD75');
+      rbGrad.addColorStop(1, '#FFD239');
+      ctx.fillStyle = rbGrad;
+      ctx.fillRect(70, 364, 1100, 6);
+
+      // Document kicker & heading
+      ctx.fillStyle = '#64687A';
+      ctx.font = '700 18px ' + fontStack;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('OFFICIAL PARTICIPATION RECEIPT · COMPROVATIVO', W / 2, 408);
+
+      ctx.fillStyle = '#10121B';
+      ctx.font = '800 42px ' + fontStack;
+      ctx.fillText(isQuiz ? 'Quiz Participation Confirmed' : 'Official Vote Recorded', W / 2, 444);
+
+      // Highlighted Dark Code Box
+      ctx.save();
+      drawRoundedRect(ctx, 140, 526, 960, 252, 24);
+      ctx.fillStyle = '#141624';
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.setLineDash([12, 9]);
+      ctx.strokeStyle = '#FFD239';
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#C7C9D9';
+      ctx.font = '700 20px ' + fontStack;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(isQuiz ? 'UNIQUE PARTICIPANT ID' : 'VOTE RECEIPT CODE', W / 2, 560);
+
+      var codeStr = String(opts.code || '—');
+      ctx.fillStyle = '#FFD239';
+      ctx.font = '800 70px ' + fontStack;
+      ctx.fillText(codeStr, W / 2, 606);
+
+      ctx.fillStyle = '#D4D6E6';
+      ctx.font = '500 20px ' + fontStack;
+      ctx.fillText(
+        isQuiz
+          ? 'Verification at Prize Desk via TEPA Unique ID'
+          : 'Verified Real-Time Auditorium Ballot',
+        W / 2,
+        708
+      );
+
+      // Metadata rows
+      var rows = [];
+      if (isQuiz) {
+        rows.push({ label: 'PARTICIPANT', value: opts.fullName || '—' });
+        rows.push({ label: 'QUIZ / EVENT', value: opts.eventTitle || 'TEPA 2026 — Welcome Quiz' });
+        rows.push({ label: 'DATE & TIME', value: formatDateTimeReceipt(opts.createdAt) });
+        rows.push({ label: 'VERIFICATION', value: 'TEPA Unique ID (Winners announced on 16:9 Stage Screen)' });
+      } else {
+        rows.push({ label: 'SELECTED CHOICE', value: opts.choiceTitle || '—' });
+        if (opts.choiceMeta) {
+          rows.push({ label: 'CATEGORY / TEAM', value: opts.choiceMeta });
+        }
+        rows.push({ label: 'POLL / EVENT', value: opts.eventTitle || 'TEPA Performance Award 2026' });
+        rows.push({ label: 'DATE & TIME', value: formatDateTimeReceipt(opts.createdAt) });
+      }
+
+      var curY = 824;
+      var rowStep = rows.length <= 3 ? 128 : 108;
+      for (var rIdx = 0; rIdx < rows.length; rIdx++) {
+        var item = rows[rIdx];
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#6B7085';
+        ctx.font = '700 17px ' + fontStack;
+        ctx.fillText(item.label, 148, curY);
+
+        ctx.fillStyle = '#10121B';
+        ctx.font = '700 25px ' + fontStack;
+        var valLines = wrapCanvasText(ctx, item.value, 944, 2);
+        for (var l = 0; l < valLines.length; l++) {
+          ctx.fillText(valLines[l], 148, curY + 26 + l * 30);
+        }
+
+        if (rIdx < rows.length - 1) {
+          var divY = curY + (valLines.length > 1 ? 94 : rowStep - 18);
+          ctx.fillStyle = '#E9ECF4';
+          ctx.fillRect(148, divY, 944, 2);
+        }
+        curY += rowStep;
+      }
+
+      // Guidance Footer Callout
+      drawRoundedRect(ctx, 140, 1286, 960, 162, 18);
+      ctx.fillStyle = '#F7F8FC';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#E2E6F0';
+      ctx.stroke();
+
+      ctx.fillStyle = '#4B5066';
+      ctx.font = '500 20px ' + fontStack;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      var noteText = isQuiz
+        ? 'Keep this PDF receipt saved on your device. When the quiz winners are announced live on the 16:9 auditorium stage screen, present your TEPA Unique ID at the Prize Desk.'
+        : 'Your single-device vote has been officially registered and is updating live on the 16:9 auditorium screen. Keep this PDF receipt as your confirmation.';
+      var noteLines = wrapCanvasText(ctx, noteText, 880, 4);
+      var noteStartY = 1286 + Math.max(24, (162 - noteLines.length * 30) / 2);
+      for (var nl = 0; nl < noteLines.length; nl++) {
+        ctx.fillText(noteLines[nl], W / 2, noteStartY + nl * 30);
+      }
+
+      // Bottom White Brand Bar
+      drawRoundedRect(ctx, 70, 1506, 1100, 178, { tl: 0, tr: 0, br: 32, bl: 32 });
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fill();
+      ctx.fillStyle = '#E9ECF4';
+      ctx.fillRect(70, 1506, 1100, 2);
+
+      if (withImages && teLogo && teLogo.naturalWidth > 0) {
+        var teRatio = teLogo.naturalWidth / teLogo.naturalHeight;
+        var teH = 84;
+        var teW = teH * teRatio;
+        if (teW > 320) { teW = 320; teH = teW / teRatio; }
+        ctx.drawImage(teLogo, (W - teW) / 2, 1528 + (84 - teH) / 2, teW, teH);
+      } else {
+        ctx.fillStyle = '#E72428';
+        ctx.font = '800 32px ' + fontStack;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('TotalEnergies', W / 2, 1568);
+      }
+
+      ctx.fillStyle = '#7A7F94';
+      ctx.font = '600 17px ' + fontStack;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText('TEPA Performance Award 2026 · Light Up', W / 2, 1632);
+    }
+
+    var dataUrl;
+    try {
+      renderReceiptCanvas(true);
+      dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    } catch (e) {
+      renderReceiptCanvas(false);
+      dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    }
+
+    var b64 = dataUrl.split(',')[1];
+    var bin = global.atob(b64);
+    var jpegBytes = new Uint8Array(bin.length);
+    for (var j = 0; j < bin.length; j++) {
+      jpegBytes[j] = bin.charCodeAt(j);
+    }
+
+    var pdfBytes = buildJpegPdfBytes(jpegBytes, canvas.width, canvas.height);
+    var safeCode = String(opts.code || 'TEPA').replace(/[^A-Za-z0-9_-]/g, '');
+    var fileName = (isQuiz ? 'TEPA-Quiz-Receipt-' : 'TEPA-Vote-Receipt-') + safeCode + '.pdf';
+    var blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      try { document.body.removeChild(a); } catch (e) {}
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    }, 10000);
+  }
+
   function prefersReducedMotion() {
     try {
       return Boolean(global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -526,7 +961,10 @@
           '    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Unique Participant ID</div>' +
           '    <div class="tepa-unique-id-code" id="tepa-unique-code-val">' + esc(r.unique_code) + '</div>' +
           '    <div style="font-size:12.5px;color:#D4D6E6;margin-bottom:12px;">' + esc(r.full_name) + '</div>' +
-          '    <button type="button" class="tepa-stage-btn" data-action="copy-code">Copy Unique ID</button>' +
+          '    <div class="tepa-receipt-actions">' +
+          '      <button type="button" class="tepa-stage-btn" data-action="copy-code">Copy Unique ID</button>' +
+          '      <button type="button" class="tepa-stage-btn is-pdf" data-action="download-quiz-pdf">' + PDF_ICON_SVG + '<span>Save PDF Receipt</span></button>' +
+          '    </div>' +
           '  </div>' +
           '  <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' +
           '    <a href="' + esc(voteUrl) + '" class="tepa-btn-cta" style="width:100%;">Open Voting Portal</a>' +
@@ -620,6 +1058,28 @@
             btn.textContent = 'Copied ✓';
             setTimeout(function () { btn.textContent = 'Copy Unique ID'; }, 1800);
           } catch (e) {}
+        }
+      } else if (action === 'download-quiz-pdf') {
+        if (state.receipt && !btn.disabled) {
+          var origQuizPdfHtml = btn.innerHTML;
+          btn.disabled = true;
+          btn.textContent = 'Saving PDF...';
+          try {
+            await downloadReceiptPdf({
+              kind: 'quiz',
+              code: state.receipt.unique_code,
+              fullName: state.receipt.full_name,
+              eventTitle: (state.activeQuiz && state.activeQuiz.title) || 'TEPA 2026 — Welcome Quiz',
+              createdAt: state.receipt.created_at
+            });
+            btn.textContent = 'PDF Saved ✓';
+          } catch (e) {
+            btn.textContent = 'Retry PDF';
+          }
+          setTimeout(function () {
+            btn.disabled = false;
+            btn.innerHTML = origQuizPdfHtml;
+          }, 2000);
         }
       } else if (action === 'sim-new-device') {
         Store.rotateSimulatedDeviceId();
@@ -915,6 +1375,9 @@
           '        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Vote Receipt Code</div>' +
           '        <div class="tepa-unique-id-code" style="font-size:22px;">' + esc(state.receipt.vote_code) + '</div>' +
           '        <div style="font-size:11.5px;color:#C7C9D9;">Live bars are updating on the Auditorium Screen</div>' +
+          '        <div class="tepa-receipt-actions" style="margin-top:10px;">' +
+          '          <button type="button" class="tepa-stage-btn is-pdf" data-action="download-vote-pdf">' + PDF_ICON_SVG + '<span>Save PDF Receipt</span></button>' +
+          '        </div>' +
           '      </div>' +
           '    </div>' +
           '    <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' +
@@ -976,6 +1439,46 @@
         } finally {
           state.submitting = false;
           render('next');
+        }
+      } else if (action === 'download-vote-pdf') {
+        if (state.receipt && !btn.disabled) {
+          var origVotePdfHtml = btn.innerHTML;
+          btn.disabled = true;
+          btn.textContent = 'Saving PDF...';
+          try {
+            var votedOption = state.projects.find(function (p) {
+              return Number(p.id) === Number(state.receipt.project_id);
+            });
+            var choiceTitle = votedOption
+              ? votedOption.project_title
+              : ('Option #' + state.receipt.project_id);
+            var choiceMeta = '';
+            if (votedOption && !isSimpleMode()) {
+              var metaParts = [];
+              if (votedOption.category_name) {
+                metaParts.push(pad2(votedOption.slot_number) + ' · ' + votedOption.category_name);
+              }
+              if (votedOption.team_name) {
+                metaParts.push(votedOption.team_name);
+              }
+              choiceMeta = metaParts.join(' — ');
+            }
+            await downloadReceiptPdf({
+              kind: 'vote',
+              code: state.receipt.vote_code,
+              choiceTitle: choiceTitle,
+              choiceMeta: choiceMeta,
+              eventTitle: (state.activePoll && state.activePoll.title) || 'TEPA Performance Award 2026',
+              createdAt: state.receipt.created_at
+            });
+            btn.textContent = 'PDF Saved ✓';
+          } catch (e) {
+            btn.textContent = 'Retry PDF';
+          }
+          setTimeout(function () {
+            btn.disabled = false;
+            btn.innerHTML = origVotePdfHtml;
+          }, 2000);
         }
       } else if (action === 'sim-new-voter') {
         Store.rotateSimulatedDeviceId();

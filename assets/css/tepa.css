@@ -992,6 +992,36 @@ body:not(.wp-admin) a,
   word-break: break-all;
 }
 
+.tepa-receipt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tepa-stage-btn.is-pdf {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(255, 210, 57, 0.18) 0%, rgba(242, 121, 34, 0.24) 100%);
+  border-color: rgba(255, 210, 57, 0.68);
+  color: #FFE680;
+}
+
+.tepa-stage-btn.is-pdf:hover {
+  background: linear-gradient(135deg, rgba(255, 210, 57, 0.28) 0%, rgba(242, 121, 34, 0.34) 100%);
+  border-color: #FFD239;
+}
+
+.tepa-stage-btn.is-pdf svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
 .tepa-qr-mini-box {
   width: 112px;
   height: 112px;
@@ -1297,6 +1327,10 @@ body:not(.wp-admin) a,
   .tepa-mobile-shell .tepa-voucher-card,
   .tepa-mobile-shell .tepa-unique-id-box {
     padding: 14px 12px;
+  }
+  .tepa-mobile-shell .tepa-receipt-actions .tepa-stage-btn {
+    flex: 1 1 auto;
+    min-height: 36px;
   }
 }
 
