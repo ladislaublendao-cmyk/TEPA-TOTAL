@@ -2226,16 +2226,7 @@
               ? '<div class="tepa-quiz-winners' + (winnersList.length > 6 ? ' is-dense' : '') + '">' + winnersChips + '</div>'
               : '<div class="tepa-quiz-prize q-anim" style="animation-delay:520ms;"><div class="tepa-quiz-prize-text"><strong>No qualifying winners in this round yet.</strong></div></div>');
         } else {
-          quizRightHtml =
-            '<div class="tepa-quiz-prize q-anim" style="animation-delay:460ms;">' +
-            '  <div class="tepa-quiz-prize-icon">' + giftSvg + '</div>' +
-            '  <div class="tepa-quiz-prize-text">' +
-            '    <span class="tepa-quiz-prize-label">Prize</span>' +
-            '    <strong>' + esc(prizeTitle) + '</strong>' +
-            '    <span>Keep your <b>Unique Participant ID</b> — winners will be announced live on this screen.</span>' +
-            '  </div>' +
-            '  <span class="tepa-quiz-badge">' + lockSvg + 'Awaiting Reveal</span>' +
-            '</div>';
+          quizRightHtml = '';
         }
 
         workspaceHtml =
@@ -2252,7 +2243,7 @@
           '      <h2 class="tepa-quiz-title tepa-rainbow-text q-anim" style="animation-delay:260ms;">' + esc(quizTitleTxt) + '</h2>' +
           '      <p class="tepa-quiz-sub q-anim" style="animation-delay:340ms;">' + (quizWinnersRevealed ? 'Congratulations to the official winners!' : 'Scan the QR code, answer the questions and win!') + '</p>' +
           '      <div class="tepa-quiz-kpis q-anim" style="animation-delay:400ms;">' +
-          '        <div class="tepa-quiz-kpi"><strong id="tepa-quiz-stage-participants">' + esc(qs.total_participants || 0) + '</strong><span><i class="tepa-quiz-dot"></i>Participants</span></div>' +
+          '        <div class="tepa-quiz-kpi"><strong id="tepa-quiz-stage-participants">' + esc(qs.total_participants || 0) + '</strong><span>Participants</span></div>' +
           '        <div class="tepa-quiz-kpi-sep" aria-hidden="true"></div>' +
           '        <div class="tepa-quiz-kpi"><strong id="tepa-quiz-stage-vouchers" class="is-gold">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded || 0) + ' / ' + esc(qs.max_vouchers || 10)) : ('Top ' + esc(qs.max_vouchers || 10))) + '</strong><span>' + (quizWinnersRevealed ? 'Winners' : 'Prizes available') + '</span></div>' +
           '      </div>' +
