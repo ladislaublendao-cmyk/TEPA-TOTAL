@@ -3392,7 +3392,7 @@ details.tepa-bo-details > summary {
 }
 
 /* ==========================================================================
-   v1.5.0 Executive Backoffice App Shell & Dedicated Custom Menu ("Menu Próprio")
+   v1.6.0 Executive Backoffice App Shell, Vector SVG Icons & Refined Cards
    ========================================================================== */
 
 body.tepa-bo-standalone {
@@ -3429,12 +3429,18 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   padding: 0 !important;
 }
 
+.tepa-bo svg {
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .tepa-bo.tepa-bo-app {
   max-width: none;
   width: 100%;
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 272px minmax(0, 1fr);
+  grid-template-columns: 274px minmax(0, 1fr);
   background: #F1F5F9;
   color: #0F172A;
   align-items: stretch;
@@ -3442,7 +3448,7 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 
 /* Left Dedicated Sidebar ("Menu Próprio") */
 .tepa-bo-sidebar {
-  background: linear-gradient(180deg, #0B0F19 0%, #111827 100%);
+  background: linear-gradient(180deg, #070A12 0%, #0F172A 100%);
   color: #F8FAFC;
   display: flex;
   flex-direction: column;
@@ -3451,16 +3457,16 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   height: 100vh;
   overflow-y: auto;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 8px 0 32px rgba(15, 23, 42, 0.14);
+  box-shadow: 10px 0 36px rgba(15, 23, 42, 0.16);
   z-index: 40;
 }
 
 .tepa-bo-side-brand {
-  padding: 20px 18px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px 16px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 11px;
 }
 
 .tepa-bo-side-logos {
@@ -3476,23 +3482,23 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
 .tepa-bo-side-te-pill img {
-  height: 28px;
+  height: 26px;
   width: auto;
   display: block;
 }
 
 .tepa-bo-side-lu-logo {
-  height: 25px;
+  height: 24px;
   width: auto;
   display: block;
 }
 
 .tepa-bo-side-title {
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 800;
   color: #FFFFFF !important;
   letter-spacing: -0.02em;
@@ -3509,7 +3515,7 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 5px 11px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -3530,98 +3536,119 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 
 .tepa-bo-side-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
 .tepa-bo-side-group-lbl {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   color: #64748B;
-  padding: 10px 10px 4px;
+  padding: 12px 10px 4px;
 }
 
 .tepa-bo-side-group-lbl:first-child {
-  padding-top: 0;
+  padding-top: 2px;
 }
 
 .tepa-bo .tepa-bo-nav-item {
   appearance: none;
+  position: relative;
   width: 100%;
   border: 1px solid transparent;
   background: transparent;
-  color: #CBD5E1;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 13px;
+  color: #94A3B8;
+  padding: 9px 10px;
+  border-radius: 11px;
+  font-size: 12.2px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   text-align: left;
-  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
 }
 
 .tepa-bo .tepa-bo-nav-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.05);
+  color: #F8FAFC;
 }
 
 .tepa-bo .tepa-bo-nav-item.is-active {
-  background: linear-gradient(90deg, rgba(231, 68, 37, 0.22) 0%, rgba(33, 148, 212, 0.16) 100%);
-  border-color: rgba(247, 123, 57, 0.42);
+  background: linear-gradient(90deg, rgba(231, 68, 37, 0.18) 0%, rgba(30, 41, 59, 0.65) 100%);
+  border-color: rgba(247, 123, 57, 0.36);
   color: #FFFFFF;
   font-weight: 700;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
 }
 
+.tepa-bo .tepa-bo-nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 8px;
+  bottom: 8px;
+  width: 3.5px;
+  border-radius: 0 4px 4px 0;
+  background: var(--tepa-grad-cta);
+}
+
 .tepa-bo-nav-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tepa-bo-nav-icon {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.06);
+  color: #CBD5E1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
   flex-shrink: 0;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.tepa-bo-nav-item:hover .tepa-bo-nav-icon {
+  background: rgba(255, 255, 255, 0.11);
+  color: #FFFFFF;
 }
 
 .tepa-bo-nav-item.is-active .tepa-bo-nav-icon {
   background: var(--tepa-grad-cta);
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(231, 36, 40, 0.35);
+  box-shadow: 0 3px 10px rgba(231, 36, 40, 0.38);
 }
 
 .tepa-bo-nav-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.1);
-  color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.09);
+  color: #CBD5E1;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
 
 .tepa-bo-nav-item.is-active .tepa-bo-nav-badge {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.18);
   color: #FFFFFF;
 }
 
@@ -3631,18 +3658,18 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 }
 
 .tepa-bo-nav-badge.is-live {
-  background: rgba(16, 185, 129, 0.22);
+  background: rgba(16, 185, 129, 0.18);
   color: #6EE7B7;
   border: 1px solid rgba(52, 211, 153, 0.3);
 }
 
 .tepa-bo-side-footer {
-  padding: 14px 14px 16px;
+  padding: 12px 12px 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .tepa-bo-side-launch-grid {
@@ -3658,23 +3685,24 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 34px;
-  padding: 0 10px;
+  height: 33px;
+  padding: 0 9px;
   border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.05);
   color: #E2E8F0;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
 .tepa-bo a.tepa-bo-side-link:hover,
 .tepa-bo button.tepa-bo-side-link:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.25);
   color: #FFFFFF;
 }
 
@@ -3683,14 +3711,20 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   border-color: transparent;
   color: #FFFFFF;
   font-weight: 700;
-  height: 38px;
-  box-shadow: 0 4px 14px rgba(231, 36, 40, 0.3);
+  height: 37px;
+  font-size: 12px;
+  box-shadow: 0 4px 14px rgba(231, 36, 40, 0.32);
+}
+
+.tepa-bo a.tepa-bo-side-link.is-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(231, 36, 40, 0.42);
 }
 
 .tepa-bo-wp-meta {
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 3px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -3717,14 +3751,14 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid #E2E8F0;
-  padding: 14px 28px;
+  padding: 12px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
 }
 
@@ -3733,25 +3767,44 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1;
+}
+
+.tepa-bo-topbar-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(231, 68, 37, 0.12) 0%, rgba(33, 148, 212, 0.12) 100%);
+  border: 1px solid rgba(231, 68, 37, 0.22);
+  color: #E74425;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .tepa-bo-topbar-title {
-  font-size: 18px;
+  font-size: 16.5px;
   font-weight: 800;
   color: #0F172A;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .tepa-bo-topbar-desc {
-  font-size: 12.5px;
+  font-size: 12px;
   color: #64748B;
-  margin-top: 1px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tepa-bo-topbar-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
 
@@ -3760,19 +3813,22 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   display: inline-flex;
   align-items: center;
   background: #F1F5F9;
-  border: 1px solid #CBD5E1;
+  border: 1px solid #E2E8F0;
   border-radius: 11px;
   padding: 3px;
-  gap: 3px;
+  gap: 2px;
 }
 
 .tepa-bo-quick-stage-lbl {
-  font-size: 11px;
-  font-weight: 700;
-  color: #475569;
-  padding: 0 8px 0 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748B;
+  padding: 0 8px 0 7px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .tepa-bo .tepa-bo-quick-stage-btn {
@@ -3786,6 +3842,9 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
 }
 
@@ -3797,21 +3856,59 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 .tepa-bo .tepa-bo-quick-stage-btn.is-active {
   background: #0F172A;
   color: #FFFFFF;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
 }
 
 .tepa-bo-content {
   flex: 1;
-  padding: 22px 28px 80px;
+  padding: 20px 24px 80px;
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
 }
 
-/* Enhanced KPI Cards with Icon Badges */
+/* Fix Card Header Wrapping so Action Buttons Stay Pinned Top-Right */
+.tepa-bo-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: nowrap;
+  margin-bottom: 16px;
+}
+
+.tepa-bo-card-head > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.tepa-bo-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tepa-bo-card-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #F1F5F9;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Enhanced Executive KPI Cards with Tinted Vector Icon Boxes */
 .tepa-bo-kpi-card {
   position: relative;
   overflow: hidden;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 6px 18px rgba(15, 23, 42, 0.02);
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
@@ -3822,18 +3919,168 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 .tepa-bo-kpi-card[data-tab]:hover {
   transform: translateY(-2px);
   border-color: #CBD5E1;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.07);
+}
+
+.tepa-bo-kpi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .tepa-bo-kpi-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
   flex-shrink: 0;
+}
+
+.tepa-bo-kpi-icon.is-orange {
+  background: #FFF4ED;
+  color: #E74425;
+  border: 1px solid #FED7AA;
+}
+
+.tepa-bo-kpi-icon.is-blue {
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+}
+
+.tepa-bo-kpi-icon.is-purple {
+  background: #FAF5FF;
+  color: #7E22CE;
+  border: 1px solid #E9D5FF;
+}
+
+.tepa-bo-kpi-icon.is-amber {
+  background: #FFFBEB;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+}
+
+.tepa-bo-kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748B;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Top 5 Standings Leaderboard Rows with Medal Badges & Non-Wrapping Vote Pills */
+.tepa-bo-leader-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.tepa-bo-leader-row {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.tepa-bo-leader-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tepa-bo-leader-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.tepa-bo-rank-pill {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: #E2E8F0;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tepa-bo-rank-pill.is-1 {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.32);
+}
+
+.tepa-bo-rank-pill.is-2 {
+  background: #334155;
+  color: #FFFFFF;
+}
+
+.tepa-bo-rank-pill.is-3 {
+  background: #B45309;
+  color: #FFFFFF;
+}
+
+.tepa-bo-leader-title-wrap {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #0F172A;
+}
+
+.tepa-bo-leader-votes-pill {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0F172A;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Deterministic 3-Column Rules Row & Rehearsal Panels */
+.tepa-bo-rules-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.tepa-bo-sim-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 13px;
+  padding: 13px 14px;
+  margin-bottom: 12px;
+}
+
+.tepa-bo-danger-box {
+  background: #FFFBFB;
+  border: 1px solid #FEE2E2;
+  border-radius: 13px;
+  padding: 13px 14px;
 }
 
 /* Inactive Project Row Dimming */
@@ -3876,7 +4123,7 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 .tepa-bo-floating-save {
   position: fixed;
   bottom: 20px;
-  left: calc(272px + 50%);
+  left: calc(264px + 50%);
   transform: translateX(-50%);
   z-index: 90;
   background: #0F172A;
@@ -3932,7 +4179,11 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
     max-width: 520px;
     justify-content: space-between;
   }
-  .tepa-bo-audit-grid {
+  .tepa-bo-audit-grid,
+  .tepa-bo-rules-grid {
     grid-template-columns: 1fr;
+  }
+  .tepa-bo-card-head {
+    flex-wrap: wrap;
   }
 }

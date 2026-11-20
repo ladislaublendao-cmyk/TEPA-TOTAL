@@ -58,12 +58,12 @@ function tepa_add_admin_menu() {
 	);
 
 	$submenus = array(
-		array( 'slug' => 'tepa-award-2026',               'title' => '📡 Palco & Controlo' ),
-		array( 'slug' => 'tepa-award-2026&tab=questions',   'title' => '✨ Quiz Studio' ),
-		array( 'slug' => 'tepa-award-2026&tab=projects',    'title' => '🏆 Votação & Projetos' ),
-		array( 'slug' => 'tepa-award-2026&tab=submissions', 'title' => '🎁 Vencedores & Vouchers' ),
-		array( 'slug' => 'tepa-award-2026&tab=settings',    'title' => '📱 QR Codes & Ligação' ),
-		array( 'slug' => 'tepa-award-2026&tab=audit',       'title' => '🛡️ Auditoria do Sistema' ),
+		array( 'slug' => 'tepa-award-2026',               'title' => 'Live Stage & Controls' ),
+		array( 'slug' => 'tepa-award-2026&tab=questions',   'title' => 'Quiz Studio' ),
+		array( 'slug' => 'tepa-award-2026&tab=projects',    'title' => 'Voting & Projects' ),
+		array( 'slug' => 'tepa-award-2026&tab=submissions', 'title' => 'Winners & Desk' ),
+		array( 'slug' => 'tepa-award-2026&tab=settings',    'title' => 'QR Kit & Connection' ),
+		array( 'slug' => 'tepa-award-2026&tab=audit',       'title' => 'System Audit' ),
 	);
 
 	foreach ( $submenus as $sub ) {

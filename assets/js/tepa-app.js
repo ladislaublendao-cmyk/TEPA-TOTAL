@@ -1572,6 +1572,46 @@
       savedPin = initCfg.defaultPin;
     }
 
+    // Modern Lucide-style Vector SVG Icons (Zero Cartoon Emojis)
+    var SVG_PATHS = {
+      radio: '<circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+      sparkles: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/><path d="M5 3v4"/><path d="M3 5h4"/>',
+      trophy: '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+      gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/>',
+      ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+      qr: '<rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/>',
+      shield: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+      monitor: '<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',
+      help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+      vote: '<path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/>',
+      lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+      maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+      layout: '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>',
+      arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+      arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+      external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+      barChart: '<line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>',
+      users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+      sliders: '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',
+      zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+      refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+      trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+      arrowUp: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+      arrowDown: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+      plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+      copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+      check: '<path d="M20 6 9 17l-5-5"/>',
+      x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+      smartphone: '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>'
+    };
+
+    function icon(name, size) {
+      var sz = size || 16;
+      var body = SVG_PATHS[name] || SVG_PATHS.sparkles;
+      return '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+    }
+
     var state = {
       pin: savedPin,
       manuallyLocked: false,
@@ -1601,34 +1641,34 @@
 
     var SECTION_META = {
       stage: {
-        icon: '📡',
-        title: 'Palco & Controlo 16:9',
-        desc: 'Comande o telão 16:9 do auditório, portões mobile e rondas de ensaio em tempo real.'
+        iconName: 'radio',
+        title: 'Live Stage & Controls',
+        desc: 'Control the 16:9 auditorium screen, mobile participation gates, and rehearsal rounds in real time.'
       },
       questions: {
-        icon: '✨',
+        iconName: 'sparkles',
         title: 'Quiz Studio',
-        desc: 'Crie quizzes personalizados, perguntas Sim/Não ou Escolha Múltipla, vouchers e pré-visualize ao vivo.'
+        desc: 'Build custom quizzes, Yes/No or Multiple Choice questions, prize rules, and preview live on mobile.'
       },
       projects: {
-        icon: '🏆',
-        title: 'Votação & Projetos Finalistas',
-        desc: 'Gira os projetos finalistas "Best of the Best", visibilidade no telão, ordem e títulos da votação.'
+        iconName: 'trophy',
+        title: 'Voting & Finalist Projects',
+        desc: 'Manage "Best of the Best" finalist projects, 16:9 stage visibility, order, and voting poll headlines.'
       },
       submissions: {
-        icon: '🎁',
-        title: 'Vencedores & Balcão de Prémios',
-        desc: ' Valide códigos TEPA-XXXXXX, registe a entrega de vouchers Café Bonjour e exporte em CSV.'
+        iconName: 'gift',
+        title: 'Winners & Prize Desk',
+        desc: 'Verify TEPA-XXXXXX participant codes, track Café Bonjour voucher redemptions, and export CSV.'
       },
       settings: {
-        icon: '📱',
-        title: 'QR Codes & Ligação WordPress',
-        desc: 'Kit de impressão QR em alta resolução (SVG/PNG 1024px), credenciais Supabase e PIN de segurança.'
+        iconName: 'qr',
+        title: 'QR Kit & WordPress Connection',
+        desc: 'High-resolution print QR kit (SVG/PNG 1024px), Supabase WordPress credentials, and security PIN.'
       },
       audit: {
-        icon: '🛡️',
-        title: 'Auditoria & Diagnóstico do Sistema',
-        desc: 'Verificação automática de integridade, segurança WordPress/RLS, cálculos de percentagem e prontidão do evento.'
+        iconName: 'shield',
+        title: 'System Audit & Diagnostics',
+        desc: 'Automated real-time verification of WordPress/RLS security, active percentages, and event readiness.'
       }
     };
 
@@ -1794,12 +1834,12 @@
       slot.innerHTML =
         '<div class="tepa-bo-floating-save">' +
         '  <div style="display:flex;align-items:center;gap:10px;">' +
-        '    <span class="tepa-bo-badge is-gold">⚡ Unsaved Changes</span>' +
+        '    <span class="tepa-bo-badge is-gold">' + icon('zap', 12) + ' Unsaved Changes</span>' +
         '    <strong style="font-size:13px;">' + esc(label) + '</strong>' +
         '  </div>' +
         '  <div style="display:flex;align-items:center;gap:8px;">' +
         '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="' + discardAct + '">Discard</button>' +
-        '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary" data-action="' + saveAct + '" ' + (state.saving ? 'disabled' : '') + '>' + (state.saving ? 'Saving...' : 'Save All Now (Ctrl+S)') + '</button>' +
+        '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary" data-action="' + saveAct + '" ' + (state.saving ? 'disabled' : '') + '>' + icon('check', 13) + ' ' + (state.saving ? 'Saving...' : 'Save All Now (Ctrl+S)') + '</button>' +
         '  </div>' +
         '</div>';
     }
@@ -1824,8 +1864,10 @@
       });
 
       var meta = SECTION_META[state.tab] || SECTION_META.stage;
+      var topIcon = root.querySelector('#tepa-bo-topbar-icon');
+      if (topIcon) topIcon.innerHTML = icon(meta.iconName, 18);
       var topTitle = root.querySelector('#tepa-bo-topbar-title');
-      if (topTitle) topTitle.textContent = meta.icon + ' ' + meta.title;
+      if (topTitle) topTitle.textContent = meta.title;
       var topDesc = root.querySelector('#tepa-bo-topbar-desc');
       if (topDesc) topDesc.textContent = meta.desc;
 
@@ -2154,42 +2196,42 @@
           '  <div class="tepa-bo-card">' +
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
-          '        <h2 class="tepa-bo-card-title">Auditorium 16:9 Stage Screen</h2>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('monitor', 15) + '</span><h2 class="tepa-bo-card-title">Auditorium 16:9 Stage Screen</h2></div>' +
           '        <p class="tepa-bo-card-desc">Switch what everyone sees on the big screen in realtime.</p>' +
           '      </div>' +
-          '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary">Launch Stage ↗</a>' +
+          '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary">' + icon('external', 13) + '<span>Launch Stage</span></a>' +
           '    </div>' +
           '    <div class="tepa-bo-stage-list">' +
           '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'quiz_qr' ? 'is-active' : '') + '" data-action="set-stage" data-val="quiz_qr">' +
-          '        <span class="tepa-bo-stage-num">1</span>' +
+          '        <span class="tepa-bo-stage-num">' + icon('qr', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
-          '          <span class="tepa-bo-stage-title">Welcome Quiz QR &amp; Winner Feed</span>' +
+          '          <span class="tepa-bo-stage-title">1. Welcome Quiz QR &amp; Winner Feed</span>' +
           '          <span class="tepa-bo-stage-desc">Shows join QR code and live prize winners (' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + ').</span>' +
           '        </span>' +
-          (s.stage_mode === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">Live Now</span>' : '') +
+          (s.stage_mode === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">● Live Now</span>' : '') +
           '      </button>' +
           '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'live_voting' ? 'is-active' : '') + '" data-action="set-stage" data-val="live_voting">' +
-          '        <span class="tepa-bo-stage-num">2</span>' +
+          '        <span class="tepa-bo-stage-num">' + icon('barChart', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
-          '          <span class="tepa-bo-stage-title">Live Voting Ranking + QR</span>' +
+          '          <span class="tepa-bo-stage-title">2. Live Voting Ranking + QR</span>' +
           '          <span class="tepa-bo-stage-desc">Adaptive Mentimeter list or column chart across ' + k.activeProjects.length + ' active finalist projects.</span>' +
           '        </span>' +
-          (s.stage_mode === 'live_voting' ? '<span class="tepa-bo-badge is-green">Live Now</span>' : '') +
+          (s.stage_mode === 'live_voting' ? '<span class="tepa-bo-badge is-green">● Live Now</span>' : '') +
           '      </button>' +
           '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'winner_reveal' ? 'is-active' : '') + '" data-action="set-stage" data-val="winner_reveal">' +
-          '        <span class="tepa-bo-stage-num">3</span>' +
+          '        <span class="tepa-bo-stage-num">' + icon('trophy', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
-          '          <span class="tepa-bo-stage-title">Reveal Best of the Best Winner</span>' +
+          '          <span class="tepa-bo-stage-title">3. Reveal Best of the Best Winner</span>' +
           '          <span class="tepa-bo-stage-desc">Grand spotlight reveal of the top-voted project and winning team.</span>' +
           '        </span>' +
-          (s.stage_mode === 'winner_reveal' ? '<span class="tepa-bo-badge is-green">Live Now</span>' : '') +
+          (s.stage_mode === 'winner_reveal' ? '<span class="tepa-bo-badge is-green">● Live Now</span>' : '') +
           '      </button>' +
           '    </div>' +
           '  </div>' +
           '  <div class="tepa-bo-card">' +
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
-          '        <h2 class="tepa-bo-card-title">Activity Gates &amp; Event Rules</h2>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('sliders', 15) + '</span><h2 class="tepa-bo-card-title">Activity Gates &amp; Event Rules</h2></div>' +
           '        <p class="tepa-bo-card-desc">Open or close mobile participation anytime during the ceremony.</p>' +
           '      </div>' +
           '    </div>' +
@@ -2218,7 +2260,7 @@
           '        <label class="tepa-bo-label" for="tepa-rule-title">Stage Event Headline</label>' +
           '        <input id="tepa-rule-title" class="tepa-bo-input" type="text" maxlength="100" value="' + esc(s.event_title || 'TEPA Performance Award 2026') + '">' +
           '      </div>' +
-          '      <div class="tepa-bo-form-row">' +
+          '      <div class="tepa-bo-rules-grid">' +
           '        <div>' +
           '          <label class="tepa-bo-label" for="tepa-rule-minscore">Quiz Pass Score</label>' +
           '          <input id="tepa-rule-minscore" class="tepa-bo-input" type="number" min="1" max="20" value="' + esc((k.activeQuiz && k.activeQuiz.min_score) || s.min_quiz_score || 5) + '">' +
@@ -2228,7 +2270,7 @@
           '          <input id="tepa-rule-maxv" class="tepa-bo-input" type="number" min="1" max="100" value="' + esc(k.maxVouchers) + '">' +
           '        </div>' +
           '        <div>' +
-          '          <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">Save Rules</button>' +
+          '          <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="height:40px;padding:0 18px;">' + icon('check', 14) + '<span>Save Rules</span></button>' +
           '        </div>' +
           '      </div>' +
           '    </form>' +
@@ -2238,10 +2280,10 @@
           '  <div class="tepa-bo-card">' +
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
-          '        <h2 class="tepa-bo-card-title">Live Top 5 Standings</h2>' +
-          '        <p class="tepa-bo-card-desc">Real-time snapshot of leading active finalist projects.</p>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('trophy', 15) + '</span><h2 class="tepa-bo-card-title">Live Top 5 Standings</h2></div>' +
+          '        <p class="tepa-bo-card-desc">Real-time ranking across active finalist projects.</p>' +
           '      </div>' +
-          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="projects">Manage Projects →</button>' +
+          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="projects"><span>Manage Projects</span>' + icon('arrowRight', 13) + '</button>' +
           '    </div>' +
           '    <div class="tepa-bo-leader-list">' +
           (top5.length
@@ -2249,11 +2291,15 @@
                 var v = Number(p.votes || 0);
                 var pct = k.totalVotes > 0 ? Math.round((v / k.totalVotes) * 100) : 0;
                 var w = k.totalVotes > 0 ? Math.max(4, Math.round((v / maxTopVotes) * 100)) : 2;
+                var rankCls = idx < 3 ? ' is-' + (idx + 1) : '';
                 return (
                   '<div class="tepa-bo-leader-row">' +
                   '  <div class="tepa-bo-leader-meta">' +
-                  '    <span><strong>#' + (idx + 1) + '</strong> ' + esc(p.project_title) + ' <span style="color:#64748B;">· ' + esc(p.category_name) + '</span></span>' +
-                  '    <strong style="font-variant-numeric:tabular-nums;">' + v + ' (' + pct + '%)</strong>' +
+                  '    <div class="tepa-bo-leader-left">' +
+                  '      <span class="tepa-bo-rank-pill' + rankCls + '">#' + (idx + 1) + '</span>' +
+                  '      <div class="tepa-bo-leader-title-wrap"><strong>' + esc(p.project_title) + '</strong> <span style="color:#64748B;">· ' + esc(p.category_name) + '</span></div>' +
+                  '    </div>' +
+                  '    <span class="tepa-bo-leader-votes-pill">' + v + ' <span style="color:#64748B;font-weight:500;">(' + pct + '%)</span></span>' +
                   '  </div>' +
                   '  <div class="tepa-bo-leader-bar"><div class="tepa-bo-leader-fill" data-target-pct="' + w + '" style="width:' + w + '%;background:' + barPalette[idx % barPalette.length] + ';"></div></div>' +
                   '</div>'
@@ -2265,26 +2311,30 @@
           '  <div class="tepa-bo-card">' +
           '    <div class="tepa-bo-card-head">' +
           '      <div>' +
-          '        <h2 class="tepa-bo-card-title">Rehearsal &amp; Safe Event Reset</h2>' +
+          '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('zap', 15) + '</span><h2 class="tepa-bo-card-title">Rehearsal &amp; Safe Event Reset</h2></div>' +
           '        <p class="tepa-bo-card-desc">Test live charts before doors open, then clear test data cleanly.</p>' +
           '      </div>' +
           '    </div>' +
-          '    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">' +
-          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="simulate-votes" data-count="5">+5 Simulated Votes</button>' +
-          '      <button type="button" class="tepa-bo-btn" data-action="simulate-votes" data-count="15">+15 Simulated Votes</button>' +
-          '    </div>' +
-          '    <div style="padding-top:14px;border-top:1px solid #E2E8F0;display:flex;flex-direction:column;gap:8px;">' +
+          '    <div class="tepa-bo-sim-box">' +
+          '      <div style="font-size:11.5px;font-weight:700;color:#334155;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' + icon('zap', 13) + '<span>Traffic Simulator (Rehearsal Testing)</span></div>' +
           '      <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="votes">Reset Votes to 0</button>' +
-          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="quiz">Reset Quiz Entries</button>' +
+          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="simulate-votes" data-count="5">' + icon('plus', 13) + '<span>5 Simulated Votes</span></button>' +
+          '        <button type="button" class="tepa-bo-btn" data-action="simulate-votes" data-count="15">' + icon('plus', 13) + '<span>15 Simulated Votes</span></button>' +
+          '      </div>' +
+          '    </div>' +
+          '    <div class="tepa-bo-danger-box">' +
+          '      <div style="font-size:11.5px;font-weight:700;color:#991B1B;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' + icon('refresh', 13) + '<span>Safe Non-Destructive Round Reset</span></div>' +
+          '      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' +
+          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="votes">' + icon('refresh', 13) + '<span>Reset Votes to 0</span></button>' +
+          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="quiz">' + icon('refresh', 13) + '<span>Reset Quiz Entries</span></button>' +
           '      </div>' +
           '      <div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="all">Reset All Event Data (Go Live Clean)</button>' +
+          '        <button type="button" class="tepa-bo-btn tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="all">' + icon('trash', 13) + '<span>Reset All Event Data (Go Live Clean)</span></button>' +
           (mode === 'demo'
-            ? '<button type="button" class="tepa-bo-btn" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="seed">Restore Sample Demo Data</button>'
+            ? '<button type="button" class="tepa-bo-btn" data-action="open-confirm-modal" data-modal-kind="reset" data-scope="seed">' + icon('refresh', 13) + '<span>Restore Sample Demo Data</span></button>'
             : '') +
           '      </div>' +
-          '      <p class="tepa-bo-hint" style="margin-top:2px;">Resetting starts a fresh round so rehearsal devices can vote or take the quiz again. Requires confirmation.</p>' +
+          '      <p class="tepa-bo-hint" style="margin-top:8px;">Resetting increments the round epoch so rehearsal phones can vote or play again. Requires confirmation.</p>' +
           '    </div>' +
           '  </div>' +
           '</div>'
@@ -2314,7 +2364,7 @@
             '</button>'
           );
         }).join('') +
-        '<button type="button" class="tepa-bo-quiz-pill is-new" data-action="create-quiz">+ Create New Quiz</button>';
+        '<button type="button" class="tepa-bo-quiz-pill is-new" data-action="create-quiz">' + icon('plus', 15) + '<span>Create New Quiz</span></button>';
 
         var qCardsHtml = selQs.length
           ? selQs.map(function (orig, idx) {
@@ -2334,12 +2384,12 @@
                       (LETTERS[optIdx] || (optIdx + 1)) +
                       '  </button>' +
                       '  <input class="tepa-bo-input" style="height:36px;min-height:36px;" data-opt-idx="' + optIdx + '" value="' + esc(optText) + '" placeholder="Answer option ' + (LETTERS[optIdx] || (optIdx + 1)) + '">' +
-                      '  <button type="button" class="tepa-bo-icon-btn is-danger" data-action="remove-q-opt" data-id="' + orig.id + '" data-opt-idx="' + optIdx + '" ' + (opts.length <= 2 ? 'disabled' : '') + ' title="Remove option">×</button>' +
+                      '  <button type="button" class="tepa-bo-icon-btn is-danger" data-action="remove-q-opt" data-id="' + orig.id + '" data-opt-idx="' + optIdx + '" ' + (opts.length <= 2 ? 'disabled' : '') + ' title="Remove option">' + icon('x', 13) + '</button>' +
                       '</div>'
                     );
                   }).join('') +
                   (opts.length < 4
-                    ? '<div><button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="add-q-opt" data-id="' + orig.id + '">+ Add Option</button> <span class="tepa-bo-hint" style="display:inline;margin-left:6px;">Click letter A/B/C/D to mark the right answer</span></div>'
+                    ? '<div><button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="add-q-opt" data-id="' + orig.id + '">' + icon('plus', 12) + '<span>Add Option</span></button> <span class="tepa-bo-hint" style="display:inline;margin-left:6px;">Click letter A/B/C/D to mark the right answer</span></div>'
                     : '<div class="tepa-bo-hint">Click letter badge (A–D) to set the correct answer.</div>') +
                   '</div>'
                 : '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
@@ -2355,8 +2405,8 @@
                 '  <div class="tepa-bo-q-card-top">' +
                 '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
                 '      <span class="tepa-bo-slot-pill" style="background:#2194D4;">Q' + pad2(idx + 1) + '</span>' +
-                '      <button type="button" class="tepa-bo-icon-btn" data-action="move-question" data-id="' + orig.id + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move Up">↑</button>' +
-                '      <button type="button" class="tepa-bo-icon-btn" data-action="move-question" data-id="' + orig.id + '" data-dir="1" ' + (idx === selQs.length - 1 ? 'disabled' : '') + ' title="Move Down">↓</button>' +
+                '      <button type="button" class="tepa-bo-icon-btn" data-action="move-question" data-id="' + orig.id + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move Up">' + icon('arrowUp', 13) + '</button>' +
+                '      <button type="button" class="tepa-bo-icon-btn" data-action="move-question" data-id="' + orig.id + '" data-dir="1" ' + (idx === selQs.length - 1 ? 'disabled' : '') + ' title="Move Down">' + icon('arrowDown', 13) + '</button>' +
                 '      <div class="tepa-bo-seg">' +
                 '        <button type="button" class="tepa-bo-seg-btn ' + (!isMc ? 'is-active' : '') + '" data-action="set-q-type" data-id="' + orig.id + '" data-qtype="yes_no">Yes / No</button>' +
                 '        <button type="button" class="tepa-bo-seg-btn ' + (isMc ? 'is-active' : '') + '" data-action="set-q-type" data-id="' + orig.id + '" data-qtype="multiple_choice">Multiple Choice</button>' +
@@ -2367,8 +2417,8 @@
                 '        <input type="checkbox" class="tepa-bo-switch-input" data-field="is_active" ' + (q.is_active !== false ? 'checked' : '') + '>' +
                 '        <span class="tepa-bo-switch-track"><span class="tepa-bo-switch-thumb"></span></span>' +
                 '      </label>' +
-                '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (isDirty ? 'tepa-bo-btn-dark' : '') + '" data-action="save-question" data-id="' + orig.id + '">Save</button>' +
-                '      <button type="button" class="tepa-bo-icon-btn is-danger" data-action="open-confirm-modal" data-modal-kind="archive_question" data-id="' + orig.id + '" title="Delete Question">🗑</button>' +
+                '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (isDirty ? 'tepa-bo-btn-dark' : '') + '" data-action="save-question" data-id="' + orig.id + '">' + icon('check', 12) + '<span>Save</span></button>' +
+                '      <button type="button" class="tepa-bo-icon-btn is-danger" data-action="open-confirm-modal" data-modal-kind="archive_question" data-id="' + orig.id + '" title="Delete Question">' + icon('trash', 13) + '</button>' +
                 '    </div>' +
                 '  </div>' +
                 '  <div class="tepa-bo-q-body">' +
@@ -2388,17 +2438,17 @@
             ? '<div class="tepa-bo-card">' +
               '  <div class="tepa-bo-card-head">' +
               '    <div>' +
-              '      <h2 class="tepa-bo-card-title">Quiz Setup &amp; Reward Settings</h2>' +
+              '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('sliders', 15) + '</span><h2 class="tepa-bo-card-title">Quiz Setup &amp; Reward Settings</h2></div>' +
               '      <p class="tepa-bo-card-desc">Customize the cover screen, passing threshold, and prize rules for this quiz.</p>' +
               '    </div>' +
               '    <div style="display:flex;gap:6px;flex-wrap:wrap;">' +
               (!isLiveQuiz
-                ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary" data-action="activate-quiz" data-id="' + esc(qDraft.id) + '" data-reset="false">Set Live</button>' +
-                  '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="activate-quiz" data-id="' + esc(qDraft.id) + '" data-reset="true">Set Live + New Round</button>'
+                ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-primary" data-action="activate-quiz" data-id="' + esc(qDraft.id) + '" data-reset="false">' + icon('radio', 13) + '<span>Set Live</span></button>' +
+                  '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="activate-quiz" data-id="' + esc(qDraft.id) + '" data-reset="true">' + icon('refresh', 13) + '<span>Set Live + New Round</span></button>'
                 : '<span class="tepa-bo-badge is-green" style="height:31px;padding:0 12px;">● Currently Live on Mobile</span>') +
-              '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="duplicate-quiz" data-id="' + esc(qDraft.id) + '">Duplicate</button>' +
+              '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="duplicate-quiz" data-id="' + esc(qDraft.id) + '">' + icon('copy', 12) + '<span>Duplicate</span></button>' +
               (quizzes.length > 1
-                ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="archive_quiz" data-id="' + esc(qDraft.id) + '">Delete</button>'
+                ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="open-confirm-modal" data-modal-kind="archive_quiz" data-id="' + esc(qDraft.id) + '">' + icon('trash', 12) + '<span>Delete</span></button>'
                 : '') +
               '    </div>' +
               '  </div>' +
@@ -2446,7 +2496,7 @@
               '        <input id="tepa-qm-maxv" class="tepa-bo-input" data-qmeta="max_vouchers" type="number" min="1" max="200" value="' + esc(qDraft.max_vouchers || 10) + '">' +
               '      </div>' +
               '      <div>' +
-              '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">Save Quiz Settings</button>' +
+              '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">' + icon('check', 14) + '<span>Save Quiz Settings</span></button>' +
               '      </div>' +
               '    </div>' +
               '  </form>' +
@@ -2455,15 +2505,15 @@
           '    <div class="tepa-bo-card">' +
           '      <div class="tepa-bo-toolbar">' +
           '        <div>' +
-          '          <h2 class="tepa-bo-card-title">Quiz Questions (' + selQs.length + ')</h2>' +
+          '          <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('sparkles', 15) + '</span><h2 class="tepa-bo-card-title">Quiz Questions (' + selQs.length + ')</h2></div>' +
           '          <p class="tepa-bo-card-desc">Add unlimited Yes/No or Multiple Choice questions, reorder, and preview live.</p>' +
           '        </div>' +
           '        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '          <span data-dirty-q-badge class="tepa-bo-badge ' + (dirtyQCount ? 'is-gold' : 'is-green') + '">' + (dirtyQCount ? (dirtyQCount + ' unsaved edit' + (dirtyQCount > 1 ? 's' : '')) : 'All synced') + '</span>' +
           '          <button type="button" class="tepa-bo-btn" data-action="discard-questions" style="' + (dirtyQCount ? '' : 'display:none;') + '">Discard</button>' +
-          '          <button type="button" class="tepa-bo-btn" data-action="create-question" data-qtype="yes_no">+ Yes / No</button>' +
-          '          <button type="button" class="tepa-bo-btn" data-action="create-question" data-qtype="multiple_choice">+ Multiple Choice</button>' +
-          '          <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-questions" ' + (state.saving ? 'disabled' : '') + '>Save All Questions</button>' +
+          '          <button type="button" class="tepa-bo-btn" data-action="create-question" data-qtype="yes_no">' + icon('plus', 13) + '<span>Yes / No</span></button>' +
+          '          <button type="button" class="tepa-bo-btn" data-action="create-question" data-qtype="multiple_choice">' + icon('plus', 13) + '<span>Multiple Choice</span></button>' +
+          '          <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-questions" ' + (state.saving ? 'disabled' : '') + '>' + icon('check', 14) + '<span>Save All Questions</span></button>' +
           '        </div>' +
           '      </div>' +
           '      <div class="tepa-bo-q-list">' + qCardsHtml + '</div>' +
@@ -2473,7 +2523,7 @@
           '    <div class="tepa-bo-card">' +
           '      <div class="tepa-bo-card-head" style="margin-bottom:10px;">' +
           '        <div>' +
-          '          <h3 class="tepa-bo-card-title" style="font-size:14.5px;">Live Mobile Preview</h3>' +
+          '          <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('smartphone', 14) + '</span><h3 class="tepa-bo-card-title" style="font-size:14.5px;">Live Mobile Preview</h3></div>' +
           '          <p class="tepa-bo-card-desc">Updates as you type</p>' +
           '        </div>' +
           '        <div class="tepa-bo-seg" style="width:154px;">' +
@@ -2528,8 +2578,8 @@
             '<div class="tepa-bo-proj-row ' + (isDirty ? 'is-dirty' : '') + ' ' + (!isAct ? 'is-inactive' : '') + '" data-proj-row="' + orig.id + '">' +
             '  <div class="tepa-bo-slot-group">' +
             '    <span class="tepa-bo-slot-pill">#' + pad2(orig.slot_number) + '</span>' +
-            '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move Up">↑</button>' +
-            '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="1" ' + (idx === filteredProjects.length - 1 ? 'disabled' : '') + ' title="Move Down">↓</button>' +
+            '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="-1" ' + (idx === 0 ? 'disabled' : '') + ' title="Move Up">' + icon('arrowUp', 13) + '</button>' +
+            '    <button type="button" class="tepa-bo-icon-btn" data-action="move-project" data-id="' + orig.id + '" data-dir="1" ' + (idx === filteredProjects.length - 1 ? 'disabled' : '') + ' title="Move Down">' + icon('arrowDown', 13) + '</button>' +
             '  </div>' +
             '  <input class="tepa-bo-input" data-field="category_name" value="' + esc(p.category_name) + '" placeholder="Category">' +
             '  <input class="tepa-bo-input" data-field="project_title" value="' + esc(p.project_title) + '" placeholder="Project Title">' +
@@ -2543,8 +2593,8 @@
             '    <span class="tepa-bo-switch-track"><span class="tepa-bo-switch-thumb"></span></span>' +
             '  </label>' +
             '  <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">' +
-            '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (isDirty ? 'tepa-bo-btn-dark' : '') + '" data-action="save-project" data-id="' + orig.id + '">Save</button>' +
-            '    <button type="button" class="tepa-bo-icon-btn is-danger" data-action="open-confirm-modal" data-modal-kind="archive_project" data-id="' + orig.id + '" title="Remove Project">🗑</button>' +
+            '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (isDirty ? 'tepa-bo-btn-dark' : '') + '" data-action="save-project" data-id="' + orig.id + '">' + icon('check', 12) + '<span>Save</span></button>' +
+            '    <button type="button" class="tepa-bo-icon-btn is-danger" data-action="open-confirm-modal" data-modal-kind="archive_project" data-id="' + orig.id + '" title="Remove Project">' + icon('trash', 13) + '</button>' +
             '  </div>' +
             '</div>'
           );
@@ -2554,7 +2604,7 @@
           '<div class="tepa-bo-card" style="margin-bottom:16px;">' +
           '  <div class="tepa-bo-card-head" style="margin-bottom:12px;">' +
           '    <div>' +
-          '      <h2 class="tepa-bo-card-title">Voting Poll Headlines</h2>' +
+          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('monitor', 15) + '</span><h2 class="tepa-bo-card-title">Voting Poll Headlines</h2></div>' +
           '      <p class="tepa-bo-card-desc">Customize the prompt shown on the Auditorium 16:9 Screen and on employees\' mobile cover.</p>' +
           '    </div>' +
           '  </div>' +
@@ -2569,7 +2619,7 @@
           '        <input id="tepa-poll-sub" class="tepa-bo-input" type="text" maxlength="180" value="' + esc(pollSub) + '">' +
           '      </div>' +
           '      <div style="max-width:170px;">' +
-          '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">Save Prompt</button>' +
+          '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark" style="width:100%;height:40px;">' + icon('check', 14) + '<span>Save Prompt</span></button>' +
           '      </div>' +
           '    </div>' +
           '  </form>' +
@@ -2577,15 +2627,15 @@
           '<div class="tepa-bo-card">' +
           '  <div class="tepa-bo-toolbar">' +
           '    <div>' +
-          '      <h2 class="tepa-bo-card-title">Finalist Projects &amp; Poll Options (' + projects.length + ')</h2>' +
+          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('trophy', 15) + '</span><h2 class="tepa-bo-card-title">Finalist Projects &amp; Poll Options (' + projects.length + ')</h2></div>' +
           '      <p class="tepa-bo-card-desc">' + activeCnt + ' active on 16:9 stage &amp; mobile voting · ' + hiddenCnt + ' hidden.</p>' +
           '    </div>' +
           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '      <span data-dirty-proj-badge class="tepa-bo-badge ' + (dirtyProjCount ? 'is-gold' : 'is-green') + '">' + (dirtyProjCount ? (dirtyProjCount + ' unsaved edit' + (dirtyProjCount > 1 ? 's' : '')) : 'All synced') + '</span>' +
           '      <button type="button" class="tepa-bo-btn" data-action="discard-projects" style="' + (dirtyProjCount ? '' : 'display:none;') + '">Discard</button>' +
-          (hiddenCnt > 0 ? '<button type="button" class="tepa-bo-btn" data-action="enable-all-projects">Enable All (' + projects.length + ')</button>' : '') +
-          '      <button type="button" class="tepa-bo-btn" data-action="create-project">+ Add Project / Option</button>' +
-          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-projects" ' + (state.saving ? 'disabled' : '') + '>Save All Projects</button>' +
+          (hiddenCnt > 0 ? '<button type="button" class="tepa-bo-btn" data-action="enable-all-projects">' + icon('check', 13) + '<span>Enable All (' + projects.length + ')</span></button>' : '') +
+          '      <button type="button" class="tepa-bo-btn" data-action="create-project">' + icon('plus', 13) + '<span>Add Project / Option</span></button>' +
+          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-primary" data-action="save-all-projects" ' + (state.saving ? 'disabled' : '') + '>' + icon('check', 14) + '<span>Save All Projects</span></button>' +
           '    </div>' +
           '  </div>' +
           '  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;">' +
@@ -2632,7 +2682,7 @@
           '    </div>' +
           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
           '      <input id="tepa-admin-search" class="tepa-bo-input" style="width:250px;" type="search" placeholder="Search name or TEPA-XXXXXX..." value="' + esc(state.search) + '">' +
-          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="export-csv">Export CSV</button>' +
+          '      <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="export-csv">' + icon('download', 14) + '<span>Export CSV</span></button>' +
           '    </div>' +
           '  </div>' +
           '  <div class="tepa-bo-table-wrap"><table class="tepa-bo-table">' +
@@ -2644,14 +2694,14 @@
                   '<tr>' +
                   '  <td>' + (r.winner_rank ? '<span class="tepa-bo-badge is-gold">#' + r.winner_rank + '</span>' : '<span style="color:#94A3B8;">—</span>') + '</td>' +
                   '  <td><strong>' + esc(r.full_name) + '</strong></td>' +
-                  '  <td><button type="button" class="tepa-bo-code-btn" data-action="copy-text" data-text="' + esc(r.unique_code) + '" data-label="Participant Code" title="Click to copy code">' + esc(r.unique_code) + '</button></td>' +
+                  '  <td><button type="button" class="tepa-bo-code-btn" data-action="copy-text" data-text="' + esc(r.unique_code) + '" data-label="Participant Code" title="Click to copy code">' + icon('copy', 11) + ' ' + esc(r.unique_code) + '</button></td>' +
                   '  <td><span class="tepa-bo-badge ' + (r.passed_criteria ? 'is-green' : 'is-muted') + '">' + esc(r.score) + ' / ' + esc(r.total_questions) + '</span></td>' +
                   '  <td>' + (r.is_voucher_winner
                     ? '<span class="tepa-bo-badge is-gold">Voucher Winner</span>'
                     : (r.passed_criteria ? '<span class="tepa-bo-badge is-blue">Passed</span>' : '<span class="tepa-bo-badge is-muted">Participant</span>')) + '</td>' +
                   '  <td style="color:#64748B;">' + esc(formatTime(r.created_at)) + '</td>' +
                   '  <td>' + (r.is_voucher_winner
-                    ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (r.voucher_claimed ? 'tepa-bo-btn-success' : 'tepa-bo-btn-dark') + '" data-action="toggle-claim" data-id="' + esc(r.id) + '" data-val="' + (!r.voucher_claimed) + '">' + (r.voucher_claimed ? 'Redeemed ✓' : 'Mark Redeemed') + '</button>'
+                    ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (r.voucher_claimed ? 'tepa-bo-btn-success' : 'tepa-bo-btn-dark') + '" data-action="toggle-claim" data-id="' + esc(r.id) + '" data-val="' + (!r.voucher_claimed) + '">' + (r.voucher_claimed ? (icon('check', 12) + '<span>Redeemed</span>') : 'Mark Redeemed') + '</button>'
                     : '<span style="color:#94A3B8;">—</span>') + '</td>' +
                   '</tr>'
                 );
@@ -2673,71 +2723,71 @@
         var auditItems = [
           {
             ok: true,
-            title: '1. Acesso Exclusivo WordPress & Segurança RLS',
-            desc: 'Backoffice protegido exclusivamente por sessão WordPress (manage_options) + políticas Row Level Security ativas no Supabase sem expor respostas corretas.',
-            badge: 'PROTEGIDO',
+            title: '1. WordPress-Only Access & RLS Security',
+            desc: 'Backoffice protected exclusively by WordPress admin session (manage_options) + Supabase Row Level Security with hidden correct answers.',
+            badge: 'PROTECTED',
             actionTab: 'settings',
-            actionLbl: 'Segurança →'
+            actionLbl: 'Security'
           },
           {
             ok: true,
-            title: '2. Motor de Tempo Real (' + (mode === 'supabase' ? 'Supabase Cloud' : 'Modo Ensaio Demo') + ')',
+            title: '2. Realtime Engine (' + (mode === 'supabase' ? 'Supabase Cloud' : 'Demo Rehearsal Mode') + ')',
             desc: mode === 'supabase'
-              ? 'Ligado ao projeto Supabase ujpzqulgainzxxombrgb com WebSockets e publicação supabase_realtime ativa em todas as 5 tabelas.'
-              : 'Modo de ensaio local ativo via BroadcastChannel. Desative Force Demo Mode nas definições WordPress para o dia do evento.',
+              ? 'Connected to Supabase project ujpzqulgainzxxombrgb with WebSockets & supabase_realtime active across all 5 tables.'
+              : 'Local rehearsal mode active via BroadcastChannel. Turn OFF Force Demo Mode in WordPress settings for live event day.',
             badge: mode === 'supabase' ? 'ONLINE' : 'DEMO MODE',
             actionTab: 'settings',
-            actionLbl: 'Ligação →'
+            actionLbl: 'Connection'
           },
           {
             ok: Boolean(actQuiz && actQuizQs.length > 0 && minScoreOk),
-            title: '3. Integridade do Quiz Ativo ("' + (actQuiz ? actQuiz.title : 'Nenhum') + '")',
+            title: '3. Active Quiz Integrity ("' + (actQuiz ? actQuiz.title : 'None') + '")',
             desc: actQuiz
-              ? (actQuizQs.length + ' perguntas ativas · Nota mínima: ' + (actQuiz.min_score || 1) + ' / ' + actQuizQs.length + ' · ' + (actQuiz.questions_per_page || 2) + ' por página mobile.')
-              : 'Nenhum quiz ativo selecionado.',
-            badge: (actQuiz && actQuizQs.length > 0) ? 'PRONTO' : 'ATENÇÃO',
+              ? (actQuizQs.length + ' active questions · Min score: ' + (actQuiz.min_score || 1) + ' / ' + actQuizQs.length + ' · ' + (actQuiz.questions_per_page || 2) + ' per mobile screen.')
+              : 'No active quiz selected.',
+            badge: (actQuiz && actQuizQs.length > 0) ? 'READY' : 'CHECK',
             actionTab: 'questions',
-            actionLbl: 'Quiz Studio →'
+            actionLbl: 'Quiz Studio'
           },
           {
             ok: Boolean(activeProjs.length >= 2),
-            title: '4. Projetos Finalistas & Escala Adaptativa (' + activeProjs.length + ' ativos)',
-            desc: activeProjs.length + ' de ' + projects.length + ' projetos visíveis no telão 16:9 e no telemóvel. Percentagens calculadas sobre ' + k.totalVotes + ' votos ativos (soma 100%).',
-            badge: activeProjs.length + ' ATIVOS',
+            title: '4. Finalist Projects & Adaptive Scale (' + activeProjs.length + ' active)',
+            desc: activeProjs.length + ' of ' + projects.length + ' projects visible on 16:9 stage & mobile voting. Share percentages calculated across ' + k.totalVotes + ' active votes (100% sum).',
+            badge: activeProjs.length + ' ACTIVE',
             actionTab: 'projects',
-            actionLbl: 'Projetos →'
+            actionLbl: 'Projects'
           },
           {
             ok: Boolean(s.quiz_open && s.voting_open),
-            title: '5. Portões Mobile (Quiz & Votação)',
-            desc: 'Quiz Mobile: ' + (s.quiz_open ? 'ABERTO' : 'FECHADO') + ' · Votação Final: ' + (s.voting_open ? 'ABERTA' : 'FECHADA') + '.',
-            badge: (s.quiz_open && s.voting_open) ? 'ABERTOS' : 'PAUSADO',
+            title: '5. Mobile Participation Gates',
+            desc: 'Mobile Quiz: ' + (s.quiz_open ? 'OPEN' : 'CLOSED') + ' · Final Voting: ' + (s.voting_open ? 'OPEN' : 'CLOSED') + '.',
+            badge: (s.quiz_open && s.voting_open) ? 'OPEN' : 'PAUSED',
             actionTab: 'stage',
-            actionLbl: 'Portões →'
+            actionLbl: 'Gates'
           },
           {
             ok: true,
-            title: '6. Sistema de Vouchers & Balcão (' + k.voucherWinners.length + ' / ' + k.maxVouchers + ')',
-            desc: 'Advisory lock transacional ativo para atribuir exatamente os primeiros ' + k.maxVouchers + ' vouchers (' + k.redeemedCount + ' já levantados no balcão).',
-            badge: k.voucherWinners.length + '/' + k.maxVouchers + ' GANHOS',
+            title: '6. Prize Vouchers & Desk (' + k.voucherWinners.length + ' / ' + k.maxVouchers + ')',
+            desc: 'Transactional advisory lock active to award the exact first ' + k.maxVouchers + ' winners (' + k.redeemedCount + ' redeemed at prize desk).',
+            badge: k.voucherWinners.length + '/' + k.maxVouchers + ' WON',
             actionTab: 'submissions',
-            actionLbl: 'Balcão →'
+            actionLbl: 'Prize Desk'
           },
           {
             ok: true,
-            title: '7. Ecrã 16:9 do Auditório (Modo: ' + (s.stage_mode === 'quiz_qr' ? 'Quiz QR' : (s.stage_mode === 'winner_reveal' ? 'Vencedor' : 'Votação Live')) + ')',
-            desc: 'Design adaptativo automático (xl / lg / md / sm) sem espaços em branco, com suporte Light/Dark Mode e QR Code lateral.',
-            badge: 'SINCRONIZADO',
+            title: '7. 16:9 Auditorium Stage (Mode: ' + (s.stage_mode === 'quiz_qr' ? 'Quiz QR' : (s.stage_mode === 'winner_reveal' ? 'Winner Reveal' : 'Live Voting')) + ')',
+            desc: 'Automatic adaptive density (xl / lg / md / sm) with zero whitespace gaps, Light/Dark mode, and collapsible QR sidebar.',
+            badge: 'SYNCED',
             actionTab: 'stage',
-            actionLbl: 'Palco 16:9 →'
+            actionLbl: 'Stage 16:9'
           },
           {
             ok: true,
-            title: '8. Controlo Não-Destrutivo de Rondas (Epochs)',
-            desc: 'Ronda Quiz #' + (s.quiz_epoch || 1) + ' · Ronda Votação #' + (s.vote_epoch || 1) + '. O reset limpa o ecrã preservando o histórico na base de dados.',
-            badge: 'RONDA #' + (s.vote_epoch || 1),
+            title: '8. Non-Destructive Round Epochs',
+            desc: 'Quiz Round #' + (s.quiz_epoch || 1) + ' · Voting Round #' + (s.vote_epoch || 1) + '. Resetting clears the stage cleanly while preserving historical records.',
+            badge: 'ROUND #' + (s.vote_epoch || 1),
             actionTab: 'stage',
-            actionLbl: 'Rondas →'
+            actionLbl: 'Rounds'
           }
         ];
 
@@ -2745,10 +2795,10 @@
           '<div class="tepa-bo-card" style="margin-bottom:16px;">' +
           '  <div class="tepa-bo-card-head">' +
           '    <div>' +
-          '      <h2 class="tepa-bo-card-title">Relatório de Auditoria Funcional &amp; Prontidão do Evento</h2>' +
-          '      <p class="tepa-bo-card-desc">Verificação em tempo real dos 8 subsistemas críticos do TEPA Performance Award 2026.</p>' +
+          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('shield', 15) + '</span><h2 class="tepa-bo-card-title">Functional Audit &amp; Event Readiness Report</h2></div>' +
+          '      <p class="tepa-bo-card-desc">Real-time health check across all 8 critical subsystems of TEPA Performance Award 2026.</p>' +
           '    </div>' +
-          '    <span class="tepa-bo-badge is-green" style="height:30px;padding:0 12px;">✓ Todos os Sistemas Operacionais</span>' +
+          '    <span class="tepa-bo-badge is-green" style="height:30px;padding:0 12px;">' + icon('check', 13) + ' All Systems Operational</span>' +
           '  </div>' +
           '  <div class="tepa-bo-audit-grid">' +
           auditItems.map(function (item) {
@@ -2761,7 +2811,7 @@
               '    </div>' +
               '    <p style="font-size:12.5px;color:#475569;">' + esc(item.desc) + '</p>' +
               '  </div>' +
-              '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="' + item.actionTab + '">' + esc(item.actionLbl) + '</button>' +
+              '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="' + item.actionTab + '"><span>' + esc(item.actionLbl) + '</span>' + icon('arrowRight', 12) + '</button>' +
               '</div>'
             );
           }).join('') +
@@ -2781,9 +2831,9 @@
         '    <div class="tepa-bo-qr-box" id="tepa-admin-qr-vote"></div>' +
         '    <div class="tepa-bo-qr-url">' + esc(voteAbs) + '</div>' +
         '    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="copy-text" data-text="' + esc(voteAbs) + '" data-label="Voting URL">Copy Link</button>' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="download-qr" data-target="tepa-admin-qr-vote" data-filename="tepa-voting-qr.svg">SVG</button>' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="download-qr-png" data-target="tepa-admin-qr-vote" data-filename="tepa-voting-qr.png">PNG 1024px</button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="copy-text" data-text="' + esc(voteAbs) + '" data-label="Voting URL">' + icon('copy', 12) + '<span>Copy Link</span></button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="download-qr" data-target="tepa-admin-qr-vote" data-filename="tepa-voting-qr.svg">' + icon('download', 12) + '<span>SVG</span></button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="download-qr-png" data-target="tepa-admin-qr-vote" data-filename="tepa-voting-qr.png">' + icon('download', 12) + '<span>PNG 1024px</span></button>' +
         '    </div>' +
         '  </div>' +
         '  <div class="tepa-bo-card tepa-bo-qr-card">' +
@@ -2791,9 +2841,9 @@
         '    <div class="tepa-bo-qr-box" id="tepa-admin-qr-quiz"></div>' +
         '    <div class="tepa-bo-qr-url">' + esc(quizAbs) + '</div>' +
         '    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="copy-text" data-text="' + esc(quizAbs) + '" data-label="Quiz URL">Copy Link</button>' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="download-qr" data-target="tepa-admin-qr-quiz" data-filename="tepa-quiz-qr.svg">SVG</button>' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="download-qr-png" data-target="tepa-admin-qr-quiz" data-filename="tepa-quiz-qr.png">PNG 1024px</button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="copy-text" data-text="' + esc(quizAbs) + '" data-label="Quiz URL">' + icon('copy', 12) + '<span>Copy Link</span></button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="download-qr" data-target="tepa-admin-qr-quiz" data-filename="tepa-quiz-qr.svg">' + icon('download', 12) + '<span>SVG</span></button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="download-qr-png" data-target="tepa-admin-qr-quiz" data-filename="tepa-quiz-qr.png">' + icon('download', 12) + '<span>PNG 1024px</span></button>' +
         '    </div>' +
         '  </div>' +
         '  <div class="tepa-bo-card tepa-bo-qr-card">' +
@@ -2801,9 +2851,9 @@
         '    <div class="tepa-bo-qr-box" id="tepa-admin-qr-live"></div>' +
         '    <div class="tepa-bo-qr-url">' + esc(liveAbs) + '</div>' +
         '    <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="copy-text" data-text="' + esc(liveAbs) + '" data-label="Live URL">Copy Link</button>' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="download-qr" data-target="tepa-admin-qr-live" data-filename="tepa-live-qr.svg">SVG</button>' +
-        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="download-qr-png" data-target="tepa-admin-qr-live" data-filename="tepa-live-qr.png">PNG 1024px</button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="copy-text" data-text="' + esc(liveAbs) + '" data-label="Live URL">' + icon('copy', 12) + '<span>Copy Link</span></button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="download-qr" data-target="tepa-admin-qr-live" data-filename="tepa-live-qr.svg">' + icon('download', 12) + '<span>SVG</span></button>' +
+        '      <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-dark" data-action="download-qr-png" data-target="tepa-admin-qr-live" data-filename="tepa-live-qr.png">' + icon('download', 12) + '<span>PNG 1024px</span></button>' +
         '    </div>' +
         '  </div>' +
         '</div>' +
@@ -2811,7 +2861,7 @@
         '  <div class="tepa-bo-card">' +
         '    <div class="tepa-bo-card-head">' +
         '      <div>' +
-        '        <h2 class="tepa-bo-card-title">Supabase Realtime Connection (WordPress)</h2>' +
+        '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('radio', 15) + '</span><h2 class="tepa-bo-card-title">Supabase Realtime Connection (WordPress)</h2></div>' +
         '        <p class="tepa-bo-card-desc">Credentials &amp; live/rehearsal mode saved in WordPress Settings.</p>' +
         '      </div>' +
         '      <span class="tepa-bo-badge ' + (mode === 'supabase' ? 'is-green' : 'is-gold') + '">' + (mode === 'supabase' ? 'Connected' : 'Demo Active') + '</span>' +
@@ -2830,7 +2880,7 @@
         '  <div class="tepa-bo-card">' +
         '    <div class="tepa-bo-card-head">' +
         '      <div>' +
-        '        <h2 class="tepa-bo-card-title">Event Admin Security PIN</h2>' +
+        '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('lock', 15) + '</span><h2 class="tepa-bo-card-title">Event Admin Security PIN</h2></div>' +
         '        <p class="tepa-bo-card-desc">Update the PIN required to unlock this Command Center.</p>' +
         '      </div>' +
         '      <span class="tepa-bo-badge is-muted">Min 4 chars</span>' +
@@ -2845,7 +2895,7 @@
         '        <input id="tepa-confirm-pin" class="tepa-bo-input" type="password" minlength="4" placeholder="Repeat new PIN" required>' +
         '      </div>' +
         '      <div style="display:flex;justify-content:flex-end;">' +
-        '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark">Update Admin PIN</button>' +
+        '        <button type="submit" class="tepa-bo-btn tepa-bo-btn-dark">' + icon('check', 14) + '<span>Update Admin PIN</span></button>' +
         '      </div>' +
         '    </form>' +
         '  </div>' +
@@ -2883,11 +2933,11 @@
           '    <div class="tepa-bo-card has-rainbow">' +
           '      <div class="tepa-bo-rainbow-bar"></div>' +
           '      <div style="padding-top:20px;">' +
-          renderBrandBlock('<span class="tepa-bo-badge is-red">🔒 Acesso Exclusivo WordPress</span>') +
+          renderBrandBlock('<span class="tepa-bo-badge is-red">' + icon('lock', 12) + ' WordPress Admin Only</span>') +
           '        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;">' +
-          '          <h2 class="tepa-bo-card-title" style="margin-bottom:6px;">Backoffice Protegido pelo WordPress</h2>' +
-          '          <p class="tepa-bo-card-desc" style="margin-bottom:18px;">O painel de gestão do TEPA Performance Award 2026 só pode ser acedido através do painel administrativo do WordPress (<code>wp-admin</code>) com sessão de administrador iniciada.</p>' +
-          '          <a href="' + esc(cfg.adminUrl || '/wp-admin/admin.php?page=tepa-award-2026') + '" class="tepa-bo-btn tepa-bo-btn-primary" style="width:100%;height:42px;">Entrar pelo WordPress (WP-Admin) →</a>' +
+          '          <h2 class="tepa-bo-card-title" style="margin-bottom:6px;">Backoffice Protected by WordPress</h2>' +
+          '          <p class="tepa-bo-card-desc" style="margin-bottom:18px;">The TEPA Performance Award 2026 Command Center can only be accessed via the WordPress administration panel (<code>wp-admin</code>) with an active administrator session.</p>' +
+          '          <a href="' + esc(cfg.adminUrl || '/wp-admin/admin.php?page=tepa-award-2026') + '" class="tepa-bo-btn tepa-bo-btn-primary" style="width:100%;height:42px;">Sign in via WordPress (WP-Admin) →</a>' +
           '        </div>' +
           '      </div>' +
           '    </div>' +
@@ -2915,7 +2965,7 @@
           '              <input id="tepa-pin-input" type="password" class="tepa-bo-input" placeholder="Enter Event PIN" autocomplete="current-password" required>' +
           '            </div>' +
           (state.error ? '<div class="tepa-bo-alert is-error" style="margin-bottom:12px;">' + esc(state.error) + '</div>' : '') +
-          '            <button type="submit" class="tepa-bo-btn tepa-bo-btn-primary" style="width:100%;height:42px;">Unlock Command Center</button>' +
+          '            <button type="submit" class="tepa-bo-btn tepa-bo-btn-primary" style="width:100%;height:42px;">' + icon('lock', 14) + '<span>Unlock Command Center</span></button>' +
           '          </form>' +
           '        </div>' +
           '      </div>' +
@@ -2980,7 +3030,7 @@
 
       root.innerHTML =
         '<div class="tepa-bo tepa-bo-app tepa-anim-enter" id="tepa-bo-shell">' +
-        '  <aside class="tepa-bo-sidebar" aria-label="Menu Principal TEPA">' +
+        '  <aside class="tepa-bo-sidebar" aria-label="TEPA Navigation">' +
         '    <div class="tepa-bo-rainbow-bar"></div>' +
         '    <div class="tepa-bo-side-brand">' +
         '      <div class="tepa-bo-side-logos">' +
@@ -2996,51 +3046,51 @@
           : '<span class="tepa-bo-side-rt is-demo"><span class="tepa-bo-status-dot"></span> Demo / Rehearsal Mode</span>') +
         '    </div>' +
         '    <nav class="tepa-bo-side-nav" aria-label="Backoffice Sections">' +
-        '      <div class="tepa-bo-side-group-lbl">Comando do Evento</div>' +
+        '      <div class="tepa-bo-side-group-lbl">Event Control</div>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'stage' ? 'is-active' : '') + '" data-tab="stage">' +
-        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">📡</span><span>Live Stage &amp; Controls</span></span>' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('radio', 15) + '</span><span>Live Stage &amp; Controls</span></span>' +
         '        <span class="tepa-bo-nav-badge is-live" data-tab-count="stage">' + esc(stageBadgeText) + '</span>' +
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'questions' ? 'is-active' : '') + '" data-tab="questions">' +
-        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">✨</span><span>Quiz Studio</span></span>' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('sparkles', 15) + '</span><span>Quiz Studio</span></span>' +
         '        <span class="tepa-bo-nav-badge" data-tab-count="questions">' + quizQs.length + '</span>' +
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'projects' ? 'is-active' : '') + '" data-tab="projects">' +
-        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">🏆</span><span>Voting &amp; Projects</span></span>' +
-        '        <span class="tepa-bo-nav-badge" data-tab-count="projects">' + k.activeProjects.length + '</span>' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('trophy', 15) + '</span><span>Voting &amp; Projects</span></span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="projects">' + (k.activeProjects.length === projects.length ? projects.length : (k.activeProjects.length + '/' + projects.length)) + '</span>' +
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'submissions' ? 'is-active' : '') + '" data-tab="submissions">' +
-        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">🎁</span><span>Winners &amp; Desk</span></span>' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('gift', 15) + '</span><span>Winners &amp; Desk</span></span>' +
         '        <span class="tepa-bo-nav-badge" data-tab-count="submissions">' + subs.length + '</span>' +
         '      </button>' +
-        '      <div class="tepa-bo-side-group-lbl">Sistema &amp; Segurança</div>' +
+        '      <div class="tepa-bo-side-group-lbl">System &amp; Security</div>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'settings' ? 'is-active' : '') + '" data-tab="settings">' +
-        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">📱</span><span>QR Kit &amp; Connection</span></span>' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('qr', 15) + '</span><span>QR Kit &amp; Connection</span></span>' +
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'audit' ? 'is-active' : '') + '" data-tab="audit">' +
-        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">🛡️</span><span>Auditoria &amp; Diagnóstico</span></span>' +
+        '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('shield', 15) + '</span><span>System Audit</span></span>' +
         '        <span class="tepa-bo-nav-badge is-live">OK</span>' +
         '      </button>' +
         '    </nav>' +
         '    <div class="tepa-bo-side-footer">' +
-        '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-side-link is-primary">🖥 Open 16:9 Live Screen ↗</a>' +
+        '      <a href="' + esc(liveScreenUrl) + '" target="_blank" class="tepa-bo-side-link is-primary">' + icon('monitor', 14) + '<span>Open 16:9 Live Screen</span>' + icon('external', 12) + '</a>' +
         '      <div class="tepa-bo-side-launch-grid">' +
-        '        <a href="' + esc(quizScreenUrl) + '" target="_blank" class="tepa-bo-side-link">❓ Quiz ↗</a>' +
-        '        <a href="' + esc(voteScreenUrl) + '" target="_blank" class="tepa-bo-side-link">🗳️ Voting ↗</a>' +
+        '        <a href="' + esc(quizScreenUrl) + '" target="_blank" class="tepa-bo-side-link">' + icon('help', 13) + '<span>Quiz</span>' + icon('external', 11) + '</a>' +
+        '        <a href="' + esc(voteScreenUrl) + '" target="_blank" class="tepa-bo-side-link">' + icon('vote', 13) + '<span>Voting</span>' + icon('external', 11) + '</a>' +
         '      </div>' +
         '      <div class="tepa-bo-wp-meta">' +
         '        <div class="tepa-bo-wp-meta-row">' +
-        '          <span>🔒 WordPress Admin</span>' +
+        '          <span style="display:inline-flex;align-items:center;gap:5px;">' + icon('lock', 11) + ' WordPress Admin</span>' +
         '          <strong style="color:#E2E8F0;">' + esc(cfg.wpUserDisplay || 'Admin') + '</strong>' +
         '        </div>' +
         '        <div class="tepa-bo-side-launch-grid">' +
         (cfg.wpDashboardUrl
-          ? '<a href="' + esc(cfg.wpDashboardUrl) + '" class="tepa-bo-side-link" title="Return to standard WordPress Dashboard">← WP-Admin</a>' +
-            '<button type="button" class="tepa-bo-side-link" data-action="toggle-wp-chrome" title="Show/Hide native WordPress sidebar">Barra WP</button>'
-          : '<button type="button" class="tepa-bo-side-link" data-action="toggle-wp-chrome" title="Toggle Fullscreen Focus">⛶ Fullscreen</button>' +
+          ? '<a href="' + esc(cfg.wpDashboardUrl) + '" class="tepa-bo-side-link" title="Return to standard WordPress Dashboard">' + icon('arrowLeft', 12) + '<span>WP-Admin</span></a>' +
+            '<button type="button" class="tepa-bo-side-link" data-action="toggle-wp-chrome" title="Show/Hide native WordPress sidebar">' + icon('layout', 12) + '<span>WP Menu</span></button>'
+          : '<button type="button" class="tepa-bo-side-link" data-action="toggle-wp-chrome" title="Toggle Fullscreen Focus">' + icon('maximize', 12) + '<span>Fullscreen</span></button>' +
             (mode === 'supabase'
-              ? '<button type="button" class="tepa-bo-side-link" data-action="lock-admin" title="Lock Admin Console">🔒 Lock</button>'
-              : '<button type="button" class="tepa-bo-side-link" data-tab="audit">🛡️ Audit</button>')) +
+              ? '<button type="button" class="tepa-bo-side-link" data-action="lock-admin" title="Lock Admin Console">' + icon('lock', 12) + '<span>Lock</span></button>'
+              : '<button type="button" class="tepa-bo-side-link" data-tab="audit">' + icon('shield', 12) + '<span>Audit</span></button>')) +
         '        </div>' +
         '      </div>' +
         '    </div>' +
@@ -3048,21 +3098,22 @@
         '  <div class="tepa-bo-main">' +
         '    <header class="tepa-bo-topbar">' +
         '      <div class="tepa-bo-topbar-left">' +
-        '        <div>' +
-        '          <div class="tepa-bo-topbar-title" id="tepa-bo-topbar-title">' + esc(meta.icon + ' ' + meta.title) + '</div>' +
+        '        <span class="tepa-bo-topbar-icon" id="tepa-bo-topbar-icon">' + icon(meta.iconName, 18) + '</span>' +
+        '        <div style="min-width:0;">' +
+        '          <div class="tepa-bo-topbar-title" id="tepa-bo-topbar-title">' + esc(meta.title) + '</div>' +
         '          <div class="tepa-bo-topbar-desc" id="tepa-bo-topbar-desc">' + esc(meta.desc) + '</div>' +
         '        </div>' +
         '      </div>' +
         '      <div class="tepa-bo-topbar-controls">' +
         '        <span id="tepa-bo-toast-slot">' + (state.notice ? '<span class="tepa-bo-toast ' + (state.noticeType === 'err' ? 'is-err' : '') + '">' + esc(state.notice) + '</span>' : '') + '</span>' +
         '        <div class="tepa-bo-quick-stage" title="Quickly switch the 16:9 Auditorium Stage from any menu">' +
-        '          <span class="tepa-bo-quick-stage-lbl">16:9 Stage:</span>' +
+        '          <span class="tepa-bo-quick-stage-lbl">' + icon('monitor', 12) + '<span>16:9 Stage:</span></span>' +
         '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'quiz_qr' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="quiz_qr">1. Quiz QR</button>' +
         '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'live_voting' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="live_voting">2. Live Voting</button>' +
         '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'winner_reveal' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="winner_reveal">3. Winner</button>' +
         '        </div>' +
         (mode === 'supabase' && cfg.wpDashboardUrl
-          ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="lock-admin" title="Lock Admin Console">🔒 Lock</button>'
+          ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="lock-admin" title="Lock Admin Console">' + icon('lock', 13) + '<span>Lock</span></button>'
           : '') +
         '      </div>' +
         '    </header>' +
@@ -3072,40 +3123,44 @@
             '  <div><strong>Demo / Rehearsal Mode Active:</strong> Votes, quizzes, and edits stay in browser local storage / BroadcastChannel without writing to Supabase Cloud.' +
             (hasWpTpl ? ' Turn OFF <em>Force Demo Mode</em> in Connection Settings when ready to go live.' : '') +
             '  </div>' +
-            '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="settings">Connection Settings →</button>' +
+            '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="settings"><span>Connection Settings</span>' + icon('arrowRight', 12) + '</button>' +
             '</div>'
           : '') +
         (state.error ? '<div class="tepa-bo-alert is-error"><div><strong>Action notice:</strong> ' + esc(state.error) + '</div></div>' : '') +
         '      <section class="tepa-bo-kpis">' +
         '        <div class="tepa-bo-kpi-card" data-tab="projects" title="Click to manage finalist projects">' +
-        '          <div class="tepa-bo-kpi-top">' +
-        '            <span class="tepa-bo-kpi-label">Total Votes Cast</span>' +
+        '          <div class="tepa-bo-kpi-head">' +
+        '            <span class="tepa-bo-kpi-icon is-orange">' + icon('barChart', 18) + '</span>' +
         '            <span data-kpi-votes-badge class="tepa-bo-badge ' + (s.voting_open ? 'is-green' : 'is-red') + '">' + (s.voting_open ? 'Voting Open' : 'Voting Closed') + '</span>' +
         '          </div>' +
+        '          <div class="tepa-bo-kpi-label">Total Votes Cast</div>' +
         '          <div class="tepa-bo-kpi-value" data-kpi-votes>' + esc(k.totalVotes) + '</div>' +
         '          <div class="tepa-bo-kpi-sub" data-kpi-votes-sub>Round #' + esc(s.vote_epoch || 1) + ' · ' + esc(k.activeProjects.length) + ' active finalists</div>' +
         '        </div>' +
         '        <div class="tepa-bo-kpi-card" data-tab="stage" title="Click to view Live Top 5 Standings">' +
-        '          <div class="tepa-bo-kpi-top">' +
-        '            <span class="tepa-bo-kpi-label">Current Leader</span>' +
+        '          <div class="tepa-bo-kpi-head">' +
+        '            <span class="tepa-bo-kpi-icon is-blue">' + icon('trophy', 18) + '</span>' +
         '            <span class="tepa-bo-badge is-blue">Best of the Best</span>' +
         '          </div>' +
+        '          <div class="tepa-bo-kpi-label">Current Leader</div>' +
         '          <div class="tepa-bo-kpi-value is-text" data-kpi-leader title="' + esc(k.leader ? k.leader.project_title : '') + '">' + esc(k.leader ? k.leader.project_title : 'No votes yet') + '</div>' +
         '          <div class="tepa-bo-kpi-sub" data-kpi-leader-sub>' + (k.leader ? esc((k.leader.votes || 0) + ' votes (' + k.leaderPct + '%) · ' + k.leader.category_name) : 'Waiting for first vote') + '</div>' +
         '        </div>' +
         '        <div class="tepa-bo-kpi-card" data-tab="questions" title="Click to open Quiz Studio">' +
-        '          <div class="tepa-bo-kpi-top">' +
-        '            <span class="tepa-bo-kpi-label">Quiz Participants</span>' +
+        '          <div class="tepa-bo-kpi-head">' +
+        '            <span class="tepa-bo-kpi-icon is-purple">' + icon('users', 18) + '</span>' +
         '            <span data-kpi-quiz-badge class="tepa-bo-badge ' + (s.quiz_open ? 'is-green' : 'is-red') + '">' + (s.quiz_open ? 'Quiz Open' : 'Quiz Closed') + '</span>' +
         '          </div>' +
+        '          <div class="tepa-bo-kpi-label">Quiz Participants</div>' +
         '          <div class="tepa-bo-kpi-value" data-kpi-quiz>' + esc(subs.length) + '</div>' +
         '          <div class="tepa-bo-kpi-sub" data-kpi-quiz-sub>' + esc(k.passedCount) + ' passed min score · Round #' + esc(s.quiz_epoch || 1) + '</div>' +
         '        </div>' +
         '        <div class="tepa-bo-kpi-card" data-tab="submissions" title="Click to manage Winners & Prize Desk">' +
-        '          <div class="tepa-bo-kpi-top">' +
-        '            <span class="tepa-bo-kpi-label">Prize Vouchers</span>' +
+        '          <div class="tepa-bo-kpi-head">' +
+        '            <span class="tepa-bo-kpi-icon is-amber">' + icon('ticket', 18) + '</span>' +
         '            <span data-kpi-vouchers-badge class="tepa-bo-badge is-gold">First ' + esc(k.maxVouchers) + '</span>' +
         '          </div>' +
+        '          <div class="tepa-bo-kpi-label">Prize Vouchers</div>' +
         '          <div class="tepa-bo-kpi-value" data-kpi-vouchers>' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + '</div>' +
         '          <div class="tepa-bo-kpi-sub" data-kpi-vouchers-sub>' + esc(k.redeemedCount) + ' redeemed at prize desk</div>' +
         '          <div class="tepa-bo-progress"><div class="tepa-bo-progress-fill" data-kpi-vouchers-bar style="width:' + k.voucherPct + '%;"></div></div>' +
