@@ -509,31 +509,18 @@
       } else if (state.step === 'result' && state.receipt) {
         var r = state.receipt;
         var voteUrl = Store.getConfig().voteUrl || 'vote.html';
-        var voucherHtml = '';
-        if (r.passed_criteria) {
-          voucherHtml =
-            '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin-bottom:14px;">' +
-            '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
-            '  <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;" class="tepa-rainbow-text">Quiz Recorded!</h2>' +
-            '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
-            '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below — the quiz winners will be announced live on the 16:9 stage screen.' +
-            '  </p>' +
-            '</div>';
-        } else {
-          voucherHtml =
-            '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin-bottom:14px;">' +
-            '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
-            '  <h2 style="margin:0 0 6px;font-size:21px;font-weight:800;" class="tepa-rainbow-text">Thank You for Playing!</h2>' +
-            '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
-            '    Your participation has been recorded! Keep your Unique ID below and watch the 16:9 live stage screen for the official announcements.' +
-            '  </p>' +
-            '</div>';
-        }
+        var voucherHtml =
+          '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin:16px 0 14px;">' +
+          '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
+          '  <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;" class="tepa-rainbow-text">Quiz Recorded!</h2>' +
+          '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
+          '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below — the quiz winners will be announced live on the 16:9 stage screen.' +
+          '  </p>' +
+          '</div>';
 
         stage.innerHTML =
           '<div class="tepa-quiz-step-wrap is-result ' + animClass + '">' +
           '  <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
-          '  <p style="margin:12px 0 12px;font-size:13px;color:#C7C9D9;text-align:center;">Score: <strong style="color:#FFFFFF;">' + esc(r.score) + ' / ' + esc(r.total_questions) + '</strong></p>' +
           voucherHtml +
           '  <div class="tepa-unique-id-box" style="width:100%;">' +
           '    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Unique Participant ID</div>' +
