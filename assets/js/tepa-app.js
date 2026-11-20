@@ -1230,10 +1230,13 @@
         ? ranked.slice(0, 5)
         : displayList;
 
+      var qsForKey = dash.quiz_stats || {};
       var renderKey = [
         stageMode, state.theme, state.chartType, state.verticalScope,
         state.showQrSidebar, state.hideResults, state.sortMode, mode,
-        projects.length, settings.voting_headline || ''
+        projects.length, settings.voting_headline || '',
+        Boolean(settings.reveal_quiz_winners), qsForKey.total_participants || 0,
+        qsForKey.vouchers_awarded || 0, (qsForKey.winners || []).length
       ].join('|');
 
       if (stageMode === 'live_voting' && state.lastRenderKey === renderKey) {
@@ -1487,7 +1490,7 @@
         '</footer>';
 
       var stageEl = root.querySelector('.tepa-menti-stage');
-      var onlyThemeSwitch = prevKey && prevKey.replace(/\|(light|dark)\|/, '|X|') === renderKey.replace(/\|(light|dark)\|/, '|X|');
+      var onlyThemeSwitch = prevKey && prevKey !== renderKey && prevKey.replace(/\|(light|dark)\|/, '|X|') === renderKey.replace(/\|(light|dark)\|/, '|X|');
       if (stageEl && onlyThemeSwitch) {
         stageEl.setAttribute('data-live-theme', state.theme);
         return;
