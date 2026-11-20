@@ -236,6 +236,7 @@
         quiz_open: true,
         voting_open: true,
         reveal_winner: false,
+        reveal_quiz_winners: false,
         stage_mode: 'live_voting',
         min_quiz_score: 5,
         max_vouchers: 10,
@@ -256,6 +257,7 @@
     if (!state.settings.active_quiz_id) state.settings.active_quiz_id = DEFAULT_QUIZ_ID;
     if (!state.settings.voting_headline) state.settings.voting_headline = 'Which finalist project deserves the Best of the Best?';
     if (!state.settings.voting_subtitle) state.settings.voting_subtitle = 'You have 15 finalist projects · Choose one for Best of the Best';
+    if (state.settings.reveal_quiz_winners == null) state.settings.reveal_quiz_winners = false;
     if (!Array.isArray(state.quizzes) || !state.quizzes.length) {
       state.quizzes = clone(DEFAULT_QUIZZES);
     }
@@ -343,19 +345,23 @@
       return !q.is_archived && q.id === state.settings.active_quiz_id;
     }) || (state.quizzes || []).find(function (q) { return !q.is_archived; }) || null;
 
-    var winners = state.quiz_submissions
+    var allWinners = state.quiz_submissions
       .filter(function (s) { return s.is_voucher_winner; })
-      .sort(function (a, b) { return (a.winner_rank || 999) - (b.winner_rank || 999); })
-      .map(function (s) {
-        return {
-          winner_rank: s.winner_rank,
-          display_name: s.full_name,
-          code_suffix: String(s.unique_code || '').slice(-4),
-          score: s.score,
-          total_questions: s.total_questions,
-          created_at: s.created_at
-        };
-      });
+      .sort(function (a, b) { return (a.winner_rank || 999) - (b.winner_rank || 999); });
+
+    var revealQuizWinners = Boolean(state.settings.reveal_quiz_winners);
+    var winners = revealQuizWinners
+      ? allWinners.map(function (s) {
+          return {
+            winner_rank: s.winner_rank,
+            display_name: s.full_name,
+            code_suffix: String(s.unique_code || '').slice(-4),
+            score: s.score,
+            total_questions: s.total_questions,
+            created_at: s.created_at
+          };
+        })
+      : [];
 
     var activeVotesTotal = projectsWithVotes.reduce(function (acc, p) {
       return acc + (Number(p.votes) || 0);
@@ -368,8 +374,9 @@
       total_votes: activeVotesTotal,
       quiz_stats: {
         total_participants: state.quiz_submissions.length,
-        vouchers_awarded: winners.length,
+        vouchers_awarded: allWinners.length,
         max_vouchers: (activeQuiz && activeQuiz.max_vouchers) || state.settings.max_vouchers || 10,
+        reveal_quiz_winners: revealQuizWinners,
         winners: winners
       }
     };
@@ -505,7 +512,19 @@
       var voucherTitle = (activeQuiz && activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher';
       var existing = state.quiz_submissions.find(function (s) { return s.device_id === deviceId; });
       if (existing) {
-        return Object.assign({ ok: true, already_submitted: true, voucher_title: voucherTitle }, existing);
+        return {
+          ok: true,
+          already_submitted: true,
+          epoch: existing.epoch || state.settings.quiz_epoch || 1,
+          full_name: existing.full_name,
+          device_id: existing.device_id,
+          score: existing.score,
+          total_questions: existing.total_questions,
+          passed_criteria: existing.passed_criteria,
+          unique_code: existing.unique_code,
+          voucher_title: voucherTitle,
+          created_at: existing.created_at
+        };
       }
 
       if (!state.settings.quiz_open) {
@@ -574,7 +593,19 @@
       state.quiz_submissions.push(record);
       saveDemoState(state, true);
 
-      var result = Object.assign({ ok: true, already_submitted: false }, record);
+      var result = {
+        ok: true,
+        already_submitted: false,
+        epoch: record.epoch,
+        full_name: record.full_name,
+        device_id: record.device_id,
+        score: record.score,
+        total_questions: record.total_questions,
+        passed_criteria: record.passed_criteria,
+        unique_code: record.unique_code,
+        voucher_title: record.voucher_title,
+        created_at: record.created_at
+      };
       try {
         global.localStorage.setItem(QUIZ_CACHE_KEY, JSON.stringify(result));
       } catch (e) {}
@@ -833,7 +864,7 @@
       }
 
       if (action === 'update_settings') {
-        ['event_title', 'voting_headline', 'voting_subtitle', 'quiz_open', 'voting_open', 'reveal_winner', 'stage_mode', 'min_quiz_score', 'max_vouchers'].forEach(function (k) {
+        ['event_title', 'voting_headline', 'voting_subtitle', 'quiz_open', 'voting_open', 'reveal_winner', 'reveal_quiz_winners', 'stage_mode', 'min_quiz_score', 'max_vouchers'].forEach(function (k) {
           if (payload[k] !== undefined && payload[k] !== null) {
             state.settings[k] = payload[k];
           }
@@ -932,6 +963,7 @@
         if (payload.reset_round) {
           state.quiz_submissions = [];
           state.settings.quiz_epoch = (state.settings.quiz_epoch || 1) + 1;
+          state.settings.reveal_quiz_winners = false;
           try { global.localStorage.removeItem(QUIZ_CACHE_KEY); } catch (e) {}
         }
         saveDemoState(state, true);
@@ -1103,6 +1135,7 @@
         if (scope === 'quiz' || scope === 'all') {
           state.quiz_submissions = [];
           state.settings.quiz_epoch = (state.settings.quiz_epoch || 1) + 1;
+          state.settings.reveal_quiz_winners = false;
         }
         if (scope === 'seed') {
           state = buildSeededDemoState(true);

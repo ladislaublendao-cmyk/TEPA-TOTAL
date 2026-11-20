@@ -505,32 +505,23 @@
       } else if (state.step === 'result' && state.receipt) {
         var r = state.receipt;
         var voteUrl = Store.getConfig().voteUrl || 'vote.html';
-        var voucherName = r.voucher_title || (state.activeQuiz && state.activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher';
-        var maxV = (state.activeQuiz && state.activeQuiz.max_vouchers) || 10;
         var voucherHtml = '';
-        if (r.is_voucher_winner) {
-          voucherHtml =
-            '<div class="tepa-voucher-card tepa-anim-enter">' +
-            '  <div class="tepa-voucher-badge">★ Winner #' + esc(r.winner_rank) + ' of ' + esc(maxV) + '</div>' +
-            '  <h2 style="margin:4px 0 6px;font-size:24px;font-weight:800;" class="tepa-rainbow-text">YOU LIT IT UP!</h2>' +
-            '  <p style="margin:0;font-size:14px;line-height:1.45;color:#F2F3FA;">' +
-            '    Congratulations, <strong>' + esc(r.full_name) + '</strong>! You\'ve won a <strong>' + esc(voucherName) + '</strong>.' +
-            '  </p>' +
-            '</div>';
-        } else if (r.passed_criteria) {
+        if (r.passed_criteria) {
           voucherHtml =
             '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin-bottom:14px;">' +
-            '  <h2 style="margin:0 0 6px;font-size:21px;font-weight:800;" class="tepa-rainbow-text">Great Score!</h2>' +
-            '  <p style="margin:0;font-size:13.5px;line-height:1.45;color:#D6D8E8;">' +
-            '    You passed! Thank you for lighting up the TEPA Performance Award!' +
+            '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
+            '  <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;" class="tepa-rainbow-text">Quiz Recorded!</h2>' +
+            '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
+            '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below — the quiz winners will be announced live on the 16:9 stage screen.' +
             '  </p>' +
             '</div>';
         } else {
           voucherHtml =
             '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin-bottom:14px;">' +
+            '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
             '  <h2 style="margin:0 0 6px;font-size:21px;font-weight:800;" class="tepa-rainbow-text">Thank You for Playing!</h2>' +
-            '  <p style="margin:0;font-size:13.5px;line-height:1.45;color:#D6D8E8;">' +
-            '    Enjoy the TEPA Performance Award 2026 ceremony and get ready to vote for the Best of the Best.' +
+            '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
+            '    Your participation has been recorded! Keep your Unique ID below and watch the 16:9 live stage screen for the official announcements.' +
             '  </p>' +
             '</div>';
         }
@@ -1307,16 +1298,31 @@
       if (stageMode === 'quiz_qr') {
         var qs = dash.quiz_stats || { total_participants: 0, vouchers_awarded: 0, max_vouchers: 10, winners: [] };
         var prizeTitle = (activeQuiz && activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher';
-        var winnersHtml = (qs.winners || []).map(function (w, i) {
-          return (
-            '<div class="tepa-winner-chip tepa-anim-enter" style="animation-delay:' + (i * 35) + 'ms;">' +
-            '  <div><strong style="color:#F77B39;">#' + esc(w.winner_rank) + '</strong> ' + esc(w.display_name) + '</div>' +
-            '  <span style="font-size:12px;color:var(--m-muted);font-family:monospace;">****' + esc(w.code_suffix) + '</span>' +
-            '</div>'
-          );
-        }).join('');
-        if (!winnersHtml) {
-          winnersHtml = '<p style="color:var(--m-muted);font-size:14px;">Waiting for the first ' + esc(qs.max_vouchers || 10) + ' ' + esc(prizeTitle) + ' winners...</p>';
+        var quizWinnersRevealed = Boolean(settings.reveal_quiz_winners || qs.reveal_quiz_winners);
+        var winnersHtml = '';
+        if (quizWinnersRevealed) {
+          winnersHtml = (qs.winners || []).map(function (w, i) {
+            return (
+              '<div class="tepa-winner-chip tepa-anim-enter" style="animation-delay:' + (i * 45) + 'ms;">' +
+              '  <div><strong style="color:#F77B39;">#' + esc(w.winner_rank) + '</strong> ' + esc(w.display_name) + '</div>' +
+              '  <span style="font-size:12px;color:var(--m-muted);font-family:monospace;">****' + esc(w.code_suffix) + '</span>' +
+              '</div>'
+            );
+          }).join('');
+          if (!winnersHtml) {
+            winnersHtml = '<p style="color:var(--m-muted);font-size:14px;">No qualifying winners recorded in this round yet.</p>';
+          }
+        } else {
+          winnersHtml =
+            '<div class="tepa-anim-enter" style="padding:20px 22px;border-radius:16px;background:var(--m-bg);border:1px dashed var(--m-border);display:flex;align-items:center;gap:14px;">' +
+            '  <div style="width:42px;height:42px;border-radius:12px;background:rgba(247,123,57,0.14);color:#F77B39;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+            '  </div>' +
+            '  <div>' +
+            '    <div style="font-weight:700;font-size:15px;color:var(--m-text);margin-bottom:3px;">Official Winners Announcement Pending</div>' +
+            '    <div style="font-size:13px;color:var(--m-muted);line-height:1.45;">Scan the QR code to complete the Quiz and keep your <strong>Unique Participant ID</strong>. The event manager will announce the ' + esc(prizeTitle) + ' winners right here on the live screen!</div>' +
+            '  </div>' +
+            '</div>';
         }
         workspaceHtml =
           '<div class="tepa-menti-quiz-grid tepa-anim-enter">' +
@@ -1328,9 +1334,14 @@
           '  <div style="min-width:0;">' +
           '    <div class="tepa-menti-kpi-row">' +
           '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val">' + esc(qs.total_participants) + '</div><div class="tepa-menti-kpi-lbl">Participants</div></div>' +
-          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" style="color:#F77B39;">' + esc(qs.vouchers_awarded) + ' / ' + esc(qs.max_vouchers) + '</div><div class="tepa-menti-kpi-lbl">Vouchers Won</div></div>' +
+          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" style="color:#F77B39;">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded) + ' / ' + esc(qs.max_vouchers)) : ('Top ' + esc(qs.max_vouchers))) + '</div><div class="tepa-menti-kpi-lbl">' + (quizWinnersRevealed ? 'Winners Announced' : 'Prizes Available') + '</div></div>' +
           '    </div>' +
-          '    <h3 style="margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:var(--m-muted);">' + esc(prizeTitle) + ' Winners</h3>' +
+          '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;">' +
+          '      <h3 style="margin:0;font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:var(--m-muted);">' + esc(prizeTitle) + ' Winners</h3>' +
+          (quizWinnersRevealed
+            ? '<span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(22,163,74,0.14);color:#16A34A;">● Official Results Live</span>'
+            : '<span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(247,123,57,0.14);color:#F77B39;">Awaiting Manager Reveal</span>') +
+          '    </div>' +
           '    <div class="tepa-winners-feed">' + winnersHtml + '</div>' +
           '  </div>' +
           '</div>';
@@ -2205,8 +2216,8 @@
           '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'quiz_qr' ? 'is-active' : '') + '" data-action="set-stage" data-val="quiz_qr">' +
           '        <span class="tepa-bo-stage-num">' + icon('qr', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
-          '          <span class="tepa-bo-stage-title">1. Welcome Quiz QR &amp; Winner Feed</span>' +
-          '          <span class="tepa-bo-stage-desc">Shows join QR code and live prize winners (' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + ').</span>' +
+          '          <span class="tepa-bo-stage-title">1. Welcome Quiz QR &amp; Official Winners</span>' +
+          '          <span class="tepa-bo-stage-desc">Shows join QR code (' + esc(k.voucherWinners.length) + ' / ' + esc(k.maxVouchers) + ' qualified · ' + (s.reveal_quiz_winners ? 'Winners Announced on 16:9' : 'Winners Hidden until Announced') + ').</span>' +
           '        </span>' +
           (s.stage_mode === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">● Live Now</span>' : '') +
           '      </button>' +
@@ -2242,6 +2253,16 @@
           '      </div>' +
           '      <label class="tepa-bo-switch" aria-label="Toggle Welcome Quiz Open">' +
           '        <input type="checkbox" class="tepa-bo-switch-input" data-action="toggle-setting" data-key="quiz_open" ' + (s.quiz_open ? 'checked' : '') + '>' +
+          '        <span class="tepa-bo-switch-track"><span class="tepa-bo-switch-thumb"></span></span>' +
+          '      </label>' +
+          '    </div>' +
+          '    <div class="tepa-bo-gate-row">' +
+          '      <div>' +
+          '        <div class="tepa-bo-stage-title">Announce Quiz Winners on 16:9 Live Screen</div>' +
+          '        <div class="tepa-bo-stage-desc">' + (s.reveal_quiz_winners ? 'Quiz winners are currently visible on the 16:9 auditorium screen.' : 'Winners are kept secret from players until you announce them on 16:9.') + '</div>' +
+          '      </div>' +
+          '      <label class="tepa-bo-switch" aria-label="Toggle Announce Quiz Winners on 16:9">' +
+          '        <input type="checkbox" class="tepa-bo-switch-input" data-action="toggle-setting" data-key="reveal_quiz_winners" ' + (s.reveal_quiz_winners ? 'checked' : '') + '>' +
           '        <span class="tepa-bo-switch-track"><span class="tepa-bo-switch-thumb"></span></span>' +
           '      </label>' +
           '    </div>' +
@@ -2681,7 +2702,9 @@
           '      <button type="button" class="tepa-bo-filter-pill ' + (state.subFilter === 'redeemed' ? 'is-active' : '') + '" data-subfilter="redeemed">Redeemed (' + redeemedSubs.length + ')</button>' +
           '    </div>' +
           '    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-          '      <input id="tepa-admin-search" class="tepa-bo-input" style="width:250px;" type="search" placeholder="Search name or TEPA-XXXXXX..." value="' + esc(state.search) + '">' +
+          '      <input id="tepa-admin-search" class="tepa-bo-input" style="width:230px;" type="search" placeholder="Search name or TEPA-XXXXXX..." value="' + esc(state.search) + '">' +
+          '      <button type="button" class="tepa-bo-btn ' + (s.reveal_quiz_winners ? 'tepa-bo-btn-success' : 'tepa-bo-btn-primary') + '" data-action="announce-quiz-winners" data-val="' + (!s.reveal_quiz_winners) + '">' +
+          icon('radio', 14) + '<span>' + (s.reveal_quiz_winners ? 'Winners Live on 16:9 (Hide)' : 'Announce Winners on 16:9 Screen') + '</span></button>' +
           '      <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="export-csv">' + icon('download', 14) + '<span>Export CSV</span></button>' +
           '    </div>' +
           '  </div>' +
@@ -2767,11 +2790,11 @@
           },
           {
             ok: true,
-            title: '6. Prize Vouchers & Desk (' + k.voucherWinners.length + ' / ' + k.maxVouchers + ')',
-            desc: 'Transactional advisory lock active to award the exact first ' + k.maxVouchers + ' winners (' + k.redeemedCount + ' redeemed at prize desk).',
-            badge: k.voucherWinners.length + '/' + k.maxVouchers + ' WON',
+            title: '6. Prize Vouchers & Live Screen Reveal (' + k.voucherWinners.length + ' / ' + k.maxVouchers + ')',
+            desc: 'Players never see winner status on their phones after answering — only the platform manager can announce winners on the 16:9 Live Screen (' + (s.reveal_quiz_winners ? 'CURRENTLY ANNOUNCED ON 16:9' : 'HIDDEN UNTIL MANAGER ANNOUNCES') + ').',
+            badge: s.reveal_quiz_winners ? 'ANNOUNCED 16:9' : 'SECRET / READY',
             actionTab: 'submissions',
-            actionLbl: 'Prize Desk'
+            actionLbl: 'Winners Desk'
           },
           {
             ok: true,
@@ -3400,7 +3423,11 @@
         var tRes = await Store.adminAction(pin, 'update_settings', payload);
         if (tRes && tRes.ok) {
           await loadAdmin(false);
-          flash((key === 'quiz_open' ? 'Welcome Quiz ' : 'Final Voting ') + (payload[key] ? 'OPENED' : 'CLOSED'));
+          if (key === 'reveal_quiz_winners') {
+            flash(payload[key] ? 'Quiz Winners ANNOUNCED on 16:9 Live Screen!' : 'Quiz Winners HIDDEN on 16:9 Live Screen');
+          } else {
+            flash((key === 'quiz_open' ? 'Welcome Quiz ' : 'Final Voting ') + (payload[key] ? 'OPENED' : 'CLOSED'));
+          }
         } else {
           flash((tRes && tRes.error) || 'Failed to update setting.', true);
         }
@@ -3960,6 +3987,23 @@
         });
         await loadAdmin(false);
         flash('Voucher status updated');
+        return;
+      }
+
+      if (act === 'announce-quiz-winners') {
+        var revealVal = btn.getAttribute('data-val') === 'true';
+        var annPayload = { reveal_quiz_winners: revealVal };
+        if (revealVal) {
+          annPayload.stage_mode = 'quiz_qr';
+          annPayload.reveal_winner = false;
+        }
+        var annRes = await Store.adminAction(pin, 'update_settings', annPayload);
+        if (annRes && annRes.ok) {
+          await loadAdmin(false);
+          flash(revealVal ? 'Quiz Winners ANNOUNCED on 16:9 Live Screen!' : 'Quiz Winners HIDDEN on 16:9 Live Screen');
+        } else {
+          flash((annRes && annRes.error) || 'Failed to update announcement status.', true);
+        }
         return;
       }
 
