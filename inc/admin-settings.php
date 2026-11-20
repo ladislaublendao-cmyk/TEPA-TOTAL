@@ -118,20 +118,20 @@ function tepa_render_admin_page() {
 				<?php settings_fields( 'tepa_award_settings' ); ?>
 
 				<div class="tepa-bo-field">
-					<label class="tepa-bo-label" for="tepa_supabase_url">Supabase Project URL</label>
+					<label class="tepa-bo-label" for="tepa_supabase_url">Cloud Database Endpoint URL</label>
 					<input
 						name="tepa_supabase_url"
 						id="tepa_supabase_url"
 						type="url"
 						class="tepa-bo-input"
 						value="<?php echo esc_attr( $supabase_url ); ?>"
-						placeholder="https://your-project-ref.supabase.co"
+						placeholder="https://your-project-endpoint.co"
 					/>
-					<div class="tepa-bo-hint">Connected cloud database &amp; Realtime engine (leave default for TEPA 2026 project <code>ujpzqulgainzxxombrgb</code>).</div>
+					<div class="tepa-bo-hint">Connected cloud database endpoint for TEPA 2026 live event synchronization.</div>
 				</div>
 
 				<div class="tepa-bo-field">
-					<label class="tepa-bo-label" for="tepa_supabase_anon_key">Supabase Publishable / Anon Key</label>
+					<label class="tepa-bo-label" for="tepa_supabase_anon_key">Public Client API Key</label>
 					<input
 						name="tepa_supabase_anon_key"
 						id="tepa_supabase_anon_key"
@@ -140,13 +140,13 @@ function tepa_render_admin_page() {
 						value="<?php echo esc_attr( $supabase_key ); ?>"
 						placeholder="sb_publishable_..."
 					/>
-					<div class="tepa-bo-hint">Public client key safe for browser Realtime subscriptions and RPC calls.</div>
+					<div class="tepa-bo-hint">Public client key safe for browser live updates and RPC calls.</div>
 				</div>
 
 				<div class="tepa-bo-gate-row">
 					<div>
 						<div class="tepa-bo-stage-title">Force Demo / Rehearsal Mode</div>
-						<div class="tepa-bo-stage-desc">When ON, events run locally via browser BroadcastChannel without writing to Supabase Cloud. Keep OFF for live event day.</div>
+						<div class="tepa-bo-stage-desc">When ON, events run locally via browser BroadcastChannel without writing to the live database. Keep OFF for live event day.</div>
 					</div>
 					<label class="tepa-bo-switch">
 						<input class="tepa-bo-switch-input" name="tepa_force_demo" type="checkbox" value="1" <?php checked( $force_demo ); ?> />

@@ -1227,7 +1227,7 @@
         root.innerHTML =
           '<div class="tepa-menti-stage" data-live-theme="' + esc(state.theme) + '" style="align-items:center;justify-content:center;">' +
           '  <img src="' + esc(assetUrl('totalenergies-logo.png')) + '" alt="TotalEnergies" style="height:64px;">' +
-          '  <p style="color:var(--m-muted);margin-top:14px;">Connecting to Realtime Stream...</p>' +
+          '  <p style="color:var(--m-muted);margin-top:14px;">Loading Live Stage...</p>' +
           '</div>';
         state.lastRenderKey = null;
         return;
@@ -1531,7 +1531,6 @@
             '</div>'
           : '<div></div>') +
         '  <div class="tepa-menti-dock-group">' +
-        '    <span class="tepa-menti-rt-pill ' + (mode === 'demo' ? 'is-demo' : '') + '"><span class="tepa-live-dot"></span> ' + (mode === 'supabase' ? 'Supabase Realtime' : 'Demo Realtime') + '</span>' +
         '    <span class="tepa-menti-pill-btn" style="cursor:default;">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
         '  </div>' +
         '</footer>';
@@ -1740,7 +1739,7 @@
       settings: {
         iconName: 'qr',
         title: 'QR Kit & WordPress Connection',
-        desc: 'High-resolution print QR kit (SVG/PNG 1024px), Supabase WordPress credentials, and security PIN.'
+        desc: 'High-resolution print QR kit (SVG/PNG 1024px), cloud database credentials, and security PIN.'
       },
       audit: {
         iconName: 'shield',
@@ -2549,7 +2548,7 @@
           '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('radio', 15) + '</span><h2 class="tepa-bo-card-title">Live 16:9 Stage Monitor</h2></div>' +
           '        <p class="tepa-bo-card-desc">Real-time mirror of the active auditorium projection state.</p>' +
           '      </div>' +
-          '      <span class="tepa-bo-badge is-green">● ' + (mode === 'supabase' ? 'Supabase Realtime' : 'Demo Realtime') + '</span>' +
+          '      <span class="tepa-bo-badge is-green">● Live Sync Active</span>' +
           '    </div>' +
           '    <div class="tepa-bo-monitor-frame is-' + curTheme + '">' +
           '      <div class="tepa-bo-monitor-top">' +
@@ -3055,17 +3054,17 @@
         var auditItems = [
           {
             ok: true,
-            title: '1. WordPress-Only Access & RLS Security',
-            desc: 'Backoffice protected exclusively by WordPress admin session (manage_options) + Supabase Row Level Security with hidden correct answers.',
+            title: '1. WordPress-Only Access & Row-Level Security',
+            desc: 'Backoffice protected exclusively by WordPress admin session (manage_options) + database Row-Level Security with hidden correct answers.',
             badge: 'PROTECTED',
             actionTab: 'settings',
             actionLbl: 'Security'
           },
           {
             ok: true,
-            title: '2. Realtime Engine (' + (mode === 'supabase' ? 'Supabase Cloud' : 'Demo Rehearsal Mode') + ')',
+            title: '2. Live Sync Engine (' + (mode === 'supabase' ? 'Production Cloud' : 'Demo Rehearsal Mode') + ')',
             desc: mode === 'supabase'
-              ? 'Connected to Supabase project ujpzqulgainzxxombrgb with WebSockets & supabase_realtime active across all 5 tables.'
+              ? 'Connected to live cloud database with instant WebSocket synchronization active across all event tables.'
               : 'Local rehearsal mode active via BroadcastChannel. Turn OFF Force Demo Mode in WordPress settings for live event day.',
             badge: mode === 'supabase' ? 'ONLINE' : 'DEMO MODE',
             actionTab: 'settings',
@@ -3193,7 +3192,7 @@
         '  <div class="tepa-bo-card">' +
         '    <div class="tepa-bo-card-head">' +
         '      <div>' +
-        '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('radio', 15) + '</span><h2 class="tepa-bo-card-title">Supabase Realtime Connection (WordPress)</h2></div>' +
+        '        <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('radio', 15) + '</span><h2 class="tepa-bo-card-title">Live Database Connection (WordPress)</h2></div>' +
         '        <p class="tepa-bo-card-desc">Credentials &amp; live/rehearsal mode saved in WordPress Settings.</p>' +
         '      </div>' +
         '      <span class="tepa-bo-badge ' + (mode === 'supabase' ? 'is-green' : 'is-gold') + '">' + (mode === 'supabase' ? 'Connected' : 'Demo Active') + '</span>' +
@@ -3206,7 +3205,7 @@
             '</div>' +
             '<div class="tepa-bo-field">' +
             '  <div class="tepa-bo-label">Active Mode</div>' +
-            '  <p>' + (mode === 'supabase' ? 'Supabase Live Realtime (configured via WordPress / config.js).' : 'Demo Mode (?demo=1 or forceDemo=true).') + '</p>' +
+            '  <p>' + (mode === 'supabase' ? 'Live Cloud Database (configured via WordPress / config.js).' : 'Demo Mode (?demo=1 or forceDemo=true).') + '</p>' +
             '</div>') +
         '  </div>' +
         '  <div class="tepa-bo-card">' +
@@ -3287,10 +3286,10 @@
           '    <div class="tepa-bo-card has-rainbow">' +
           '      <div class="tepa-bo-rainbow-bar"></div>' +
           '      <div style="padding-top:20px;">' +
-          renderBrandBlock('<span class="tepa-bo-status-pill is-live"><span class="tepa-bo-status-dot"></span> Supabase Live · WP-Admin</span>') +
+          renderBrandBlock('<span class="tepa-bo-status-pill is-live"><span class="tepa-bo-status-dot"></span> Live Event · WP-Admin</span>') +
           '        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;">' +
           '          <h2 class="tepa-bo-card-title" style="margin-bottom:4px;">Unlock Event Controls</h2>' +
-          '          <p class="tepa-bo-card-desc" style="margin-bottom:14px;">Enter the Supabase Event Admin PIN (default: <code>2026</code>) to manage quizzes, votes, projects, and the 16:9 stage.</p>' +
+          '          <p class="tepa-bo-card-desc" style="margin-bottom:14px;">Enter the Event Admin PIN (default: <code>2026</code>) to manage quizzes, votes, projects, and the 16:9 stage.</p>' +
           '          <form id="tepa-pin-form">' +
           '            <div class="tepa-bo-field">' +
           '              <label class="tepa-bo-label" for="tepa-pin-input">Admin PIN</label>' +
@@ -3304,7 +3303,7 @@
           '    </div>' +
           (hasWpTpl
             ? '<details class="tepa-bo-card tepa-bo-details">' +
-              '  <summary><span>WordPress Supabase Connection &amp; Demo Mode</span><span class="tepa-bo-badge is-muted">WP Settings</span></summary>' +
+              '  <summary><span>WordPress Database Connection &amp; Demo Mode</span><span class="tepa-bo-badge is-muted">WP Settings</span></summary>' +
               '  <div id="tepa-wp-unlock-settings-mount" style="margin-top:16px;padding-top:14px;border-top:1px solid #E2E8F0;"></div>' +
               '</details>'
             : '') +
@@ -3373,9 +3372,9 @@
         '        <div class="tepa-bo-side-title">TEPA Award 2026</div>' +
         '        <div class="tepa-bo-side-sub">WordPress Event Studio</div>' +
         '      </div>' +
-        (mode === 'supabase'
-          ? '<span class="tepa-bo-side-rt is-live"><span class="tepa-bo-status-dot"></span> Supabase Realtime Live</span>'
-          : '<span class="tepa-bo-side-rt is-demo"><span class="tepa-bo-status-dot"></span> Demo / Rehearsal Mode</span>') +
+        (mode === 'demo'
+          ? '<span class="tepa-bo-side-rt is-demo"><span class="tepa-bo-status-dot"></span> Demo / Rehearsal Mode</span>'
+          : '') +
         '    </div>' +
         '    <nav class="tepa-bo-side-nav" aria-label="Backoffice Sections">' +
         '      <div class="tepa-bo-side-group-lbl">Event Control</div>' +
@@ -3456,7 +3455,7 @@
         '    <div class="tepa-bo-content">' +
         (mode === 'demo'
           ? '<div class="tepa-bo-alert is-warn">' +
-            '  <div><strong>Demo / Rehearsal Mode Active:</strong> Votes, quizzes, and edits stay in browser local storage / BroadcastChannel without writing to Supabase Cloud.' +
+            '  <div><strong>Demo / Rehearsal Mode Active:</strong> Votes, quizzes, and edits stay in browser local storage / BroadcastChannel without writing to the live cloud database.' +
             (hasWpTpl ? ' Turn OFF <em>Force Demo Mode</em> in Connection Settings when ready to go live.' : '') +
             '  </div>' +
             '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-tab="settings"><span>Connection Settings</span>' + icon('arrowRight', 12) + '</button>' +
