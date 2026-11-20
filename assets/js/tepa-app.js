@@ -2178,7 +2178,7 @@
           ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
           : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
 
-      var headlineRow = stageMode === 'winner_reveal' ? '' :
+      var headlineRow = (stageMode === 'winner_reveal' || stageMode === 'quiz_qr') ? '' :
         '<div class="tepa-menti-headline-row tepa-anim-enter">' +
         '  <h1 class="tepa-menti-headline">' + headlineTitle + '</h1>' +
         (stageMode === 'live_voting' && state.chartType === 'vertical' && projects.length > 5
@@ -2195,50 +2195,69 @@
         var qs = dash.quiz_stats || { total_participants: 0, vouchers_awarded: 0, max_vouchers: 10, winners: [] };
         var prizeTitle = (activeQuiz && activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher';
         var quizWinnersRevealed = Boolean(settings.reveal_quiz_winners || qs.reveal_quiz_winners);
-        var winnersHtml = '';
+        var quizTitleTxt = (activeQuiz && activeQuiz.title && activeQuiz.title !== 'Quiz') ? activeQuiz.title : 'Welcome Quiz';
+        var quizEventTxt = settings.event_title || 'TEPA Performance Award 2026';
+        var giftSvg =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/>' +
+          '<path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>';
+        var lockSvg =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+        var quizRightHtml;
         if (quizWinnersRevealed) {
-          winnersHtml = (qs.winners || []).map(function (w, i) {
+          var winnersList = (qs.winners || []);
+          var winnersChips = winnersList.map(function (w, i) {
             return (
-              '<div class="tepa-winner-chip tepa-anim-enter" style="animation-delay:' + (i * 45) + 'ms;">' +
-              '  <div><strong style="color:#F77B39;">#' + esc(w.winner_rank) + '</strong> ' + esc(w.display_name) + '</div>' +
-              '  <span style="font-size:12px;color:var(--m-muted);font-family:monospace;">****' + esc(w.code_suffix) + '</span>' +
+              '<div class="tepa-quiz-winner q-anim" style="animation-delay:' + (520 + i * 70) + 'ms;">' +
+              '  <span class="tepa-quiz-winner-rank">' + esc(w.winner_rank) + '</span>' +
+              '  <span class="tepa-quiz-winner-name">' + esc(w.display_name) + '</span>' +
+              '  <span class="tepa-quiz-winner-code">····' + esc(w.code_suffix) + '</span>' +
               '</div>'
             );
           }).join('');
-          if (!winnersHtml) {
-            winnersHtml = '<p style="color:var(--m-muted);font-size:14px;">No qualifying winners recorded in this round yet.</p>';
-          }
+          quizRightHtml =
+            '<div class="tepa-quiz-section-head q-anim" style="animation-delay:420ms;">' +
+            '  <span class="tepa-quiz-section-title">' + giftSvg + '<span>' + esc(prizeTitle) + ' · Official Winners</span></span>' +
+            '  <span class="tepa-quiz-badge is-live"><span class="tepa-quiz-dot"></span>Results Live</span>' +
+            '</div>' +
+            (winnersChips
+              ? '<div class="tepa-quiz-winners' + (winnersList.length > 6 ? ' is-dense' : '') + '">' + winnersChips + '</div>'
+              : '<div class="tepa-quiz-prize q-anim" style="animation-delay:520ms;"><div class="tepa-quiz-prize-text"><strong>No qualifying winners in this round yet.</strong></div></div>');
         } else {
-          winnersHtml =
-            '<div class="tepa-anim-enter" style="padding:20px 22px;border-radius:16px;background:var(--m-bg);border:1px dashed var(--m-border);display:flex;align-items:center;gap:14px;">' +
-            '  <div style="width:42px;height:42px;border-radius:12px;background:rgba(247,123,57,0.14);color:#F77B39;display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
-            '    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+          quizRightHtml =
+            '<div class="tepa-quiz-prize q-anim" style="animation-delay:460ms;">' +
+            '  <div class="tepa-quiz-prize-icon">' + giftSvg + '</div>' +
+            '  <div class="tepa-quiz-prize-text">' +
+            '    <span class="tepa-quiz-prize-label">Prize</span>' +
+            '    <strong>' + esc(prizeTitle) + '</strong>' +
+            '    <span>Keep your <b>Unique Participant ID</b> — winners will be announced live on this screen.</span>' +
             '  </div>' +
-            '  <div>' +
-            '    <div style="font-weight:700;font-size:15px;color:var(--m-text);margin-bottom:3px;">Official Winners Announcement Pending</div>' +
-            '    <div style="font-size:13px;color:var(--m-muted);line-height:1.45;">Scan the QR code to complete the Quiz and keep your <strong>Unique Participant ID</strong>. The event manager will announce the ' + esc(prizeTitle) + ' winners right here on the live screen!</div>' +
-            '  </div>' +
+            '  <span class="tepa-quiz-badge">' + lockSvg + 'Awaiting Reveal</span>' +
             '</div>';
         }
+
         workspaceHtml =
-          '<div class="tepa-menti-quiz-grid tepa-anim-enter">' +
-          '  <div class="tepa-menti-qrcard">' +
-          '    <div class="tepa-menti-qrwrap" style="max-width:260px;" id="tepa-stage-quiz-qr"></div>' +
-          '    <div class="tepa-menti-qrsub">Scan QR to join Quiz</div>' +
-          '    <div class="tepa-menti-qrhost">' + esc(shortHostLabel(quizTargetUrl)) + '</div>' +
-          '  </div>' +
-          '  <div style="min-width:0;">' +
-          '    <div class="tepa-menti-kpi-row">' +
-          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" id="tepa-quiz-stage-participants">' + esc(qs.total_participants) + '</div><div class="tepa-menti-kpi-lbl">Participants</div></div>' +
-          '      <div class="tepa-menti-kpi"><div class="tepa-menti-kpi-val" id="tepa-quiz-stage-vouchers" style="color:#F77B39;">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded) + ' / ' + esc(qs.max_vouchers)) : ('Top ' + esc(qs.max_vouchers))) + '</div><div class="tepa-menti-kpi-lbl">' + (quizWinnersRevealed ? 'Winners Announced' : 'Prizes Available') + '</div></div>' +
+          '<div class="tepa-quiz-stage' + (quizWinnersRevealed ? ' is-revealed' : '') + '">' +
+          '  <div class="tepa-winner-glow" aria-hidden="true"></div>' +
+          '  <div class="tepa-quiz-stage-grid">' +
+          '    <div class="tepa-quiz-qr-panel q-anim" style="animation-delay:80ms;">' +
+          '      <div class="tepa-quiz-qr-frame"><div class="tepa-menti-qrwrap" id="tepa-stage-quiz-qr"></div></div>' +
+          '      <div class="tepa-quiz-qr-cta">Scan to join</div>' +
+          '      <div class="tepa-quiz-qr-host">' + esc(shortHostLabel(quizTargetUrl)) + '</div>' +
           '    </div>' +
-          '    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;">' +
-          '      <h3 style="margin:0;font-size:14px;text-transform:uppercase;letter-spacing:0.06em;color:var(--m-muted);">' + esc(prizeTitle) + ' Winners</h3>' +
-          (quizWinnersRevealed
-            ? '<span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(22,163,74,0.14);color:#16A34A;">● Official Results Live</span>'
-            : '<span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(247,123,57,0.14);color:#F77B39;">Awaiting Manager Reveal</span>') +
+          '    <div class="tepa-quiz-info">' +
+          '      <div class="tepa-winner-eyebrow q-anim" style="animation-delay:180ms;">★ ' + esc(quizEventTxt) + '</div>' +
+          '      <h2 class="tepa-quiz-title tepa-rainbow-text q-anim" style="animation-delay:260ms;">' + esc(quizTitleTxt) + '</h2>' +
+          '      <p class="tepa-quiz-sub q-anim" style="animation-delay:340ms;">' + (quizWinnersRevealed ? 'Congratulations to the official winners!' : 'Scan the QR code, answer the questions and win!') + '</p>' +
+          '      <div class="tepa-quiz-kpis q-anim" style="animation-delay:400ms;">' +
+          '        <div class="tepa-quiz-kpi"><strong id="tepa-quiz-stage-participants">' + esc(qs.total_participants || 0) + '</strong><span><i class="tepa-quiz-dot"></i>Participants</span></div>' +
+          '        <div class="tepa-quiz-kpi-sep" aria-hidden="true"></div>' +
+          '        <div class="tepa-quiz-kpi"><strong id="tepa-quiz-stage-vouchers" class="is-gold">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded || 0) + ' / ' + esc(qs.max_vouchers || 10)) : ('Top ' + esc(qs.max_vouchers || 10))) + '</strong><span>' + (quizWinnersRevealed ? 'Winners' : 'Prizes available') + '</span></div>' +
+          '      </div>' +
+          quizRightHtml +
           '    </div>' +
-          '    <div class="tepa-winners-feed">' + winnersHtml + '</div>' +
           '  </div>' +
           '</div>';
       } else if (stageMode === 'winner_reveal') {
