@@ -1496,6 +1496,135 @@
     var prevQuizReveal = null;
     var prevRemoteSig = null;
 
+    var stageAnimRaf = 0;
+    var stageAnimLastTs = 0;
+    var stageAnimBars = new Map();
+    var stageAnimNums = new Map();
+    var lastReorderAt = 0;
+    var REORDER_COOLDOWN_MS = 750;
+
+    function stopStageAnimator() {
+      if (stageAnimRaf) {
+        cancelAnimationFrame(stageAnimRaf);
+        stageAnimRaf = 0;
+      }
+      stageAnimLastTs = 0;
+      stageAnimBars.clear();
+      stageAnimNums.clear();
+    }
+
+    function stepStageAnimator(now) {
+      if (!stageAnimLastTs) stageAnimLastTs = now;
+      var dt = Math.min(0.05, Math.max(0.004, (now - stageAnimLastTs) / 1000));
+      stageAnimLastTs = now;
+      var alpha = prefersReducedMotion() ? 1 : (1 - Math.exp(-dt * 5.8));
+      var keepGoing = false;
+
+      stageAnimBars.forEach(function (b, el) {
+        if (!el || !el.isConnected) {
+          stageAnimBars.delete(el);
+          return;
+        }
+        var diff = b.target - b.cur;
+        if (Math.abs(diff) < 0.04 || alpha >= 1) {
+          b.cur = b.target;
+        } else {
+          b.cur += diff * alpha;
+          keepGoing = true;
+        }
+        el._tepaBarCur = b.cur;
+        if (b.mode === 'h') {
+          var tx = b.isZero ? 'calc(-100% + 6px)' : ('-' + Math.max(0, 100 - b.cur).toFixed(2) + '%');
+          el.style.transform = 'translate3d(' + tx + ', 0, 0)';
+        } else {
+          el.style.height = b.cur.toFixed(2) + '%';
+        }
+      });
+
+      stageAnimNums.forEach(function (n, el) {
+        if (!el || !el.isConnected) {
+          stageAnimNums.delete(el);
+          return;
+        }
+        var ndiff = n.target - n.cur;
+        if (Math.abs(ndiff) < 0.15 || alpha >= 1) {
+          n.cur = n.target;
+        } else {
+          n.cur += ndiff * alpha;
+          keepGoing = true;
+        }
+        el._tepaNumVal = n.cur;
+        var nextTxt = n.fmt(n.cur);
+        if (el.textContent !== nextTxt) el.textContent = nextTxt;
+      });
+
+      if (keepGoing) {
+        stageAnimRaf = requestAnimationFrame(stepStageAnimator);
+      } else {
+        stageAnimRaf = 0;
+        stageAnimLastTs = 0;
+      }
+    }
+
+    function ensureStageAnimator() {
+      if (!stageAnimRaf) {
+        stageAnimLastTs = 0;
+        stageAnimRaf = requestAnimationFrame(stepStageAnimator);
+      }
+    }
+
+    function setAnimatedBar(el, targetPct, mode, isZero, startFromZero) {
+      if (!el) return;
+      var target = Number(targetPct) || 0;
+      var entry = stageAnimBars.get(el);
+      if (!entry) {
+        var initCur = startFromZero ? 0 : (el._tepaBarCur !== undefined ? el._tepaBarCur : target);
+        entry = { cur: initCur, target: target, mode: mode, isZero: Boolean(isZero) };
+        stageAnimBars.set(el, entry);
+      } else {
+        entry.target = target;
+        entry.mode = mode;
+        entry.isZero = Boolean(isZero);
+      }
+      if (prefersReducedMotion()) {
+        entry.cur = target;
+        el._tepaBarCur = target;
+        if (mode === 'h') {
+          var tx = entry.isZero ? 'calc(-100% + 6px)' : ('-' + Math.max(0, 100 - target).toFixed(2) + '%');
+          el.style.transform = 'translate3d(' + tx + ', 0, 0)';
+        } else {
+          el.style.height = target.toFixed(2) + '%';
+        }
+        return;
+      }
+      ensureStageAnimator();
+    }
+
+    function setAnimatedNum(el, targetVal, fmt, initialFrom) {
+      if (!el) return;
+      var target = Number(targetVal);
+      if (!isFinite(target)) target = 0;
+      var formatter = fmt || function (v) { return String(Math.round(v)); };
+      var entry = stageAnimNums.get(el);
+      if (!entry) {
+        var initCur = el._tepaNumVal !== undefined
+          ? el._tepaNumVal
+          : (initialFrom !== undefined ? Number(initialFrom) : target);
+        entry = { cur: initCur, target: target, fmt: formatter };
+        stageAnimNums.set(el, entry);
+      } else {
+        entry.target = target;
+        entry.fmt = formatter;
+      }
+      if (prefersReducedMotion()) {
+        entry.cur = target;
+        el._tepaNumVal = target;
+        el.textContent = formatter(target);
+        return;
+      }
+      ensureStageAnimator();
+    }
+
     function colorFor(project) {
       var idx = Math.max(0, Number(project.slot_number || project.id || 1) - 1);
       return MENTI_PALETTE[idx % MENTI_PALETTE.length];
@@ -1602,7 +1731,7 @@
       if (Object.keys(nodes).length !== displayList.length) return false;
 
       var orderedRows = [];
-      displayList.forEach(function (p, idx) {
+      displayList.forEach(function (p) {
         var row = nodes[String(p.id)];
         if (!row) return;
         orderedRows.push(row);
@@ -1612,8 +1741,6 @@
         var barPct = isZero ? 0 : ((!state.hideResults && maxVotes > 0 && v > 0) ? Math.max(2.5, (v / maxVotes) * 100) : 1);
         var barPctStr = isZero ? '0' : barPct.toFixed(2);
 
-        var rankEl = row.querySelector('.tepa-menti-hrank');
-        if (rankEl) rankEl.textContent = (idx + 1) + '.';
         var titleEl = row.querySelector('.tepa-menti-htitle');
         if (titleEl && titleEl.textContent !== p.project_title) titleEl.textContent = p.project_title;
         var catEl = row.querySelector('.tepa-menti-hcat');
@@ -1624,28 +1751,38 @@
         var pctEl = row.querySelector('.tepa-menti-hpct');
         if (numEl) {
           if (state.hideResults) numEl.textContent = '••';
-          else animateNumber(numEl, v, function (n) { return String(Math.round(n)); }, 380);
+          else setAnimatedNum(numEl, v, function (n) { return String(Math.round(n)); });
         }
         if (pctEl) {
           if (state.hideResults) pctEl.textContent = '';
-          else animateNumber(pctEl, sharePct, function (n) { return '(' + Math.round(n) + '%)'; }, 380);
+          else setAnimatedNum(pctEl, sharePct, function (n) { return '(' + Math.round(n) + '%)'; });
         }
 
         var fillEl = row.querySelector('.tepa-menti-hfill');
         if (fillEl) {
           fillEl.classList.toggle('is-zero', isZero);
-          fillEl.style.transitionDelay = '0ms';
           fillEl.style.backgroundColor = colorFor(p);
-          if (fillEl.getAttribute('data-target-pct') !== barPctStr) {
-            fillEl.setAttribute('data-target-pct', barPctStr);
-            fillEl.style.width = barPctStr + '%';
-          }
+          fillEl.setAttribute('data-target-pct', barPctStr);
+          setAnimatedBar(fillEl, barPct, 'h', isZero, false);
         }
       });
 
       if (orderedRows.length === displayList.length) {
-        flipReorderChildren(listEl, orderedRows);
+        var currentRows = Array.from(listEl.children);
+        var orderChanged = currentRows.length !== orderedRows.length || currentRows.some(function (el, idx) {
+          return el !== orderedRows[idx];
+        });
+        if (orderChanged && (Date.now() - lastReorderAt >= REORDER_COOLDOWN_MS)) {
+          lastReorderAt = Date.now();
+          flipReorderChildren(listEl, orderedRows);
+        }
       }
+
+      Array.from(listEl.children).forEach(function (rowEl, visualIdx) {
+        var rankEl = rowEl.querySelector('.tepa-menti-hrank');
+        var nextRank = (visualIdx + 1) + '.';
+        if (rankEl && rankEl.textContent !== nextRank) rankEl.textContent = nextRank;
+      });
 
       var waitEl = root.querySelector('#tepa-menti-wait-text');
       if (waitEl) {
@@ -1654,7 +1791,7 @@
           : totalVotes + (totalVotes === 1 ? ' vote received' : ' votes received');
       }
       var countPill = root.querySelector('#tepa-menti-total-pill');
-      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
+      if (countPill) setAnimatedNum(countPill, totalVotes, function (n) { return String(Math.round(n)); });
       return true;
     }
 
@@ -1708,30 +1845,40 @@
         var numEl = col.querySelector('.tepa-vnum');
         var pctEl = col.querySelector('.tepa-menti-vcount-pct');
         if (numEl) {
-          if (repurposed) numEl._tepaNumVal = v;
+          if (repurposed) {
+            numEl._tepaNumVal = v;
+            stageAnimNums.delete(numEl);
+          }
           if (state.hideResults) numEl.textContent = '•';
-          else animateNumber(numEl, v, function (n) { return String(Math.round(n)); }, 380);
+          else setAnimatedNum(numEl, v, function (n) { return String(Math.round(n)); });
         }
         if (pctEl) {
-          if (repurposed) pctEl._tepaNumVal = sharePct;
+          if (repurposed) {
+            pctEl._tepaNumVal = sharePct;
+            stageAnimNums.delete(pctEl);
+          }
           if (state.hideResults) pctEl.textContent = '';
-          else animateNumber(pctEl, sharePct, function (n) { return Math.round(n) + '%'; }, 380);
+          else setAnimatedNum(pctEl, sharePct, function (n) { return Math.round(n) + '%'; });
         }
 
         var barEl = col.querySelector('.tepa-menti-vbar');
         if (barEl) {
-          barEl.style.transitionDelay = '0ms';
           barEl.style.backgroundColor = colorFor(p);
-          if (barEl.getAttribute('data-target-pct') !== barHStr) {
-            barEl.setAttribute('data-target-pct', barHStr);
-            barEl.style.height = barHStr + '%';
-          }
+          barEl.setAttribute('data-target-pct', barHStr);
+          setAnimatedBar(barEl, barH, 'v', false, false);
         }
       });
 
       if (orderedCols.length === visibleCols.length) {
-        flipReorderChildren(barsWrap, orderedCols);
-        flipReorderChildren(labelsWrap, orderedLbls);
+        var curCols = Array.from(barsWrap.children);
+        var vOrderChanged = curCols.length !== orderedCols.length || curCols.some(function (el, idx) {
+          return el !== orderedCols[idx];
+        });
+        if (vOrderChanged && (Date.now() - lastReorderAt >= REORDER_COOLDOWN_MS)) {
+          lastReorderAt = Date.now();
+          flipReorderChildren(barsWrap, orderedCols);
+          flipReorderChildren(labelsWrap, orderedLbls);
+        }
       }
 
       var waitEl = root.querySelector('#tepa-menti-wait-text');
@@ -1741,14 +1888,14 @@
           : totalVotes + (totalVotes === 1 ? ' vote received' : ' votes received');
       }
       var countPill = root.querySelector('#tepa-menti-total-pill');
-      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
+      if (countPill) setAnimatedNum(countPill, totalVotes, function (n) { return String(Math.round(n)); });
       return true;
     }
 
     function updateQuizQrInPlace(qs, quizWinnersRevealed, totalVotes) {
       var partEl = root.querySelector('#tepa-quiz-stage-participants');
       if (!partEl) return false;
-      animateNumber(partEl, Number(qs.total_participants || 0), function (n) { return String(Math.round(n)); }, 380);
+      setAnimatedNum(partEl, Number(qs.total_participants || 0), function (n) { return String(Math.round(n)); });
       var vouchEl = root.querySelector('#tepa-quiz-stage-vouchers');
       if (vouchEl) {
         vouchEl.textContent = quizWinnersRevealed
@@ -1756,7 +1903,7 @@
           : ('Top ' + (qs.max_vouchers || 10));
       }
       var countPill = root.querySelector('#tepa-menti-total-pill');
-      if (countPill) animateNumber(countPill, totalVotes, function (n) { return String(Math.round(n)); }, 380);
+      if (countPill) setAnimatedNum(countPill, totalVotes, function (n) { return String(Math.round(n)); });
       return true;
     }
 
@@ -2061,7 +2208,7 @@
               '      <span class="tepa-menti-hvotes"><span class="tepa-hnum">' + (state.hideResults ? '••' : v) + '</span>' + (state.hideResults ? '' : '<span class="tepa-menti-hpct">(' + sharePct + '%)</span>') + '</span>' +
               '    </div>' +
               '    <div class="tepa-menti-htrack">' +
-              '      <div class="tepa-menti-hfill' + (isZero ? ' is-zero' : '') + '" data-target-pct="' + barPctStr + '" style="width:' + barPctStr + '%;background-color:' + colorFor(p) + ';"></div>' +
+              '      <div class="tepa-menti-hfill' + (isZero ? ' is-zero' : '') + '" data-target-pct="' + barPctStr + '" style="background-color:' + colorFor(p) + ';"></div>' +
               '    </div>' +
               '  </div>' +
               '</div>'
@@ -2118,6 +2265,7 @@
         return;
       }
 
+      stopStageAnimator();
       root.innerHTML =
         '<div class="tepa-menti-stage" data-live-theme="' + esc(state.theme) + '">' +
         topBar +
@@ -2133,9 +2281,13 @@
           renderQR(root.querySelector('#tepa-stage-vote-qr'), voteTargetUrl);
         }
         if (state.chartType === 'horizontal') {
-          springAnimateBars(root, '.tepa-menti-hfill', 'width', 20);
+          root.querySelectorAll('.tepa-menti-hfill').forEach(function (el) {
+            setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'h', el.classList.contains('is-zero'), true);
+          });
         } else {
-          springAnimateBars(root, '.tepa-menti-vbar', 'height', 30);
+          root.querySelectorAll('.tepa-menti-vbar').forEach(function (el) {
+            setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'v', false, true);
+          });
         }
       } else if (stageMode === 'winner_reveal' && ranked[0] && totalVotes > 0) {
         animateNumber(root.querySelector('#tepa-reveal-votes'), ranked[0].votes, function (n) { return String(Math.round(n)); }, 720, 0);
@@ -2194,6 +2346,7 @@
     });
     safetyPoll = setInterval(refresh, 3000);
     global.addEventListener('beforeunload', function () {
+      stopStageAnimator();
       if (unsubscribe) unsubscribe();
       if (safetyPoll) clearInterval(safetyPoll);
     });
