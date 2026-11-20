@@ -1261,6 +1261,37 @@
       shell.appendChild(wrap);
     }
 
+    var shellSwapTimer = 0;
+    var pendingShellSwap = null;
+
+    function swapShellHtml(shell, html, stepChanged, afterMount) {
+      var canFade = stepChanged && !prefersReducedMotion() && shell.firstElementChild;
+      if (!canFade) {
+        if (shellSwapTimer) {
+          clearTimeout(shellSwapTimer);
+          shellSwapTimer = 0;
+        }
+        pendingShellSwap = null;
+        shell.classList.remove('is-swapping');
+        shell.innerHTML = html;
+        if (afterMount) afterMount();
+        return;
+      }
+      pendingShellSwap = { html: html, after: afterMount };
+      shell.classList.add('is-swapping');
+      if (shellSwapTimer) return;
+      shellSwapTimer = setTimeout(function () {
+        shellSwapTimer = 0;
+        var job = pendingShellSwap;
+        pendingShellSwap = null;
+        shell.classList.remove('is-swapping');
+        if (!job) return;
+        shell.innerHTML = job.html;
+        shell.scrollTop = 0;
+        if (job.after) job.after();
+      }, 180);
+    }
+
     function render(directionHint) {
       ensureShell();
       var shell = root.querySelector('#tepa-vote-shell');
@@ -1274,21 +1305,21 @@
 
       shell.setAttribute('data-player-step', state.step);
       shell.classList.toggle('is-scrollable', state.step === 'cover' || state.step === 'receipt');
-      if (stepChanged) shell.scrollTop = 0;
+      if (stepChanged && !shellSwapTimer) shell.scrollTop = 0;
 
       if (state.loading || state.step === 'loading') {
-        shell.innerHTML =
+        swapShellHtml(shell,
           '<div class="tepa-mobile-content" style="align-items:center;justify-content:center;padding:32px;text-align:center;">' +
           '  <img class="tepa-lightup-logo" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '  <p style="margin-top:18px;color:#C7C9D9;">Loading Voting System...</p>' +
-          '</div>' + renderFooter();
+          '</div>' + renderFooter(), stepChanged);
         return;
       }
 
       var isSimple = isSimpleMode();
 
       if (state.step === 'cover') {
-        shell.innerHTML =
+        swapShellHtml(shell,
           '<div class="tepa-vote-ambient-glow" style="background-image:url(\'' + esc(assetUrl('lightbulb-hero.jpg')) + '\');"></div>' +
           '<div class="tepa-vote-hero ' + (directionHint ? animCls : '') + '">' +
           '  <img src="' + esc(assetUrl('lightbulb-hero.jpg')) + '" alt="TEPA Performance Award">' +
@@ -1305,7 +1336,7 @@
           '    <button type="button" class="tepa-btn-rainbow-outline" data-action="open-list" ' + (state.votingOpen ? '' : 'disabled') + '>Click to Select</button>' +
           '  </div>' +
           '</div>' +
-          renderFooter();
+          renderFooter(), stepChanged);
       } else if (state.step === 'select') {
         var listHtml = state.projects.map(function (p, idx) {
           var isSel = state.selectedProjectId === p.id;
@@ -1339,7 +1370,7 @@
 
         var countTier = state.projects.length <= 4 ? 'few' : (state.projects.length <= 6 ? 'medium' : 'full');
 
-        shell.innerHTML =
+        swapShellHtml(shell,
           '<header class="tepa-sheet-header tepa-anim-enter">' +
           '  <h1 class="tepa-rainbow-text">Voting System</h1>' +
           '  <button type="button" class="tepa-btn-rainbow-outline is-pill" data-action="back-cover">' + backIconSvg + '<span>Back</span></button>' +
@@ -1355,9 +1386,7 @@
           (state.error ? '<p style="color:#E72428;font-size:12.5px;margin:0 0 4px;">' + esc(state.error) + '</p>' : '') +
           '    <button type="button" id="tepa-vote-submit-btn" class="tepa-btn-cta is-pill" data-action="open-confirm" ' + (state.selectedProjectId && state.votingOpen ? '' : 'disabled') + '>Submit Vote</button>' +
           '  </div>' +
-          '</main>';
-
-        syncModalInPlace();
+          '</main>', stepChanged, syncModalInPlace);
       } else if (state.step === 'receipt' && state.receipt) {
         var votedProj = state.projects.find(function (p) { return p.id === state.receipt.project_id; });
         var quizUrl = Store.getConfig().quizUrl || 'quiz.html';
@@ -1365,7 +1394,7 @@
         var receiptCat = votedProj && votedProj.category_name
           ? '<div style="font-size:12px;color:#FFD239;font-weight:700;text-transform:uppercase;margin-top:4px;">' + esc(pad2(votedProj.slot_number)) + ' · ' + esc(votedProj.category_name) + '</div>'
           : '';
-        shell.innerHTML =
+        swapShellHtml(shell,
           '<div class="tepa-bulb-watermark" style="background-image:url(\'' + esc(assetUrl('lightbulb-hero.jpg')) + '\');"></div>' +
           '<div class="tepa-mobile-content ' + animCls + '">' +
           '  <div class="tepa-quiz-step-wrap is-receipt">' +
@@ -1387,7 +1416,7 @@
           '    </div>' +
           '  </div>' +
           '</div>' +
-          renderFooter();
+          renderFooter(), stepChanged);
       }
     }
 
@@ -1505,6 +1534,80 @@
     var stageSwapTimer = 0;
     var stageSwapRaf = 0;
     var pendingStageMount = null;
+    var confettiRaf = 0;
+
+    function launchStageConfetti() {
+      if (prefersReducedMotion()) return;
+      var host = root.querySelector('.tepa-menti-stage');
+      if (!host) return;
+      var oldCanvas = host.querySelector('.tepa-menti-confetti');
+      if (oldCanvas) oldCanvas.remove();
+      if (confettiRaf) { cancelAnimationFrame(confettiRaf); confettiRaf = 0; }
+
+      var canvas = document.createElement('canvas');
+      canvas.className = 'tepa-menti-confetti';
+      host.appendChild(canvas);
+      var dpr = Math.min(2, global.devicePixelRatio || 1);
+      var W = host.clientWidth;
+      var H = host.clientHeight;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      var ctx = canvas.getContext('2d');
+      if (!ctx) { canvas.remove(); return; }
+      ctx.scale(dpr, dpr);
+
+      var colors = ['#F77B39', '#E72428', '#FFD239', '#2194D4', '#64BD75', '#8F4F9E'];
+      var pieces = [];
+      var COUNT = 110;
+      for (var i = 0; i < COUNT; i++) {
+        var fromLeft = i % 2 === 0;
+        pieces.push({
+          x: fromLeft ? W * 0.18 : W * 0.82,
+          y: H * 0.42,
+          vx: (fromLeft ? 1 : -1) * (2.2 + Math.random() * 5.2),
+          vy: -(6 + Math.random() * 7),
+          w: 6 + Math.random() * 6,
+          h: 9 + Math.random() * 8,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.28,
+          color: colors[i % colors.length],
+          delay: Math.random() * 260
+        });
+      }
+
+      var start = 0;
+      var DURATION = 2600;
+      function frame(ts) {
+        if (!start) start = ts;
+        var t = ts - start;
+        if (!canvas.isConnected) { confettiRaf = 0; return; }
+        ctx.clearRect(0, 0, W, H);
+        var fade = t > DURATION - 700 ? Math.max(0, (DURATION - t) / 700) : 1;
+        for (var j = 0; j < pieces.length; j++) {
+          var p = pieces[j];
+          if (t < p.delay) continue;
+          p.vy += 0.22;
+          p.vx *= 0.992;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+          ctx.save();
+          ctx.globalAlpha = fade;
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 1.6)) + 2);
+          ctx.restore();
+        }
+        if (t < DURATION) {
+          confettiRaf = requestAnimationFrame(frame);
+        } else {
+          confettiRaf = 0;
+          canvas.remove();
+        }
+      }
+      confettiRaf = requestAnimationFrame(frame);
+    }
 
     function stopStageAnimator() {
       if (stageAnimRaf) {
@@ -2002,7 +2105,7 @@
       var runnerIdsSig = ranked.slice(1, 4).map(function (r) { return r.id; }).join(',');
       var renderKey = [
         stageMode, state.theme, state.chartType, state.verticalScope,
-        state.showQrSidebar, state.hideResults, state.sortMode, mode,
+        state.hideResults, state.sortMode, mode,
         (activePoll && activePoll.id) || '', (activePoll && activePoll.poll_type) || 'projects',
         (activePoll && activePoll.title) || '',
         projects.length, projectsMetaSig, effHeadline, settings.event_title || '',
@@ -2017,6 +2120,8 @@
 
       var existingStageEl = root.querySelector('.tepa-menti-stage');
       if (existingStageEl && state.lastRenderKey === renderKey) {
+        var liveWorkspaceEl = root.querySelector('.tepa-menti-workspace');
+        if (liveWorkspaceEl) liveWorkspaceEl.classList.toggle('is-qr-hidden', !state.showQrSidebar);
         if (stageMode === 'live_voting') {
           var updated = state.chartType === 'horizontal'
             ? updateHorizontalInPlace(ranked, displayList, totalVotes, maxVotes)
@@ -2240,21 +2345,22 @@
             '</section>';
         }
 
-        var qrSidebar = state.showQrSidebar
-          ? '<aside class="tepa-menti-sidebar tepa-anim-enter">' +
-            '  <div class="tepa-menti-qrcard">' +
-            '    <button type="button" class="tepa-menti-qrclose" data-action="toggle-qr" title="Hide QR">×</button>' +
-            '    <div class="tepa-menti-qrwrap" id="tepa-stage-vote-qr"></div>' +
-            '    <div class="tepa-menti-qrsub">Scan QR to vote</div>' +
-            '    <div class="tepa-menti-qrhost">' + esc(shortHostLabel(voteTargetUrl)) + '</div>' +
-            '  </div>' +
-            '  <div class="tepa-menti-waitcard" id="tepa-menti-wait-text">' +
-            (totalVotes === 0 ? 'Waiting for participants' : totalVotes + (totalVotes === 1 ? ' vote received' : ' votes received')) +
-            '  </div>' +
-            '</aside>'
-          : '';
+        var qrSidebar =
+          '<aside class="tepa-menti-sidebar" aria-hidden="' + (state.showQrSidebar ? 'false' : 'true') + '">' +
+          '  <div class="tepa-menti-sidebar-inner">' +
+          '  <div class="tepa-menti-qrcard">' +
+          '    <button type="button" class="tepa-menti-qrclose" data-action="toggle-qr" title="Hide QR">×</button>' +
+          '    <div class="tepa-menti-qrwrap" id="tepa-stage-vote-qr"></div>' +
+          '    <div class="tepa-menti-qrsub">Scan QR to vote</div>' +
+          '    <div class="tepa-menti-qrhost">' + esc(shortHostLabel(voteTargetUrl)) + '</div>' +
+          '  </div>' +
+          '  <div class="tepa-menti-waitcard" id="tepa-menti-wait-text">' +
+          (totalVotes === 0 ? 'Waiting for participants' : totalVotes + (totalVotes === 1 ? ' vote received' : ' votes received')) +
+          '  </div>' +
+          '  </div>' +
+          '</aside>';
 
-        workspaceHtml = '<div class="tepa-menti-workspace">' + chartHtml + qrSidebar + '</div>';
+        workspaceHtml = '<div class="tepa-menti-workspace' + (state.showQrSidebar ? '' : ' is-qr-hidden') + '">' + chartHtml + qrSidebar + '</div>';
       }
 
       var stageEl = root.querySelector('.tepa-menti-stage');
@@ -2281,9 +2387,7 @@
         if (snap.stageMode === 'quiz_qr') {
           renderQR(targetEl.querySelector('#tepa-stage-quiz-qr'), snap.quizTargetUrl);
         } else if (snap.stageMode === 'live_voting') {
-          if (snap.showQrSidebar) {
-            renderQR(targetEl.querySelector('#tepa-stage-vote-qr'), snap.voteTargetUrl);
-          }
+          renderQR(targetEl.querySelector('#tepa-stage-vote-qr'), snap.voteTargetUrl);
           if (snap.chartType === 'horizontal') {
             targetEl.querySelectorAll('.tepa-menti-hfill').forEach(function (el) {
               setAnimatedBar(el, Number(el.getAttribute('data-target-pct') || 0), 'h', el.classList.contains('is-zero'), true);
@@ -2296,8 +2400,9 @@
             });
           }
         } else if (snap.stageMode === 'winner_reveal' && snap.totalVotes > 0) {
-          animateNumber(targetEl.querySelector('#tepa-reveal-votes'), snap.topVotes, function (n) { return String(Math.round(n)); }, 720, 0);
-          animateNumber(targetEl.querySelector('#tepa-reveal-pct'), Math.round((snap.topVotes / snap.totalVotes) * 100), function (n) { return Math.round(n) + '%'; }, 720, 0);
+          animateNumber(targetEl.querySelector('#tepa-reveal-votes'), snap.topVotes, function (n) { return String(Math.round(n)); }, 1100, 0);
+          animateNumber(targetEl.querySelector('#tepa-reveal-pct'), Math.round((snap.topVotes / snap.totalVotes) * 100), function (n) { return Math.round(n) + '%'; }, 1100, 0);
+          launchStageConfetti();
         }
       }
 

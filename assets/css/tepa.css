@@ -287,6 +287,23 @@ body:not(.wp-admin) a,
   animation: tepaTabFade 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* Player screens: soft fade-out of the outgoing step before the next step slides in */
+@keyframes tepaShellOut {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+}
+
+.tepa-mobile-shell.is-swapping > *:not(.tepa-brand-footer):not(.tepa-modal-backdrop) {
+  animation: tepaShellOut 180ms cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tepa-anim-enter,
   .tepa-anim-slide-next,
@@ -1838,7 +1855,7 @@ body:not(.wp-admin) a,
   background: var(--h-row-bg, transparent);
   border: var(--h-row-border, none);
   will-change: transform;
-  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease;
+  transition: background-color 480ms cubic-bezier(0.22, 1, 0.36, 1), border-color 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tepa-menti-hrank {
@@ -2096,14 +2113,44 @@ body:not(.wp-admin) a,
   font-size: 13px;
 }
 
-/* Right Collapsible QR Sidebar (Ref 2) */
+/* Right Collapsible QR Sidebar (Ref 2) — collapses smoothly without rebuilding the chart */
 .tepa-menti-sidebar {
-  width: clamp(248px, 22vw, 308px);
+  --sidebar-w: clamp(248px, 22vw, 308px);
+  width: var(--sidebar-w);
   flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  overflow: hidden;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    width 560ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tepa-menti-sidebar-inner {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 14px;
+}
+
+.tepa-menti-workspace {
+  transition: gap 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.tepa-menti-workspace.is-qr-hidden {
+  gap: 0;
+}
+
+.tepa-menti-workspace.is-qr-hidden .tepa-menti-sidebar {
+  width: 0;
+  opacity: 0;
+  transform: translate3d(24px, 0, 0);
+  pointer-events: none;
 }
 
 .tepa-menti-qrcard {
@@ -2112,6 +2159,7 @@ body:not(.wp-admin) a,
   padding: 24px 20px 20px;
   text-align: center;
   position: relative;
+  transition: background-color 480ms cubic-bezier(0.22, 1, 0.36, 1), color 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .tepa-menti-qrclose {
@@ -2342,6 +2390,115 @@ body:not(.wp-admin) a,
   align-items: center;
   justify-content: center;
   text-align: center;
+  transition: background-color 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ==========================================================================
+   v1.8.12 Live Stage Motion Polish
+   ========================================================================== */
+
+.tepa-menti-stage {
+  position: relative;
+}
+
+/* Single unified entrance: the stage body crossfades, inner blocks no longer double-animate */
+.tepa-menti-stage-body .tepa-anim-enter {
+  animation: none;
+}
+
+/* Smooth Light ↔ Dark across every surface of the 16:9 screen */
+.tepa-menti-htrack,
+.tepa-menti-waitcard,
+.tepa-menti-kpi,
+.tepa-winner-chip,
+.tepa-menti-top-count,
+.tepa-menti-lu-wrap,
+.tepa-menti-te-wrap,
+.tepa-menti-headline,
+.tepa-menti-htitle,
+.tepa-menti-hvotes,
+.tepa-menti-hrank,
+.tepa-menti-vcount,
+.tepa-menti-vlabel,
+.tepa-menti-vbars {
+  transition-property: background-color, border-color, color;
+  transition-duration: 480ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Best of the Best — staged hero reveal */
+@keyframes tepaHeroRise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes tepaHeroTitle {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.9);
+    letter-spacing: 0.06em;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    letter-spacing: -0.025em;
+  }
+}
+
+.tepa-menti-stage-body .tepa-menti-spotlight > * {
+  animation: tepaHeroRise 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tepa-menti-stage-body .tepa-menti-spotlight > h2 {
+  animation: tepaHeroTitle 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(1) { animation-delay: 60ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(2) { animation-delay: 180ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(3) { animation-delay: 420ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(4) { animation-delay: 540ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(5) { animation-delay: 660ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(6) { animation-delay: 780ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) { animation-delay: 1000ms; }
+
+.tepa-menti-stage-body .tepa-menti-spotlight .tepa-anim-enter {
+  animation: tepaHeroRise 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) .tepa-anim-enter:nth-child(1) { animation-delay: 1080ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) .tepa-anim-enter:nth-child(2) { animation-delay: 1200ms; }
+.tepa-menti-stage-body .tepa-menti-spotlight > *:nth-child(7) .tepa-anim-enter:nth-child(3) { animation-delay: 1320ms; }
+
+/* One-shot celebratory confetti layer (removed automatically after ~2.6s) */
+.tepa-menti-confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tepa-menti-stage-body .tepa-menti-spotlight > *,
+  .tepa-menti-stage-body .tepa-menti-spotlight .tepa-anim-enter,
+  .tepa-menti-sidebar,
+  .tepa-menti-workspace {
+    animation: none !important;
+    transition: none !important;
+  }
+  .tepa-menti-confetti {
+    display: none;
+  }
 }
 
 .tepa-voucher-badge {
@@ -3749,7 +3906,10 @@ details.tepa-bo-details > summary {
     grid-template-columns: 1fr;
   }
   .tepa-menti-sidebar {
+    --sidebar-w: 100%;
     width: 100%;
+  }
+  .tepa-menti-sidebar-inner {
     flex-direction: row;
     flex-wrap: wrap;
   }
