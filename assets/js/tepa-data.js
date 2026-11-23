@@ -13,6 +13,8 @@
   var VOTE_CACHE_KEY = 'tepa_vote_receipt_v1';
   var CHANNEL_NAME = 'tepa_realtime_channel_v1';
   var DEFAULT_QUIZ_ID = '00000000-0000-0000-0000-000000002026';
+  var DEFAULT_QUIZ_2_ID = 'b71864e5-fd87-4b27-9f0b-4930f8f0c632';
+  var DEFAULT_QUIZ_3_ID = '3dadebd5-c71d-41ef-a258-f5c96e80b7d2';
   var DEFAULT_POLL_ID = '00000000-0000-0000-0000-000000002027';
 
   var DEFAULT_POLLS = [
@@ -49,26 +51,67 @@
   var DEFAULT_QUIZZES = [
     {
       id: DEFAULT_QUIZ_ID,
-      title: 'Quiz',
-      subtitle: 'Test your knowledge about the TEPA Performance Award and show that you are up to date with this experience!',
-      min_score: 5,
+      title: 'TEPA Welcome Quiz — TotalEnergies & Award',
+      subtitle: 'Test your knowledge about TotalEnergies in Angola and the TEPA Performance Award 2026!',
+      min_score: 4,
       voucher_enabled: true,
       voucher_title: 'Café Bonjour Breakfast Voucher',
       max_vouchers: 10,
       questions_per_page: 2,
       is_archived: false,
       created_at: '2026-11-18T09:00:00.000Z',
-      updated_at: '2026-11-18T09:00:00.000Z'
+      updated_at: '2026-11-23T09:00:00.000Z'
+    },
+    {
+      id: DEFAULT_QUIZ_2_ID,
+      title: 'TEPA Quiz 2 — TotalEnergies EP Angola',
+      subtitle: 'How well do you know TotalEnergies EP Angola, our offshore hubs, and our core values?',
+      min_score: 4,
+      voucher_enabled: true,
+      voucher_title: 'Café Bonjour Breakfast Voucher',
+      max_vouchers: 10,
+      questions_per_page: 2,
+      is_archived: false,
+      created_at: '2026-11-18T09:05:00.000Z',
+      updated_at: '2026-11-23T09:00:00.000Z'
+    },
+    {
+      id: DEFAULT_QUIZ_3_ID,
+      title: 'TEPA Quiz 3 — Multi-Energy & Innovation',
+      subtitle: 'Explore TotalEnergies\' 7 energies, Net Zero 2050 ambition, and the TEPA Performance Award!',
+      min_score: 4,
+      voucher_enabled: true,
+      voucher_title: 'Café Bonjour Breakfast Voucher',
+      max_vouchers: 10,
+      questions_per_page: 2,
+      is_archived: false,
+      created_at: '2026-11-18T09:10:00.000Z',
+      updated_at: '2026-11-23T09:00:00.000Z'
     }
   ];
 
   var DEFAULT_QUESTIONS = [
-    { id: 1, quiz_id: DEFAULT_QUIZ_ID, question_number: 1, sort_order: 1, question_text: 'Does the TEPA Performance Award happen only to reward those with the most years at the company?', question_type: 'yes_no', options: [], correct_answer: false, correct_option: 0, is_active: true, is_archived: false },
-    { id: 2, quiz_id: DEFAULT_QUIZ_ID, question_number: 2, sort_order: 2, question_text: 'Can an innovative idea come from any TotalEnergies employee?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
-    { id: 3, quiz_id: DEFAULT_QUIZ_ID, question_number: 3, sort_order: 3, question_text: 'Are 15 finalist projects competing today, representing 15 different categories?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
-    { id: 4, quiz_id: DEFAULT_QUIZ_ID, question_number: 4, sort_order: 4, question_text: 'Is the "Best of the Best" winner chosen exclusively by external judges?', question_type: 'yes_no', options: [], correct_answer: false, correct_option: 0, is_active: true, is_archived: false },
-    { id: 5, quiz_id: DEFAULT_QUIZ_ID, question_number: 5, sort_order: 5, question_text: 'Can each employee submit multiple votes during the final voting stage?', question_type: 'yes_no', options: [], correct_answer: false, correct_option: 0, is_active: true, is_archived: false },
-    { id: 6, quiz_id: DEFAULT_QUIZ_ID, question_number: 6, sort_order: 6, question_text: 'Is the goal of the TEPA Performance Award to celebrate ideas that create positive impact and improve our company?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false }
+    // QUIZ 1: TEPA Welcome Quiz — TotalEnergies & Award
+    { id: 1,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 1,  sort_order: 1, question_text: 'In which year did Total officially rebrand to TotalEnergies to reflect its transformation into a broad multi-energy company?', question_type: 'multiple_choice', options: ['2018', '2021', '2015', '2023'], correct_answer: true, correct_option: 1, is_active: true, is_archived: false },
+    { id: 2,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 2,  sort_order: 2, question_text: 'Which deepwater block operated by TotalEnergies EP Angola is known as the "Golden Block", home to the Girassol, Dalia, Pazflor, and CLOV FPSOs?', question_type: 'multiple_choice', options: ['Block 17', 'Block 32', 'Block 0', 'Block 14'], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 3,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 3,  sort_order: 3, question_text: 'Has TotalEnergies been operating in Angola since 1953 — more than 70 years of continuous partnership?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 4,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 4,  sort_order: 4, question_text: 'Which core value sits at the heart of every TotalEnergies operation worldwide as our non-negotiable #1 priority?', question_type: 'multiple_choice', options: ['Speed at Any Cost', 'Short-Term Profit', 'Safety', 'Individual Competition'], correct_answer: true, correct_option: 2, is_active: true, is_archived: false },
+    { id: 5,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 5,  sort_order: 5, question_text: 'At the TEPA Performance Award, do 15 finalist projects (1 winner per category) pitch on stage before employees vote live for the "Best of the Best"?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 6,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 6,  sort_order: 6, question_text: 'Which solar project in Huíla Province exemplifies TotalEnergies\' renewable and multi-energy transition in Angola?', question_type: 'multiple_choice', options: ['Namibe Wind Corridor', 'Luanda Geothermal Hub', 'Caculo Cabaça Hydro', 'Quilemba Solar Plant'], correct_answer: true, correct_option: 3, is_active: true, is_archived: false },
+    // QUIZ 2: TEPA Quiz 2 — TotalEnergies EP Angola
+    { id: 7,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 7,  sort_order: 1, question_text: 'What does the acronym TEPA stand for in our Angolan operations?', question_type: 'multiple_choice', options: ['Total Energy Power Africa', 'TotalEnergies EP Angola', 'Technical Engineering & Production Alliance', 'Trans-Equatorial Petroleum Agency'], correct_answer: true, correct_option: 1, is_active: true, is_archived: false },
+    { id: 8,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 8,  sort_order: 2, question_text: 'Which pioneering FPSO came online in 2001 as the very first deepwater development hub on Block 17?', question_type: 'multiple_choice', options: ['Girassol', 'Pazflor', 'Kaombo Sul', 'Dalia'], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 9,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 9,  sort_order: 3, question_text: 'Does the ultra-deepwater Kaombo project on Block 32 operate using two converted FPSO vessels — Kaombo Norte and Kaombo Sul?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 10, quiz_id: DEFAULT_QUIZ_2_ID, question_number: 10, sort_order: 4, question_text: 'Which five values form the official core values of TotalEnergies?', question_type: 'multiple_choice', options: ['Speed, Hierarchy, Secrecy, Cost-Cutting, Exclusivity', 'Compliance, Tradition, Standardization, Caution, Uniformity', 'Safety, Respect for Each Other, Pioneer Spirit, Stand Together, Performance-Minded', 'Oil Only, Centralization, Seniority, Risk-Taking, Autonomy'], correct_answer: true, correct_option: 2, is_active: true, is_archived: false },
+    { id: 11, quiz_id: DEFAULT_QUIZ_2_ID, question_number: 11, sort_order: 5, question_text: 'Is the Kaminho deepwater project in the Kwanza Basin designed with an all-electric FPSO and zero routine flaring to cut emissions?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 12, quiz_id: DEFAULT_QUIZ_2_ID, question_number: 12, sort_order: 6, question_text: 'In the TEPA Performance Award, is participation restricted only to directors with more than 15 years at the company?', question_type: 'yes_no', options: [], correct_answer: false, correct_option: 0, is_active: true, is_archived: false },
+    // QUIZ 3: TEPA Quiz 3 — Multi-Energy & Innovation
+    { id: 13, quiz_id: DEFAULT_QUIZ_3_ID, question_number: 13, sort_order: 1, question_text: 'How many primary energies are integrated in TotalEnergies\' multi-energy strategy (oil, natural gas, electricity, hydrogen, biomass, wind, and solar)?', question_type: 'multiple_choice', options: ['2 energies', '4 energies', '7 energies', '12 energies'], correct_answer: true, correct_option: 2, is_active: true, is_archived: false },
+    { id: 14, quiz_id: DEFAULT_QUIZ_3_ID, question_number: 14, sort_order: 2, question_text: 'Which four offshore fields give their initials to the "CLOV" FPSO hub on Block 17?', question_type: 'multiple_choice', options: ['Cravo, Lírio, Orquídea, and Violeta', 'Camama, Luanda, Ondjiva, and Viana', 'Cuanza, Lobito, Ombaka, and Vale', 'Cameia, Louro, Orvalho, and Vitória'], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 15, quiz_id: DEFAULT_QUIZ_3_ID, question_number: 15, sort_order: 3, question_text: 'Do the first 10 participants who pass the Welcome Quiz win a breakfast voucher at Café Bonjour?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 16, quiz_id: DEFAULT_QUIZ_3_ID, question_number: 16, sort_order: 4, question_text: 'Who elects the ultimate "Best of the Best" project winner among the 15 category finalists at the TEPA Performance Award?', question_type: 'multiple_choice', options: ['An external jury based in Paris', 'All employees attending the event via live mobile QR voting', 'Only department managers', 'An automated random draw'], correct_answer: true, correct_option: 1, is_active: true, is_archived: false },
+    { id: 17, quiz_id: DEFAULT_QUIZ_3_ID, question_number: 17, sort_order: 5, question_text: 'Can each employee submit multiple votes during the final "Best of the Best" voting round?', question_type: 'yes_no', options: [], correct_answer: false, correct_option: 0, is_active: true, is_archived: false },
+    { id: 18, quiz_id: DEFAULT_QUIZ_3_ID, question_number: 18, sort_order: 6, question_text: 'Is TotalEnergies\' climate ambition to achieve Net Zero emissions (carbon neutrality) by 2050, together with society?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false }
   ];
 
   function getConfig() {
@@ -229,7 +272,7 @@
           id: 'seed-q-' + (i + 1),
           full_name: demoWinners[i],
           device_id: 'seed-qdev-' + (i + 1),
-          answers: { '1': false, '2': true, '3': true, '4': false, '5': false, '6': true },
+          answers: { '1': 1, '2': 0, '3': true, '4': 2, '5': true, '6': 3 },
           score: 6,
           total_questions: 6,
           passed_criteria: true,
@@ -261,7 +304,7 @@
         live_sort_mode: 'votes',
         live_show_qr: true,
         live_hide_results: false,
-        min_quiz_score: 5,
+        min_quiz_score: 4,
         max_vouchers: 10,
         quiz_epoch: 1,
         vote_epoch: 1,
@@ -289,6 +332,16 @@
     if (!state.settings.live_sort_mode) state.settings.live_sort_mode = 'votes';
     if (state.settings.live_show_qr == null) state.settings.live_show_qr = true;
     if (state.settings.live_hide_results == null) state.settings.live_hide_results = false;
+    var hasLegacyDemoQuestions = Array.isArray(state.questions) && state.questions.some(function (q) {
+      return q && typeof q.question_text === 'string' && q.question_text.indexOf('most years at the company') !== -1;
+    });
+    if (hasLegacyDemoQuestions) {
+      state.quizzes = clone(DEFAULT_QUIZZES);
+      state.questions = clone(DEFAULT_QUESTIONS);
+      if (state.settings.min_quiz_score === 5) {
+        state.settings.min_quiz_score = 4;
+      }
+    }
     if (!Array.isArray(state.quizzes) || !state.quizzes.length) {
       state.quizzes = clone(DEFAULT_QUIZZES);
     }
