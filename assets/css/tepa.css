@@ -470,6 +470,24 @@ body:not(.wp-admin) a,
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tepa-mobile-shell.is-scrollable::-webkit-scrollbar,
+.tepa-project-list::-webkit-scrollbar,
+.tepa-quiz-step-wrap::-webkit-scrollbar,
+.tepa-sheet-body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.tepa-project-list,
+.tepa-quiz-step-wrap,
+.tepa-sheet-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 @media (max-width: 540px) {
