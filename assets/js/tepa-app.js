@@ -1605,13 +1605,13 @@
         var y;
         if (zone === 0 || zone === 1) {
           x = (0.02 + Math.random() * 0.30) * W;
-          y = anywhereY ? (Math.random() * H) : (-24 - Math.random() * H * 0.35);
+          y = anywhereY ? (Math.random() * H) : (-20 - Math.random() * H * 1.05);
         } else if (zone === 2 || zone === 3) {
           x = (0.68 + Math.random() * 0.30) * W;
-          y = anywhereY ? (Math.random() * H) : (-24 - Math.random() * H * 0.35);
+          y = anywhereY ? (Math.random() * H) : (-20 - Math.random() * H * 1.05);
         } else {
           x = (0.24 + Math.random() * 0.52) * W;
-          y = anywhereY ? (Math.random() * H * 0.24) : (-20 - Math.random() * 140);
+          y = anywhereY ? (Math.random() * H * 0.24) : (-20 - Math.random() * H * 0.95);
         }
         var scale = Math.min(1.15, Math.max(0.68, W / 1600));
         return {
@@ -1620,7 +1620,7 @@
           x: x,
           y: y,
           baseX: x,
-          vy: (24 + Math.random() * 36) * scale,
+          vy: (32 + Math.random() * 44) * scale,
           swayAmp: (12 + Math.random() * 24) * scale,
           swayFreq: 0.7 + Math.random() * 1.1,
           phase: Math.random() * Math.PI * 2,
@@ -1637,10 +1637,7 @@
       }
 
       var pieces = [];
-      var AMBIENT_COUNT = 95;
-      for (var a = 0; a < AMBIENT_COUNT; a++) {
-        pieces.push(spawnAmbient(a, true));
-      }
+      var AMBIENT_COUNT = 100;
 
       function getConeMouths() {
         var hostRect = host.getBoundingClientRect();
@@ -1669,15 +1666,6 @@
         return { left: lMouth, right: rMouth };
       }
 
-      function triggerConeRecoil() {
-        var cones = host.querySelectorAll('.tepa-winner-cone');
-        cones.forEach(function (c) {
-          c.classList.remove('is-recoil');
-          void c.offsetWidth;
-          c.classList.add('is-recoil');
-        });
-      }
-
       function fireConeBurst(count, power) {
         var mouths = getConeMouths();
         var bScale = Math.min(1.18, Math.max(0.68, W / 1550)) * (power || 1);
@@ -1685,10 +1673,10 @@
           var fromLeft = b % 2 === 0;
           var origin = fromLeft ? mouths.left : mouths.right;
           var spreadDeg = fromLeft
-            ? (-30 - Math.random() * 44)
-            : (-106 - Math.random() * 44);
+            ? (-26 - Math.random() * 48)
+            : (-106 - Math.random() * 48);
           var rad = spreadDeg * Math.PI / 180;
-          var speed = (520 + Math.random() * 460) * bScale;
+          var speed = (580 + Math.random() * 520) * bScale;
           pieces.push({
             mode: 'burst',
             kind: pickKind(),
@@ -1704,15 +1692,17 @@
             aspect: 0.45 + Math.random() * 0.2,
             color: pickColor(b),
             alpha: 0.94,
-            delay: Math.random() * 0.16,
+            delay: Math.random() * 0.14,
             age: 0,
-            life: 2.9 + Math.random() * 1.2
+            life: 3.1 + Math.random() * 1.2
           });
         }
       }
 
-      if (!reduced) {
-        fireConeBurst(84, 1.0);
+      if (reduced) {
+        for (var rSpawn = 0; rSpawn < AMBIENT_COUNT; rSpawn++) {
+          pieces.push(spawnAmbient(rSpawn, true));
+        }
       }
 
       function drawPiece(p, alpha) {
@@ -1779,7 +1769,8 @@
 
       var lastTs = 0;
       var elapsed = 0;
-      var nextMiniPop = 5.2;
+      var burstFired = false;
+      var ambientStarted = false;
 
       function frame(ts) {
         if (!canvas.isConnected) {
@@ -1791,10 +1782,18 @@
         lastTs = ts;
         elapsed += dt;
 
-        if (elapsed >= nextMiniPop) {
-          nextMiniPop = elapsed + 5.2;
-          triggerConeRecoil();
-          fireConeBurst(28, 0.86);
+        // Beat 2 (~450ms): Cones reach firing stance and launch the opening burst
+        if (!burstFired && elapsed >= 0.45) {
+          burstFired = true;
+          fireConeBurst(110, 1.15);
+        }
+
+        // Beat 4 (~1.15s): As cones retract out of scene, background confetti begins descending from above
+        if (!ambientStarted && elapsed >= 1.15) {
+          ambientStarted = true;
+          for (var a = 0; a < AMBIENT_COUNT; a++) {
+            pieces.push(spawnAmbient(a, false));
+          }
         }
 
         ctx.clearRect(0, 0, W, H);
