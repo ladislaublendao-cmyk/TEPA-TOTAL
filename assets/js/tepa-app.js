@@ -1637,36 +1637,82 @@
       }
 
       var pieces = [];
-      var AMBIENT_COUNT = 105;
+      var AMBIENT_COUNT = 95;
       for (var a = 0; a < AMBIENT_COUNT; a++) {
         pieces.push(spawnAmbient(a, true));
       }
 
-      if (!reduced) {
-        var BURST_COUNT = 70;
-        var bScale = Math.min(1.15, Math.max(0.7, W / 1600));
-        for (var b = 0; b < BURST_COUNT; b++) {
+      function getConeMouths() {
+        var hostRect = host.getBoundingClientRect();
+        var leftEl = host.querySelector('.tepa-winner-cone.is-left');
+        var rightEl = host.querySelector('.tepa-winner-cone.is-right');
+        var lMouth = { x: W * 0.10, y: H * 0.80 };
+        var rMouth = { x: W * 0.90, y: H * 0.80 };
+        if (leftEl && hostRect.width > 0) {
+          var lr = leftEl.getBoundingClientRect();
+          if (lr.width > 0) {
+            lMouth = {
+              x: (lr.left - hostRect.left) + lr.width * 0.66,
+              y: (lr.top - hostRect.top) + lr.height * 0.29
+            };
+          }
+        }
+        if (rightEl && hostRect.width > 0) {
+          var rr = rightEl.getBoundingClientRect();
+          if (rr.width > 0) {
+            rMouth = {
+              x: (rr.left - hostRect.left) + rr.width * 0.34,
+              y: (rr.top - hostRect.top) + rr.height * 0.29
+            };
+          }
+        }
+        return { left: lMouth, right: rMouth };
+      }
+
+      function triggerConeRecoil() {
+        var cones = host.querySelectorAll('.tepa-winner-cone');
+        cones.forEach(function (c) {
+          c.classList.remove('is-recoil');
+          void c.offsetWidth;
+          c.classList.add('is-recoil');
+        });
+      }
+
+      function fireConeBurst(count, power) {
+        var mouths = getConeMouths();
+        var bScale = Math.min(1.18, Math.max(0.68, W / 1550)) * (power || 1);
+        for (var b = 0; b < count; b++) {
           var fromLeft = b % 2 === 0;
+          var origin = fromLeft ? mouths.left : mouths.right;
+          var spreadDeg = fromLeft
+            ? (-30 - Math.random() * 44)
+            : (-106 - Math.random() * 44);
+          var rad = spreadDeg * Math.PI / 180;
+          var speed = (520 + Math.random() * 460) * bScale;
           pieces.push({
             mode: 'burst',
             kind: pickKind(),
-            x: fromLeft ? W * 0.14 : W * 0.86,
-            y: H * 0.48,
-            vx: (fromLeft ? 1 : -1) * (150 + Math.random() * 340) * bScale,
-            vy: -(320 + Math.random() * 410) * bScale,
+            x: origin.x + (Math.random() - 0.5) * 18,
+            y: origin.y + (Math.random() - 0.5) * 18,
+            vx: Math.cos(rad) * speed,
+            vy: Math.sin(rad) * speed,
             rot: Math.random() * Math.PI * 2,
-            vr: (Math.random() - 0.5) * 7.5,
+            vr: (Math.random() - 0.5) * 8.2,
             tumblePhase: Math.random() * Math.PI * 2,
             tumbleSpeed: 4 + Math.random() * 5,
-            size: (12 + Math.random() * 9) * bScale,
+            size: (11 + Math.random() * 9) * Math.min(1.15, Math.max(0.7, W / 1600)),
             aspect: 0.45 + Math.random() * 0.2,
             color: pickColor(b),
-            alpha: 0.92,
-            delay: Math.random() * 0.24,
+            alpha: 0.94,
+            delay: Math.random() * 0.16,
             age: 0,
-            life: 2.8 + Math.random() * 1.1
+            life: 2.9 + Math.random() * 1.2
           });
         }
+      }
+
+      if (!reduced) {
+        fireConeBurst(84, 1.0);
       }
 
       function drawPiece(p, alpha) {
@@ -1733,6 +1779,7 @@
 
       var lastTs = 0;
       var elapsed = 0;
+      var nextMiniPop = 5.2;
 
       function frame(ts) {
         if (!canvas.isConnected) {
@@ -1743,6 +1790,12 @@
         var dt = Math.min(0.08, Math.max(0.004, (ts - lastTs) / 1000));
         lastTs = ts;
         elapsed += dt;
+
+        if (elapsed >= nextMiniPop) {
+          nextMiniPop = elapsed + 5.2;
+          triggerConeRecoil();
+          fireConeBurst(28, 0.86);
+        }
 
         ctx.clearRect(0, 0, W, H);
         for (var j = pieces.length - 1; j >= 0; j--) {
@@ -2476,6 +2529,10 @@
           '    <button type="button" class="tepa-winner-fs-hover" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
           '    <div class="tepa-winner-glow" aria-hidden="true"></div>' +
           '    <div class="tepa-winner-rays" aria-hidden="true"></div>' +
+          (hasWinner
+            ? '    <img class="tepa-winner-cone is-left" src="' + esc(assetUrl('confetti-cone.svg')) + '" alt="" aria-hidden="true">' +
+              '    <img class="tepa-winner-cone is-right" src="' + esc(assetUrl('confetti-cone.svg')) + '" alt="" aria-hidden="true">'
+            : '') +
           '    <div class="tepa-winner-content">' +
           '      <div class="tepa-winner-trophy w-anim w-d1">' + trophySvg + '</div>' +
           '      <div class="tepa-winner-eyebrow w-anim w-d2">★ ' + esc(eventLabel) + '</div>' +
