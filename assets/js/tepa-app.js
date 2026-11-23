@@ -2526,16 +2526,20 @@
           ? ((activePoll && activePoll.title) || 'Live Poll Results')
           : (settings.event_title || 'TEPA Performance Award 2026');
         var trophySvg =
-          '<svg viewBox="0 0 64 64" fill="none" aria-hidden="true">' +
-          '<defs><linearGradient id="tepaTrophyGrad" x1="0" y1="0" x2="1" y2="1">' +
-          '<stop offset="0" stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/>' +
-          '</linearGradient></defs>' +
-          '<path d="M20 8h24v14c0 7.2-5.4 13-12 13s-12-5.8-12-13V8z" fill="url(#tepaTrophyGrad)"/>' +
-          '<path d="M20 12h-7c0 7.5 3.8 12 9.5 13M44 12h7c0 7.5-3.8 12-9.5 13" stroke="url(#tepaTrophyGrad)" stroke-width="3.2" stroke-linecap="round"/>' +
-          '<path d="M28 35h8v8h-8z" fill="url(#tepaTrophyGrad)"/>' +
-          '<rect x="20" y="43" width="24" height="7" rx="2.5" fill="url(#tepaTrophyGrad)"/>' +
-          '<rect x="16" y="50" width="32" height="6" rx="2.5" fill="url(#tepaTrophyGrad)"/>' +
-          '<path d="M27 15l1.6 3.3 3.6.5-2.6 2.5.6 3.6-3.2-1.7-3.2 1.7.6-3.6-2.6-2.5 3.6-.5z" fill="#FFFFFF" opacity="0.85"/>' +
+          '<svg viewBox="924 156 72 78" fill="none" aria-hidden="true">' +
+          '<defs>' +
+          '<linearGradient id="tepaTrophyStem" x1="954" y1="180" x2="975.041" y2="187.89" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/></linearGradient>' +
+          '<linearGradient id="tepaTrophyHandles" x1="932.094" y1="167.625" x2="943.789" y2="201.811" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/></linearGradient>' +
+          '<linearGradient id="tepaTrophyCup" x1="942.375" y1="159.75" x2="981.758" y2="194.757" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/></linearGradient>' +
+          '<linearGradient id="tepaTrophyBase1" x1="942.375" y1="211.156" x2="947.902" y2="230.107" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/></linearGradient>' +
+          '<linearGradient id="tepaTrophyBase2" x1="937" y1="220" x2="941.071" y2="239.134" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE27A"/><stop offset="0.55" stop-color="#FFD239"/><stop offset="1" stop-color="#F77B39"/></linearGradient>' +
+          '</defs>' +
+          '<path d="M954 180H966V212H954V180Z" fill="url(#tepaTrophyStem)"/>' +
+          '<path d="M942.375 167.625H932.094C932.094 178.641 937.675 185.25 946.047 186.719M977.625 167.625H987.906C987.906 178.641 982.325 185.25 973.953 186.719" stroke="url(#tepaTrophyHandles)" stroke-width="4.7" stroke-linecap="round"/>' +
+          '<path d="M942.375 159.75H977.625V180.312C977.625 190.887 969.694 199.406 960 199.406C950.306 199.406 942.375 190.887 942.375 180.312V159.75Z" fill="url(#tepaTrophyCup)"/>' +
+          '<path d="M973.953 211.156H946.047C944.019 211.156 942.375 212.8 942.375 214.828V217.766C942.375 219.794 944.019 221.438 946.047 221.438H973.953C975.981 221.438 977.625 219.794 977.625 217.766V214.828C977.625 212.8 975.981 211.156 973.953 211.156Z" fill="url(#tepaTrophyBase1)"/>' +
+          '<path d="M980.328 220H940.672C938.644 220 937 221.865 937 224.167V225.833C937 228.135 938.644 230 940.672 230H980.328C982.356 230 984 228.135 984 225.833V224.167C984 221.865 982.356 220 980.328 220Z" fill="url(#tepaTrophyBase2)"/>' +
+          '<path opacity="0.88" d="M959.656 170.031L962.006 174.878L967.294 175.612L963.475 179.284L964.356 184.572L959.656 182.075L954.956 184.572L955.838 179.284L952.019 175.612L957.306 174.878L959.656 170.031Z" fill="#FFFFFF"/>' +
           '</svg>';
 
         workspaceHtml =
