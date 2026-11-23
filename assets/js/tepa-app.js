@@ -2423,12 +2423,7 @@
         '<path d="M9 18h6M10 22h4M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>';
 
       var topOverlay =
-        '<img class="tepa-winner-brand-lightup" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
-        '<div class="tepa-broadcast-tools">' +
-        '  <span class="tepa-menti-top-count tepa-broadcast-count">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
-        '  <button type="button" class="tepa-menti-icon-circle tepa-broadcast-sort" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '">' + sortIcon + '</button>' +
-        '  <button type="button" class="tepa-menti-icon-circle tepa-broadcast-fs" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
-        '</div>';
+        '<img class="tepa-winner-brand-lightup" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">';
 
       var broadcastFooter =
         '<footer class="tepa-winner-footer">' +
@@ -2441,20 +2436,9 @@
           ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
           : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
 
-      var voteScopeHtml = (stageMode === 'live_voting' && state.chartType === 'vertical' && projects.length > 5)
-        ? '<div class="tepa-menti-sub-toggle">' +
-          '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'top5' ? 'is-active' : '') + '" data-vscope="top5">Top 5</button>' +
-          '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'all15' ? 'is-active' : '') + '" data-vscope="all15">All ' + projects.length + '</button>' +
-          '</div>'
-        : '';
-
       var voteHeaderHtml =
         '<div class="tepa-vote-stage-head">' +
         '  <div class="tepa-vote-stage-titles">' +
-        '    <div class="tepa-vote-stage-eyebrow-row">' +
-        '      <div class="tepa-vote-stage-eyebrow"><span class="tepa-vote-live-dot"></span>Live Voting</div>' +
-        voteScopeHtml +
-        '    </div>' +
         '    <h1 class="tepa-menti-headline tepa-vote-stage-title">' + headlineTitle + '</h1>' +
         '  </div>' +
         '</div>';

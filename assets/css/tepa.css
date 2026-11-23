@@ -3364,7 +3364,7 @@ body:not(.wp-admin) a,
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 0 clamp(175px, 17vw, 270px);
+  padding: clamp(8px, 1.8vh, 22px) clamp(170px, 17vw, 260px) 0;
   gap: 6px;
   flex-shrink: 0;
 }
