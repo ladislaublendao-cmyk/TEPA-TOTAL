@@ -377,7 +377,7 @@
         }
         rows.push({ label: 'QUIZ / EVENT', value: opts.eventTitle || 'TEPA 2026 — Welcome Quiz' });
         rows.push({ label: 'DATE & TIME', value: formatDateTimeReceipt(opts.createdAt) });
-        rows.push({ label: 'VERIFICATION', value: 'TEPA Unique ID (Winners announced on 16:9 Stage Screen)' });
+        rows.push({ label: 'VERIFICATION', value: 'TEPA Unique ID (Winners announced live during the event)' });
       } else {
         rows.push({ label: 'SELECTED CHOICE', value: opts.choiceTitle || '—' });
         if (opts.choiceMeta) {
@@ -425,8 +425,8 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       var noteText = isQuiz
-        ? 'Keep this PDF receipt saved on your device. When the quiz winners are announced live on the 16:9 auditorium stage screen, present your TEPA Unique ID at the Prize Desk.'
-        : 'Your single-device vote has been officially registered and is updating live on the 16:9 auditorium screen. Keep this PDF receipt as your confirmation.';
+        ? 'Keep this PDF receipt saved on your device. When the quiz winners are announced live during the event, present your TEPA Unique ID at the Prize Desk.'
+        : 'Your single-device vote has been officially registered and is updating live on the auditorium screen. Keep this PDF receipt as your confirmation.';
       var noteLines = wrapCanvasText(ctx, noteText, 880, 4);
       var noteStartY = 1286 + Math.max(24, (162 - noteLines.length * 30) / 2);
       for (var nl = 0; nl < noteLines.length; nl++) {
@@ -1050,7 +1050,7 @@
           '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
           '  <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;" class="tepa-rainbow-text">Quiz Recorded!</h2>' +
           '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
-          '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below — the quiz winners will be announced live on the 16:9 stage screen.' +
+          '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below — the quiz winners will be announced live during the event.' +
           '  </p>' +
           '</div>';
 
