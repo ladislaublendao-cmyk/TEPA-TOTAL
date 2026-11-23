@@ -950,10 +950,18 @@ body:not(.wp-admin) a,
   filter: brightness(1.06);
 }
 
+.tepa-yn-btn:focus {
+  outline: none;
+}
+
+.tepa-yn-btn:focus-visible {
+  box-shadow: 0 0 0 2px rgba(242, 121, 34, 0.55);
+}
+
 .tepa-yn-btn.is-selected {
-  border-color: var(--tepa-white);
+  border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35), 0 8px 20px rgba(231, 36, 40, 0.38);
+  box-shadow: 0 8px 20px rgba(231, 36, 40, 0.36);
   transform: scale(1.015);
 }
 
@@ -1022,11 +1030,19 @@ body:not(.wp-admin) a,
   transition: background 0.18s ease, color 0.18s ease;
 }
 
+.tepa-mc-btn:focus {
+  outline: none;
+}
+
+.tepa-mc-btn:focus-visible {
+  box-shadow: 0 0 0 2px rgba(242, 121, 34, 0.55);
+}
+
 .tepa-mc-btn.is-selected {
-  border-color: #FFFFFF;
+  border-color: transparent;
   background: var(--tepa-grad-cta);
   font-weight: 700;
-  box-shadow: 0 8px 22px rgba(231, 36, 40, 0.35);
+  box-shadow: 0 8px 22px rgba(231, 36, 40, 0.34);
   transform: scale(1.01);
 }
 
@@ -1133,92 +1149,95 @@ body:not(.wp-admin) a,
 }
 
 .tepa-unique-id-box {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px dashed rgba(255, 210, 57, 0.65);
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 210, 57, 0.55);
+  border-radius: 16px;
+  padding: 16px 16px 14px;
   text-align: center;
-  margin: 14px 0;
+  margin: 10px 0 12px;
+}
+
+.tepa-unique-id-kicker {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(212, 214, 230, 0.78);
 }
 
 .tepa-unique-id-code {
-  font-size: clamp(20px, 6.2vw, 26px);
+  font-size: clamp(22px, 6.5vw, 28px);
   font-weight: 800;
   letter-spacing: 0.12em;
   color: #FFD239;
   font-variant-numeric: tabular-nums;
-  margin: 4px 0;
+  margin: 6px 0 6px;
   word-break: break-all;
 }
 
-.tepa-unique-id-email {
-  font-size: 12px;
-  color: #B6B9CE;
-  margin-bottom: 10px;
-  word-break: break-word;
+.tepa-unique-id-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #F2F4FA;
+  margin-bottom: 4px;
 }
 
 .tepa-email-status {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 8px 12px;
-  border-radius: 10px;
+  gap: 5px;
+  margin: 0 auto;
+  padding: 0;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
   text-align: center;
+  color: rgba(212, 214, 230, 0.78);
 }
 
 .tepa-email-status strong {
-  font-weight: 700;
+  font-weight: 600;
+  color: #E5E7F2;
   word-break: break-word;
 }
 
+.tepa-email-check {
+  color: #FFD239;
+  font-weight: 800;
+}
+
 .tepa-email-status.is-sending {
-  background: rgba(33, 148, 212, 0.16);
-  border: 1px solid rgba(33, 148, 212, 0.42);
-  color: #CFEFFF;
-}
-
-.tepa-email-status.is-sent {
-  background: rgba(100, 189, 117, 0.16);
-  border: 1px solid rgba(100, 189, 117, 0.48);
-  color: #D2F8DA;
-}
-
-.tepa-email-status.is-simulated,
-.tepa-email-status.is-idle {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #D4D6E6;
+  color: rgba(212, 214, 230, 0.72);
 }
 
 .tepa-email-status.is-error {
-  background: rgba(231, 36, 40, 0.18);
-  border: 1px solid rgba(231, 36, 40, 0.48);
-  color: #FFD2D3;
+  color: #FFA6A8;
+}
+
+.tepa-unique-id-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 14px 0 12px;
 }
 
 .tepa-email-retry-btn {
   appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  background: rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
+  border: none;
+  background: transparent;
+  color: #FFD239;
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 0 2px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease;
+  transition: opacity 0.16s ease;
 }
 
 .tepa-email-retry-btn:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.55);
+  opacity: 0.82;
 }
 
 .tepa-receipt-actions {

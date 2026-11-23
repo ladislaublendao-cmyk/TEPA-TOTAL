@@ -672,21 +672,22 @@
       if (state.emailStatus === 'sending') {
         return (
           '<div class="tepa-email-status is-sending">' +
-          '  <span>Sending access code to <strong>' + esc(targetEmail) + '</strong>...</span>' +
+          '  <span>Sending code to <strong>' + esc(targetEmail) + '</strong>...</span>' +
           '</div>'
         );
       }
       if (state.emailStatus === 'sent') {
         return (
           '<div class="tepa-email-status is-sent">' +
-          '  <span>✓ Access code sent to <strong>' + esc(targetEmail) + '</strong></span>' +
+          '  <span class="tepa-email-check" aria-hidden="true">✓</span>' +
+          '  <span>Sent to <strong>' + esc(targetEmail) + '</strong></span>' +
           '</div>'
         );
       }
       if (state.emailStatus === 'simulated') {
         return (
           '<div class="tepa-email-status is-simulated">' +
-          '  <span>✉ ' + esc(state.emailMessage || 'Preview mode — automatic email activates on WordPress.') + '</span>' +
+          '  <span>Email: <strong>' + esc(targetEmail) + '</strong></span>' +
           '</div>'
         );
       }
@@ -700,8 +701,8 @@
       }
       return (
         '<div class="tepa-email-status is-idle">' +
-        '  <span>Email registered: <strong>' + esc(targetEmail) + '</strong></span>' +
-        '  <button type="button" class="tepa-email-retry-btn" data-action="resend-code-email">Send code</button>' +
+        '  <span><strong>' + esc(targetEmail) + '</strong></span>' +
+        '  <button type="button" class="tepa-email-retry-btn" data-action="resend-code-email">Resend code</button>' +
         '</div>'
       );
     }
@@ -759,9 +760,7 @@
     }
 
     function getAnswerValue(q) {
-      if (state.answers[String(q.id)] !== undefined) return state.answers[String(q.id)];
-      if (state.answers[String(q.question_number)] !== undefined) return state.answers[String(q.question_number)];
-      return undefined;
+      return state.answers[String(q.id)];
     }
 
     function computeProgress() {
@@ -979,9 +978,8 @@
           '      <p class="tepa-input-helper">Your unique access code will be sent automatically to this email.</p>' +
           '    </div>' +
           (state.error ? '<p style="color:#FF8B8E;font-size:13px;margin:10px 0 0;">' + esc(state.error) + '</p>' : '') +
-          '    <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">' +
+          '    <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;">' +
           '      <button type="submit" class="tepa-btn-cta" style="width:100%;">Start Quiz</button>' +
-          '      <button type="button" class="tepa-btn-rainbow-outline is-pill" data-action="back-cover" style="width:100%;">← Back</button>' +
           '    </div>' +
           '  </form>' +
           '</div>';
@@ -1007,7 +1005,6 @@
           var pctEl = root.querySelector('#tepa-quiz-progress-pct');
           var pgLbl = root.querySelector('#tepa-quiz-page-label');
           var nxtBtn = root.querySelector('#tepa-quiz-next-btn');
-          var prevBtnWrap = root.querySelector('#tepa-quiz-prev-wrap');
           var errBox = root.querySelector('#tepa-quiz-err');
           if (fillEl) fillEl.style.width = prog.pct + '%';
           if (pctEl) animateNumber(pctEl, prog.pct, function (v) { return Math.round(v) + '%'; }, 360);
@@ -1015,11 +1012,6 @@
           if (nxtBtn) {
             nxtBtn.disabled = !(allPageAnswered && !state.submitting);
             nxtBtn.textContent = state.submitting ? 'Submitting...' : (isLast ? 'Submit Answers' : 'Next');
-          }
-          if (prevBtnWrap) {
-            prevBtnWrap.innerHTML = state.page > 0
-              ? '<button type="button" class="tepa-btn-rainbow-outline is-pill" data-action="prev-page" style="width:100%;">← Previous Questions</button>'
-              : '';
           }
           if (errBox) {
             errBox.textContent = state.error || '';
@@ -1049,18 +1041,13 @@
           '    <button type="button" class="tepa-btn-cta" id="tepa-quiz-next-btn" data-action="next-page" ' + (allPageAnswered && !state.submitting ? '' : 'disabled') + '>' +
           (state.submitting ? 'Submitting...' : (isLast ? 'Submit Answers' : 'Next')) +
           '    </button>' +
-          '    <div id="tepa-quiz-prev-wrap">' +
-          (state.page > 0
-            ? '<button type="button" class="tepa-btn-rainbow-outline is-pill" data-action="prev-page" style="width:100%;">← Previous Questions</button>'
-            : '') +
-          '    </div>' +
           '  </div>' +
           '</div>';
       } else if (state.step === 'result' && state.receipt) {
         var r = state.receipt;
         var voteUrl = Store.getConfig().voteUrl || 'vote.html';
         var voucherHtml =
-          '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin:16px 0 14px;">' +
+          '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin:14px 0 12px;">' +
           '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
           '  <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;" class="tepa-rainbow-text">Quiz Recorded!</h2>' +
           '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
@@ -1073,17 +1060,17 @@
           '  <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           voucherHtml +
           '  <div class="tepa-unique-id-box" style="width:100%;">' +
-          '    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Unique Participant ID</div>' +
+          '    <div class="tepa-unique-id-kicker">Unique Participant ID</div>' +
           '    <div class="tepa-unique-id-code" id="tepa-unique-code-val">' + esc(r.unique_code) + '</div>' +
-          '    <div style="font-size:12.5px;color:#D4D6E6;margin-bottom:' + ((r.email || state.email) ? '3px' : '12px') + ';">' + esc(r.full_name) + '</div>' +
-          ((r.email || state.email) ? '<div class="tepa-unique-id-email">' + esc(r.email || state.email) + '</div>' : '') +
+          '    <div class="tepa-unique-id-name">' + esc(r.full_name) + '</div>' +
           '    <div id="tepa-email-status-slot">' + buildEmailStatusHtml() + '</div>' +
+          '    <div class="tepa-unique-id-divider"></div>' +
           '    <div class="tepa-receipt-actions">' +
           '      <button type="button" class="tepa-stage-btn" data-action="copy-code">Copy Unique ID</button>' +
           '      <button type="button" class="tepa-stage-btn is-pdf" data-action="download-quiz-pdf">' + PDF_ICON_SVG + '<span>Save PDF Receipt</span></button>' +
           '    </div>' +
           '  </div>' +
-          '  <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' +
+          '  <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:4px;">' +
           '    <a href="' + esc(voteUrl) + '" class="tepa-btn-cta" style="width:100%;">Open Voting Portal</a>' +
           renderDemoResetPill() +
           '  </div>' +
@@ -1130,26 +1117,13 @@
         render('next');
         var inp = root.querySelector('#tepa-quiz-fullname');
         if (inp) setTimeout(function () { try { inp.focus(); } catch (e) {} }, 120);
-      } else if (action === 'back-cover') {
-        state.step = 'cover';
-        state.error = '';
-        render('prev');
       } else if (action === 'answer') {
         var qId = btn.getAttribute('data-qid');
-        var qNum = btn.getAttribute('data-qnum');
         var qtype = btn.getAttribute('data-qtype');
         var rawVal = btn.getAttribute('data-val');
         var typedVal = qtype === 'multiple_choice' ? Number(rawVal) : (rawVal === 'true');
         state.answers[String(qId)] = typedVal;
-        if (qNum && String(qNum) !== String(qId)) {
-          state.answers[String(qNum)] = typedVal;
-        }
         updateQuestionsUiInPlace();
-      } else if (action === 'prev-page') {
-        if (state.page > 0) {
-          state.page--;
-          render('prev');
-        }
       } else if (action === 'next-page') {
         var totalPages = Math.max(1, Math.ceil(state.questions.length / state.pageSize));
         if (state.page < totalPages - 1) {
