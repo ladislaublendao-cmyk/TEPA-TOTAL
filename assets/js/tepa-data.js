@@ -263,7 +263,7 @@
     var sampleQuiz = [];
     if (withSampleActivity !== false) {
       var demoWinners = [
-        'Ana Paula Santos',
+        'Beatriz Domingos',
         'Carlos Manuel Silva',
         'Mateus Kiala',
         'Sofia Mendes'
@@ -354,6 +354,13 @@
         if (!p.poll_id) p.poll_id = state.settings.active_poll_id || DEFAULT_POLL_ID;
         if (p.sort_order == null) p.sort_order = p.slot_number || (i + 1);
         if (p.is_archived == null) p.is_archived = false;
+      });
+    }
+    if (Array.isArray(state.quiz_submissions)) {
+      state.quiz_submissions.forEach(function (sub) {
+        if (sub && sub.full_name === 'Ana Paula Santos') {
+          sub.full_name = 'Beatriz Domingos';
+        }
       });
     }
     if (Array.isArray(state.questions)) {
