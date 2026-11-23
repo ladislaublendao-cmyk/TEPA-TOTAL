@@ -1389,11 +1389,11 @@
           '</main>', stepChanged, syncModalInPlace);
       } else if (state.step === 'receipt' && state.receipt) {
         var votedProj = state.projects.find(function (p) { return p.id === state.receipt.project_id; });
-        var quizUrl = Store.getConfig().quizUrl || 'quiz.html';
         var pollLabel = (state.activePoll && state.activePoll.title) || 'TEPA Performance Award 2026';
         var receiptCat = votedProj && votedProj.category_name
           ? '<div style="font-size:12px;color:#FFD239;font-weight:700;text-transform:uppercase;margin-top:4px;">' + esc(pad2(votedProj.slot_number)) + ' · ' + esc(votedProj.category_name) + '</div>'
           : '';
+        var demoResetHtml = renderDemoVoteReset();
         swapShellHtml(shell,
           '<div class="tepa-bulb-watermark" style="background-image:url(\'' + esc(assetUrl('lightbulb-hero.jpg')) + '\');"></div>' +
           '<div class="tepa-mobile-content ' + animCls + '">' +
@@ -1410,10 +1410,9 @@
             : '<h2 style="margin:6px 0;">Option #' + esc(state.receipt.project_id) + '</h2>') +
           '      <p style="margin:12px 0 2px;font-size:12.5px;color:#C7C9D9;">Live bars are updating on the Auditorium Screen</p>' +
           '    </div>' +
-          '    <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' +
-          '      <a href="' + esc(quizUrl) + '" class="tepa-btn-rainbow-outline is-pill" style="width:100%;">Go to Welcome Quiz</a>' +
-          renderDemoVoteReset() +
-          '    </div>' +
+          (demoResetHtml
+            ? '    <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:6px;">' + demoResetHtml + '</div>'
+            : '') +
           '  </div>' +
           '</div>' +
           renderFooter(), stepChanged);
