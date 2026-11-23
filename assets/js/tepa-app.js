@@ -2422,18 +2422,18 @@
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
         '<path d="M9 18h6M10 22h4M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>';
 
-      var topBar =
-        '<header class="tepa-menti-topbar">' +
-        '  <div class="tepa-menti-top-actions">' +
-        '    <button type="button" class="tepa-menti-icon-circle" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
-        '    <button type="button" class="tepa-menti-icon-circle" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '"' + (stageMode === 'live_voting' ? '' : ' style="display:none;"') + '>' + sortIcon + '</button>' +
-        '    <span class="tepa-menti-top-count">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
-        '  </div>' +
-        '  <div class="tepa-menti-brand-right">' +
-        '    <div class="tepa-menti-lu-wrap"><img class="tepa-menti-lu-logo" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP"></div>' +
-        '    <div class="tepa-menti-te-wrap"><img class="tepa-menti-te-logo" src="' + esc(assetUrl('totalenergies-logo.png')) + '" alt="TotalEnergies"></div>' +
-        '  </div>' +
-        '</header>';
+      var topOverlay =
+        '<img class="tepa-winner-brand-lightup" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
+        '<div class="tepa-broadcast-tools">' +
+        '  <span class="tepa-menti-top-count tepa-broadcast-count">👥 <strong id="tepa-menti-total-pill">' + totalVotes + '</strong></span>' +
+        '  <button type="button" class="tepa-menti-icon-circle tepa-broadcast-sort" data-action="toggle-sort" title="Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order') + '">' + sortIcon + '</button>' +
+        '  <button type="button" class="tepa-menti-icon-circle tepa-broadcast-fs" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
+        '</div>';
+
+      var broadcastFooter =
+        '<footer class="tepa-winner-footer">' +
+        '  <img class="tepa-winner-footer-logo" src="' + esc(assetUrl('totalenergies-logo.png')) + '" alt="TotalEnergies">' +
+        '</footer>';
 
       var headlineTitle = stageMode === 'quiz_qr'
         ? esc((activeQuiz && activeQuiz.title && activeQuiz.title !== 'Quiz' ? activeQuiz.title : 'Welcome Quiz') + ' — Scan to Join & Win!')
@@ -2441,18 +2441,22 @@
           ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
           : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
 
+      var voteScopeHtml = (stageMode === 'live_voting' && state.chartType === 'vertical' && projects.length > 5)
+        ? '<div class="tepa-menti-sub-toggle">' +
+          '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'top5' ? 'is-active' : '') + '" data-vscope="top5">Top 5</button>' +
+          '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'all15' ? 'is-active' : '') + '" data-vscope="all15">All ' + projects.length + '</button>' +
+          '</div>'
+        : '';
+
       var voteHeaderHtml =
         '<div class="tepa-vote-stage-head">' +
         '  <div class="tepa-vote-stage-titles">' +
-        '    <div class="tepa-vote-stage-eyebrow"><span class="tepa-vote-live-dot"></span>Live Voting</div>' +
+        '    <div class="tepa-vote-stage-eyebrow-row">' +
+        '      <div class="tepa-vote-stage-eyebrow"><span class="tepa-vote-live-dot"></span>Live Voting</div>' +
+        voteScopeHtml +
+        '    </div>' +
         '    <h1 class="tepa-menti-headline tepa-vote-stage-title">' + headlineTitle + '</h1>' +
         '  </div>' +
-        (stageMode === 'live_voting' && state.chartType === 'vertical' && projects.length > 5
-          ? '<div class="tepa-menti-sub-toggle">' +
-            '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'top5' ? 'is-active' : '') + '" data-vscope="top5">Top 5</button>' +
-            '  <button type="button" class="tepa-menti-sub-btn ' + (state.verticalScope === 'all15' ? 'is-active' : '') + '" data-vscope="all15">All ' + projects.length + '</button>' +
-            '</div>'
-          : '') +
         '</div>';
       var headlineRow = '';
 
@@ -2543,21 +2547,18 @@
           '</svg>';
 
         workspaceHtml =
-          '<div class="tepa-winner-shell">' +
-          '  <div class="tepa-menti-spotlight tepa-winner-stage' + (hasWinner ? '' : ' is-empty') + '">' +
-          '    <img class="tepa-winner-brand-lightup" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
-          '    <button type="button" class="tepa-winner-fs-hover" data-action="fullscreen" title="Fullscreen">' + fsIcon + '</button>' +
-          '    <div class="tepa-winner-glow" aria-hidden="true"></div>' +
-          '    <div class="tepa-winner-rays" aria-hidden="true"></div>' +
+          '<div class="tepa-menti-spotlight tepa-winner-stage' + (hasWinner ? '' : ' is-empty') + '">' +
+          '  <div class="tepa-winner-glow" aria-hidden="true"></div>' +
+          '  <div class="tepa-winner-rays" aria-hidden="true"></div>' +
           (hasWinner
-            ? '    <img class="tepa-winner-cone is-left" src="' + esc(assetUrl('confetti-cone.svg')) + '" alt="" aria-hidden="true">' +
-              '    <img class="tepa-winner-cone is-right" src="' + esc(assetUrl('confetti-cone.svg')) + '" alt="" aria-hidden="true">'
+            ? '  <img class="tepa-winner-cone is-left" src="' + esc(assetUrl('confetti-cone.svg')) + '" alt="" aria-hidden="true">' +
+              '  <img class="tepa-winner-cone is-right" src="' + esc(assetUrl('confetti-cone.svg')) + '" alt="" aria-hidden="true">'
             : '') +
-          '    <div class="tepa-winner-content">' +
-          '      <div class="tepa-winner-trophy w-anim w-d1">' + trophySvg + '</div>' +
-          '      <div class="tepa-winner-eyebrow w-anim w-d2">★ ' + esc(eventLabel) + '</div>' +
-          '      <h2 class="tepa-winner-kicker tepa-rainbow-text w-anim-title w-d3">' + (isSimplePoll ? 'WINNING CHOICE' : 'BEST OF THE BEST') + '</h2>' +
-          '      <div class="tepa-winner-divider w-anim-line w-d4" aria-hidden="true"></div>' +
+          '  <div class="tepa-winner-content">' +
+          '    <div class="tepa-winner-trophy w-anim w-d1">' + trophySvg + '</div>' +
+          '    <div class="tepa-winner-eyebrow w-anim w-d2">★ ' + esc(eventLabel) + '</div>' +
+          '    <h2 class="tepa-winner-kicker tepa-rainbow-text w-anim-title w-d3">' + (isSimplePoll ? 'WINNING CHOICE' : 'BEST OF THE BEST') + '</h2>' +
+          '    <div class="tepa-winner-divider w-anim-line w-d4" aria-hidden="true"></div>' +
           (hasWinner
             ? ((topWinner.category_name
                 ? '<div class="tepa-winner-cat w-anim w-d5">Category ' + esc(pad2(topWinner.slot_number)) + ' · ' + esc(topWinner.category_name) + '</div>'
@@ -2572,11 +2573,7 @@
               '  <div class="tepa-winner-stat"><strong id="tepa-reveal-pct" class="is-gold">' + pctWin + '%</strong><span>of all votes</span></div>' +
               '</div>')
             : '<div class="tepa-winner-waiting w-anim w-d5">Waiting for votes — the winner will be revealed here.</div>') +
-          '    </div>' +
           '  </div>' +
-          '  <footer class="tepa-winner-footer">' +
-          '    <img class="tepa-winner-footer-logo" src="' + esc(assetUrl('totalenergies-logo.png')) + '" alt="TotalEnergies">' +
-          '  </footer>' +
           '</div>';
       } else {
         var chartHtml = '';
@@ -2691,7 +2688,7 @@
       function mountStageBody(targetEl, snap) {
         var hostStage = root.querySelector('.tepa-menti-stage');
         if (hostStage) {
-          hostStage.classList.toggle('is-winner-fullbleed', snap.stageMode === 'winner_reveal');
+          hostStage.setAttribute('data-stage-mode', snap.stageMode);
         }
         if (snap.stageMode !== 'winner_reveal') {
           stopStageConfetti();
@@ -2724,9 +2721,9 @@
 
       if (stageEl && bodyEl) {
         stageEl.setAttribute('data-live-theme', state.theme);
+        stageEl.setAttribute('data-stage-mode', stageMode);
         var sortToggleBtn = stageEl.querySelector('[data-action="toggle-sort"]');
         if (sortToggleBtn) {
-          sortToggleBtn.style.display = stageMode === 'live_voting' ? '' : 'none';
           sortToggleBtn.title = 'Sort: ' + (state.sortMode === 'votes' ? 'Top Votes' : 'Order');
         }
         var topPillEl = stageEl.querySelector('#tepa-menti-total-pill');
@@ -2771,9 +2768,12 @@
       pendingStageMount = null;
       stopStageAnimator();
       root.innerHTML =
-        '<div class="tepa-menti-stage' + (stageMode === 'winner_reveal' ? ' is-winner-fullbleed' : '') + '" data-live-theme="' + esc(state.theme) + '">' +
-        topBar +
-        '<div class="tepa-menti-stage-body' + (prefersReducedMotion() ? '' : ' is-entering') + '"></div>' +
+        '<div class="tepa-menti-stage is-broadcast-stage" data-live-theme="' + esc(state.theme) + '" data-stage-mode="' + esc(stageMode) + '">' +
+        '  <div class="tepa-broadcast-canvas">' +
+        topOverlay +
+        '    <div class="tepa-menti-stage-body' + (prefersReducedMotion() ? '' : ' is-entering') + '"></div>' +
+        '  </div>' +
+        broadcastFooter +
         '</div>';
 
       var freshBody = root.querySelector('.tepa-menti-stage-body');

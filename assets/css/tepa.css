@@ -2600,32 +2600,70 @@ body:not(.wp-admin) a,
   50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
 }
 
-.tepa-menti-stage.is-winner-fullbleed {
+.tepa-menti-stage.is-broadcast-stage {
   padding: 0;
   gap: 0;
   background: #0D0F18;
 }
 
-.tepa-menti-stage.is-winner-fullbleed .tepa-menti-topbar {
-  display: none;
-}
-
-.tepa-menti-stage.is-winner-fullbleed .tepa-menti-stage-body {
-  gap: 0;
-}
-
-/* Best of the Best — full-bleed single winner broadcast stage + TotalEnergies white footer */
-.tepa-winner-shell {
+.tepa-broadcast-canvas {
+  position: relative;
   flex: 1;
   min-height: 0;
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #0D0F18;
+  background: radial-gradient(120% 90% at 50% 0%, #1D2036 0%, #10121D 55%, #0A0B14 100%);
 }
 
+.tepa-menti-stage.is-broadcast-stage .tepa-menti-stage-body {
+  gap: 0;
+}
+
+.tepa-broadcast-tools {
+  position: absolute;
+  top: clamp(16px, 3vh, 36px);
+  right: clamp(18px, 2.5vw, 44px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 7;
+}
+
+.tepa-broadcast-tools .tepa-menti-icon-circle,
+.tepa-broadcast-tools .tepa-menti-top-count {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(16, 18, 29, 0.62);
+  color: #FFFFFF;
+  backdrop-filter: blur(8px);
+}
+
+.tepa-broadcast-tools .tepa-menti-icon-circle:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-count,
+.tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-sort,
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-count,
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-sort {
+  display: none;
+}
+
+.tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-fs,
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs {
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.16s ease;
+}
+
+.tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-fs:hover,
+.tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-fs:focus-visible,
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs:hover,
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs:focus-visible {
+  opacity: 1;
+}
+
+/* Best of the Best — full-bleed single winner broadcast stage + TotalEnergies white footer */
 .tepa-winner-stage {
   position: relative;
   flex: 1;
@@ -2645,51 +2683,26 @@ body:not(.wp-admin) a,
 
 .tepa-winner-brand-lightup {
   position: absolute;
-  top: clamp(20px, 5.2vh, 57px);
+  top: clamp(18px, 4.4vh, 52px);
   left: clamp(22px, 2.75vw, 53px);
-  height: clamp(34px, 6.1vh, 66px);
+  height: clamp(32px, 5.6vh, 64px);
   width: auto;
   display: block;
-  z-index: 4;
+  z-index: 7;
   pointer-events: none;
-}
-
-.tepa-winner-fs-hover {
-  position: absolute;
-  top: clamp(16px, 2.4vh, 28px);
-  right: clamp(16px, 2vw, 28px);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(16, 18, 29, 0.65);
-  color: rgba(255, 255, 255, 0.85);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 6;
-  opacity: 0;
-  transition: opacity 0.2s ease, background 0.16s ease;
-}
-
-.tepa-winner-fs-hover:hover,
-.tepa-winner-fs-hover:focus-visible {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.14);
 }
 
 .tepa-winner-footer {
   position: relative;
   flex-shrink: 0;
   width: 100%;
-  height: clamp(78px, 12.7vh, 138px);
+  height: clamp(70px, 11.6vh, 134px);
   background: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(10px, 1.4vh, 18px) 24px;
-  z-index: 5;
+  padding: clamp(8px, 1.3vh, 16px) 24px;
+  z-index: 8;
 }
 
 .tepa-winner-footer::before {
@@ -2703,7 +2716,7 @@ body:not(.wp-admin) a,
 }
 
 .tepa-winner-footer-logo {
-  height: clamp(46px, 8.2vh, 88px);
+  height: clamp(42px, 7.6vh, 84px);
   width: auto;
   display: block;
 }
@@ -2956,10 +2969,11 @@ body:not(.wp-admin) a,
 .tepa-winner-stage .w-d7 { animation-delay: 1120ms !important; }
 .tepa-winner-stage .w-d8 { animation-delay: 1260ms !important; }
 
-/* Welcome Quiz — broadcast QR stage (dark, same family as the winner stage) */
+/* Welcome Quiz — full-bleed broadcast QR stage (unified with Best of the Best) */
 .tepa-quiz-stage {
   flex: 1;
   min-height: 0;
+  width: 100%;
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -2968,9 +2982,9 @@ body:not(.wp-admin) a,
   justify-content: center;
   background: radial-gradient(120% 90% at 50% 0%, #1D2036 0%, #10121D 55%, #0A0B14 100%);
   color: #FFFFFF;
-  border-radius: 28px;
-  padding: clamp(24px, 4vh, 52px) clamp(24px, 4.5vw, 72px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 30px 80px rgba(10, 11, 20, 0.28);
+  border-radius: 0;
+  padding: clamp(68px, 9.5vh, 110px) clamp(28px, 4.5vw, 72px) clamp(24px, 3.6vh, 46px);
+  box-shadow: none;
 }
 
 .tepa-quiz-stage .tepa-winner-glow {
@@ -3325,17 +3339,18 @@ body:not(.wp-admin) a,
 
   flex: 1;
   min-height: 0;
+  width: 100%;
   position: relative;
   overflow: hidden;
   isolation: isolate;
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.8vh, 20px);
+  gap: clamp(8px, 1.5vh, 18px);
   background: radial-gradient(120% 90% at 50% 0%, #1D2036 0%, #10121D 55%, #0A0B14 100%);
   color: #FFFFFF;
-  border-radius: 28px;
-  padding: clamp(18px, 3vh, 34px) clamp(20px, 2.8vw, 44px) clamp(16px, 2.4vh, 28px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 30px 80px rgba(10, 11, 20, 0.28);
+  border-radius: 0;
+  padding: clamp(16px, 2.6vh, 32px) clamp(22px, 2.8vw, 48px) clamp(14px, 2vh, 24px);
+  box-shadow: none;
 }
 
 .tepa-vote-stage .tepa-winner-glow {
@@ -3345,14 +3360,29 @@ body:not(.wp-admin) a,
 
 .tepa-vote-stage-head {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 clamp(175px, 17vw, 270px);
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .tepa-vote-stage-titles {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tepa-vote-stage-eyebrow-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
 }
 
 .tepa-vote-stage-eyebrow {
@@ -3363,8 +3393,8 @@ body:not(.wp-admin) a,
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 0;
 }
 
 .tepa-vote-live-dot {
