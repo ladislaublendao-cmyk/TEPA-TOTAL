@@ -1045,7 +1045,6 @@
           '</div>';
       } else if (state.step === 'result' && state.receipt) {
         var r = state.receipt;
-        var voteUrl = Store.getConfig().voteUrl || 'vote.html';
         var voucherHtml =
           '<div class="tepa-gradient-card tepa-anim-enter" style="text-align:center;margin:14px 0 12px;">' +
           '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
@@ -1070,10 +1069,7 @@
           '      <button type="button" class="tepa-stage-btn is-pdf" data-action="download-quiz-pdf">' + PDF_ICON_SVG + '<span>Save PDF Receipt</span></button>' +
           '    </div>' +
           '  </div>' +
-          '  <div style="width:100%;display:flex;flex-direction:column;gap:10px;margin-top:4px;">' +
-          '    <a href="' + esc(voteUrl) + '" class="tepa-btn-cta" style="width:100%;">Open Voting Portal</a>' +
           renderDemoResetPill() +
-          '  </div>' +
           '</div>';
       }
     }
