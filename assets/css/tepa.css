@@ -2600,16 +2600,112 @@ body:not(.wp-admin) a,
   50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
 }
 
-/* Best of the Best — single winner hero stage (always dark for broadcast contrast) */
+.tepa-menti-stage.is-winner-fullbleed {
+  padding: 0;
+  gap: 0;
+  background: #0D0F18;
+}
+
+.tepa-menti-stage.is-winner-fullbleed .tepa-menti-topbar {
+  display: none;
+}
+
+.tepa-menti-stage.is-winner-fullbleed .tepa-menti-stage-body {
+  gap: 0;
+}
+
+/* Best of the Best — full-bleed single winner broadcast stage + TotalEnergies white footer */
+.tepa-winner-shell {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0D0F18;
+}
+
 .tepa-winner-stage {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
   overflow: hidden;
   isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: radial-gradient(120% 90% at 50% 0%, #1D2036 0%, #10121D 55%, #0A0B14 100%);
   color: #FFFFFF;
-  border-radius: 28px;
-  padding: clamp(24px, 4vh, 48px) clamp(24px, 4vw, 64px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 30px 80px rgba(10, 11, 20, 0.28);
+  border-radius: 0;
+  padding: clamp(20px, 3.6vh, 44px) clamp(24px, 4vw, 64px);
+  box-shadow: none;
+}
+
+.tepa-winner-brand-lightup {
+  position: absolute;
+  top: clamp(20px, 5.2vh, 57px);
+  left: clamp(22px, 2.75vw, 53px);
+  height: clamp(34px, 6.1vh, 66px);
+  width: auto;
+  display: block;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.tepa-winner-fs-hover {
+  position: absolute;
+  top: clamp(16px, 2.4vh, 28px);
+  right: clamp(16px, 2vw, 28px);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(16, 18, 29, 0.65);
+  color: rgba(255, 255, 255, 0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 6;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.16s ease;
+}
+
+.tepa-winner-fs-hover:hover,
+.tepa-winner-fs-hover:focus-visible {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tepa-winner-footer {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: clamp(78px, 12.7vh, 138px);
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(10px, 1.4vh, 18px) 24px;
+  z-index: 5;
+}
+
+.tepa-winner-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(4px, 0.56vh, 6px);
+  background: var(--tepa-grad-rainbow);
+}
+
+.tepa-winner-footer-logo {
+  height: clamp(46px, 8.2vh, 88px);
+  width: auto;
+  display: block;
 }
 
 .tepa-winner-glow {
@@ -2646,6 +2742,7 @@ body:not(.wp-admin) a,
 
 .tepa-winner-content {
   position: relative;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2722,15 +2819,30 @@ body:not(.wp-admin) a,
 }
 
 .tepa-winner-stats {
-  margin-top: clamp(22px, 3.6vh, 40px);
+  position: relative;
+  margin-top: clamp(20px, 3.2vh, 38px);
   display: inline-flex;
   align-items: center;
   gap: clamp(20px, 3vw, 44px);
-  padding: clamp(14px, 2vh, 20px) clamp(26px, 3.4vw, 44px);
+  padding: clamp(14px, 2vh, 20px) clamp(28px, 3.4vw, 46px);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: none;
   backdrop-filter: blur(6px);
+}
+
+.tepa-winner-stats::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--tepa-grad-rainbow);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .tepa-winner-stat {
@@ -3322,14 +3434,14 @@ body:not(.wp-admin) a,
   }
 }
 
-/* One-shot celebratory confetti layer (removed automatically after ~2.6s) */
+/* Continuous festive confetti layer for Winner Reveal */
 .tepa-menti-confetti {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 20;
+  z-index: 2;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3343,9 +3455,6 @@ body:not(.wp-admin) a,
   .tepa-menti-workspace {
     animation: none !important;
     transition: none !important;
-  }
-  .tepa-menti-confetti {
-    display: none;
   }
 }
 
@@ -3557,17 +3666,26 @@ body:not(.wp-admin) a,
   animation: tepaPulse 1.6s infinite;
 }
 
+#tepa-bo-toast-slot {
+  position: fixed;
+  top: 70px;
+  right: 24px;
+  z-index: 70;
+  pointer-events: none;
+}
+
 .tepa-bo-toast {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 999px;
   background: #0F172A;
   color: #FFFFFF;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.24);
+  pointer-events: auto;
 }
 
 .tepa-bo-toast.is-err {
@@ -5687,6 +5805,117 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   border-color: rgba(247, 123, 57, 0.4);
 }
 
+/* Backoffice Multilanguage Switcher */
+.tepa-bo-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 11px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.tepa-bo-lang-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  padding: 0 5px 0 6px;
+}
+
+.tepa-bo .tepa-bo-lang-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #475569;
+  height: 28px;
+  min-width: 34px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.tepa-bo .tepa-bo-lang-btn:hover {
+  color: #0F172A;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.tepa-bo .tepa-bo-lang-btn.is-active {
+  background: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+}
+
+.tepa-bo-unlock-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tepa-bo-lang-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tepa-bo .tepa-bo-lang-option {
+  appearance: none;
+  text-align: left;
+  width: 100%;
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.14s ease;
+}
+
+.tepa-bo .tepa-bo-lang-option:hover {
+  border-color: #CBD5E1;
+  background: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.tepa-bo .tepa-bo-lang-option.is-active {
+  border-color: #2194D4;
+  background: linear-gradient(135deg, rgba(33, 148, 212, 0.06) 0%, rgba(143, 79, 158, 0.05) 100%);
+  box-shadow: 0 6px 18px rgba(33, 148, 212, 0.12);
+}
+
+.tepa-bo-lang-code-pill {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #E2E8F0;
+  color: #0F172A;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tepa-bo-lang-option.is-active .tepa-bo-lang-code-pill {
+  background: #0F172A;
+  color: #FFFFFF;
+}
+
 @media (max-width: 1024px) {
   .tepa-bo.tepa-bo-app {
     grid-template-columns: 1fr;
@@ -5704,7 +5933,8 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   .tepa-bo-audit-grid,
   .tepa-bo-rules-grid,
   .tepa-bo-live-director-grid,
-  .tepa-bo-ctrl-matrix {
+  .tepa-bo-ctrl-matrix,
+  .tepa-bo-lang-grid {
     grid-template-columns: 1fr;
   }
   .tepa-bo-card-head {

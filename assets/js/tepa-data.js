@@ -128,6 +128,7 @@
       wpUserDisplay: cfg.wpUserDisplay || 'WordPress Admin',
       wpDashboardUrl: cfg.wpDashboardUrl || '',
       wpAdminTab: wpTabParam,
+      wpLocale: cfg.wpLocale || '',
       defaultPin: cfg.defaultPin || '',
       assetsBase: cfg.assetsBase || '../tepa-award-theme/assets',
       homeUrl: cfg.homeUrl || '',

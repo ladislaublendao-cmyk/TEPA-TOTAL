@@ -118,7 +118,7 @@ function tepa_render_admin_page() {
 				<?php settings_fields( 'tepa_award_settings' ); ?>
 
 				<div class="tepa-bo-field">
-					<label class="tepa-bo-label" for="tepa_supabase_url">Cloud Database Endpoint URL</label>
+					<label class="tepa-bo-label" for="tepa_supabase_url" data-i18n="wpDbUrlLabel">Cloud Database Endpoint URL</label>
 					<input
 						name="tepa_supabase_url"
 						id="tepa_supabase_url"
@@ -127,11 +127,11 @@ function tepa_render_admin_page() {
 						value="<?php echo esc_attr( $supabase_url ); ?>"
 						placeholder="https://your-project-endpoint.co"
 					/>
-					<div class="tepa-bo-hint">Connected cloud database endpoint for TEPA 2026 live event synchronization.</div>
+					<div class="tepa-bo-hint" data-i18n="wpDbUrlHint">Connected cloud database endpoint for TEPA 2026 live event synchronization.</div>
 				</div>
 
 				<div class="tepa-bo-field">
-					<label class="tepa-bo-label" for="tepa_supabase_anon_key">Public Client API Key</label>
+					<label class="tepa-bo-label" for="tepa_supabase_anon_key" data-i18n="wpApiKeyLabel">Public Client API Key</label>
 					<input
 						name="tepa_supabase_anon_key"
 						id="tepa_supabase_anon_key"
@@ -140,13 +140,13 @@ function tepa_render_admin_page() {
 						value="<?php echo esc_attr( $supabase_key ); ?>"
 						placeholder="sb_publishable_..."
 					/>
-					<div class="tepa-bo-hint">Public client key safe for browser live updates and RPC calls.</div>
+					<div class="tepa-bo-hint" data-i18n="wpApiKeyHint">Public client key safe for browser live updates and RPC calls.</div>
 				</div>
 
 				<div class="tepa-bo-gate-row">
 					<div>
-						<div class="tepa-bo-stage-title">Force Demo / Rehearsal Mode</div>
-						<div class="tepa-bo-stage-desc">When ON, events run locally via browser BroadcastChannel without writing to the live database. Keep OFF for live event day.</div>
+						<div class="tepa-bo-stage-title" data-i18n="wpForceDemoTitle">Force Demo / Rehearsal Mode</div>
+						<div class="tepa-bo-stage-desc" data-i18n="wpForceDemoDesc">When ON, events run locally via browser BroadcastChannel without writing to the live database. Keep OFF for live event day.</div>
 					</div>
 					<label class="tepa-bo-switch">
 						<input class="tepa-bo-switch-input" name="tepa_force_demo" type="checkbox" value="1" <?php checked( $force_demo ); ?> />
@@ -155,7 +155,7 @@ function tepa_render_admin_page() {
 				</div>
 
 				<div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:16px;">
-					<button type="submit" class="tepa-bo-btn tepa-bo-btn-primary">Save Connection Settings</button>
+					<button type="submit" class="tepa-bo-btn tepa-bo-btn-primary" data-i18n="wpSaveConnBtn">Save Connection Settings</button>
 				</div>
 			</form>
 		</template>

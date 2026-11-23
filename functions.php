@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEPA_THEME_VERSION', '1.8.23' );
+define( 'TEPA_THEME_VERSION', '1.8.25' );
 define( 'TEPA_DEFAULT_SUPABASE_URL', 'https://ujpzqulgainzxxombrgb.supabase.co' );
 define( 'TEPA_DEFAULT_SUPABASE_KEY', 'sb_publishable_cuReE7bA6g0vdzdJQCPWJQ_oPCuxzxM' );
 
@@ -58,6 +58,7 @@ function tepa_get_runtime_config() {
 		'wpUserDisplay'   => $current_user ? $current_user->display_name : '',
 		'wpDashboardUrl'  => admin_url( 'index.php' ),
 		'wpAdminTab'      => $req_tab,
+		'wpLocale'        => function_exists( 'get_user_locale' ) ? get_user_locale() : get_locale(),
 		'defaultPin'      => $is_wp_admin ? (string) get_option( 'tepa_admin_pin', '2026' ) : '',
 		'assetsBase'      => get_template_directory_uri() . '/assets',
 		'homeUrl'         => home_url( '/' ),
@@ -104,10 +105,22 @@ function tepa_enqueue_assets() {
 
 	wp_localize_script( 'tepa-data', 'TEPA_CONFIG', tepa_get_runtime_config() );
 
+	$app_deps = array( 'tepa-data', 'tepa-qrcode' );
+	if ( is_admin() ) {
+		wp_enqueue_script(
+			'tepa-admin-i18n',
+			$theme_uri . '/assets/js/tepa-admin-i18n.js',
+			array(),
+			tepa_asset_ver( 'assets/js/tepa-admin-i18n.js' ),
+			true
+		);
+		$app_deps[] = 'tepa-admin-i18n';
+	}
+
 	wp_enqueue_script(
 		'tepa-app',
 		$theme_uri . '/assets/js/tepa-app.js',
-		array( 'tepa-data', 'tepa-qrcode' ),
+		$app_deps,
 		tepa_asset_ver( 'assets/js/tepa-app.js' ),
 		true
 	);
