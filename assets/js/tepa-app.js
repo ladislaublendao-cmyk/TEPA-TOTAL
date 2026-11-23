@@ -1767,72 +1767,89 @@
         return;
       }
 
+      var startTs = 0;
       var lastTs = 0;
-      var elapsed = 0;
       var burstFired = false;
       var ambientStarted = false;
 
-      function frame(ts) {
-        if (!canvas.isConnected) {
-          stopStageConfetti();
-          return;
-        }
-        if (!lastTs) lastTs = ts;
-        var dt = Math.min(0.08, Math.max(0.004, (ts - lastTs) / 1000));
-        lastTs = ts;
-        elapsed += dt;
-
-        // Beat 2 (~450ms): Cones reach firing stance and launch the opening burst
-        if (!burstFired && elapsed >= 0.45) {
-          burstFired = true;
-          fireConeBurst(110, 1.15);
-        }
-
-        // Beat 4 (~1.15s): As cones retract out of scene, background confetti begins descending from above
-        if (!ambientStarted && elapsed >= 1.15) {
-          ambientStarted = true;
-          for (var a = 0; a < AMBIENT_COUNT; a++) {
-            pieces.push(spawnAmbient(a, false));
-          }
-        }
-
-        ctx.clearRect(0, 0, W, H);
+      function stepPhysics(stepDt, wallSec) {
         for (var j = pieces.length - 1; j >= 0; j--) {
           var p = pieces[j];
           if (p.mode === 'burst') {
-            p.age += dt;
+            p.age += stepDt;
             if (p.age < p.delay) continue;
             var tAge = p.age - p.delay;
             if (tAge >= p.life || p.y > H + 40) {
               pieces.splice(j, 1);
               continue;
             }
-            p.vy += 520 * dt;
-            p.vx *= Math.pow(0.45, dt);
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            p.rot += p.vr * dt;
-            p.tumblePhase += p.tumbleSpeed * dt;
-            var bFade = tAge > p.life - 0.8 ? Math.max(0, (p.life - tAge) / 0.8) : 1;
-            drawPiece(p, p.alpha * bFade);
+            p.vy += 520 * stepDt;
+            p.vx *= Math.pow(0.45, stepDt);
+            p.x += p.vx * stepDt;
+            p.y += p.vy * stepDt;
+            p.rot += p.vr * stepDt;
+            p.tumblePhase += p.tumbleSpeed * stepDt;
           } else {
-            p.y += p.vy * dt;
-            p.x = p.baseX + Math.sin(elapsed * p.swayFreq + p.phase) * p.swayAmp;
-            p.rot += p.vr * dt;
-            p.tumblePhase += p.tumbleSpeed * dt;
-
-            // Keep center hero text breathing cleanly on the middle zone
-            var centerFade = 1;
-            if (p.x > W * 0.29 && p.x < W * 0.71 && p.y > H * 0.23 && p.y < H * 0.90) {
-              centerFade = 0.14;
-            }
-            var edgeFade = p.y < 36 ? Math.max(0, (p.y + 18) / 54) : (p.y > H - 48 ? Math.max(0, (H + 16 - p.y) / 64) : 1);
-
+            p.y += p.vy * stepDt;
+            p.x = p.baseX + Math.sin(wallSec * p.swayFreq + p.phase) * p.swayAmp;
+            p.rot += p.vr * stepDt;
+            p.tumblePhase += p.tumbleSpeed * stepDt;
             if (p.y > H + 28) {
               pieces[j] = spawnAmbient(j, false);
-              continue;
             }
-            drawPiece(p, p.alpha * centerFade * edgeFade);
+          }
+        }
+      }
+
+      function frame(ts) {
+        if (!canvas.isConnected) {
+          stopStageConfetti();
+          return;
+        }
+        if (!startTs) {
+          startTs = ts;
+          lastTs = ts;
+        }
+        var wallSec = Math.max(0, (ts - startTs) / 1000);
+        var rawDt = Math.min(0.30, Math.max(0.004, (ts - lastTs) / 1000));
+        lastTs = ts;
+
+        // Beat 2 (~460ms wall-clock): Cones reach firing stance and launch the opening burst
+        if (!burstFired && wallSec >= 0.46) {
+          burstFired = true;
+          fireConeBurst(110, 1.15);
+        }
+
+        // Beat 4 (~1.35s wall-clock): As cones begin exiting, background confetti starts descending from above
+        if (!ambientStarted && wallSec >= 1.35) {
+          ambientStarted = true;
+          for (var a = 0; a < AMBIENT_COUNT; a++) {
+            pieces.push(spawnAmbient(a, false));
+          }
+        }
+
+        // Substep physics so speed stays true to wall-clock time even on throttled frames
+        var substeps = Math.max(1, Math.ceil(rawDt / 0.04));
+        var subDt = rawDt / substeps;
+        for (var st = 0; st < substeps; st++) {
+          stepPhysics(subDt, wallSec);
+        }
+
+        ctx.clearRect(0, 0, W, H);
+        for (var k = 0; k < pieces.length; k++) {
+          var pk = pieces[k];
+          if (pk.mode === 'burst') {
+            if (pk.age < pk.delay) continue;
+            var tAge = pk.age - pk.delay;
+            var bFade = tAge > pk.life - 0.8 ? Math.max(0, (pk.life - tAge) / 0.8) : 1;
+            drawPiece(pk, pk.alpha * bFade);
+          } else {
+            var centerFade = 1;
+            if (pk.x > W * 0.29 && pk.x < W * 0.71 && pk.y > H * 0.23 && pk.y < H * 0.90) {
+              centerFade = 0.14;
+            }
+            var edgeFade = pk.y < 36 ? Math.max(0, (pk.y + 18) / 54) : (pk.y > H - 48 ? Math.max(0, (H + 16 - pk.y) / 64) : 1);
+            drawPiece(pk, pk.alpha * centerFade * edgeFade);
           }
         }
         confettiRaf = requestAnimationFrame(frame);
