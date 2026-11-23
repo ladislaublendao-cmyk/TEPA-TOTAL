@@ -372,6 +372,9 @@
       var rows = [];
       if (isQuiz) {
         rows.push({ label: 'PARTICIPANT', value: opts.fullName || '—' });
+        if (opts.email) {
+          rows.push({ label: 'EMAIL', value: opts.email });
+        }
         rows.push({ label: 'QUIZ / EVENT', value: opts.eventTitle || 'TEPA 2026 — Welcome Quiz' });
         rows.push({ label: 'DATE & TIME', value: formatDateTimeReceipt(opts.createdAt) });
         rows.push({ label: 'VERIFICATION', value: 'TEPA Unique ID (Winners announced on 16:9 Stage Screen)' });
@@ -385,7 +388,7 @@
       }
 
       var curY = 824;
-      var rowStep = rows.length <= 3 ? 128 : 108;
+      var rowStep = rows.length <= 3 ? 128 : (rows.length === 4 ? 108 : 88);
       for (var rIdx = 0; rIdx < rows.length; rIdx++) {
         var item = rows[rIdx];
         ctx.textAlign = 'left';
@@ -395,14 +398,14 @@
         ctx.fillText(item.label, 148, curY);
 
         ctx.fillStyle = '#10121B';
-        ctx.font = '700 25px ' + fontStack;
+        ctx.font = '700 ' + (rows.length >= 5 ? '23px ' : '25px ') + fontStack;
         var valLines = wrapCanvasText(ctx, item.value, 944, 2);
         for (var l = 0; l < valLines.length; l++) {
-          ctx.fillText(valLines[l], 148, curY + 26 + l * 30);
+          ctx.fillText(valLines[l], 148, curY + 24 + l * 28);
         }
 
         if (rIdx < rows.length - 1) {
-          var divY = curY + (valLines.length > 1 ? 94 : rowStep - 18);
+          var divY = curY + (valLines.length > 1 ? Math.min(82, rowStep - 10) : rowStep - 16);
           ctx.fillStyle = '#E9ECF4';
           ctx.fillRect(148, divY, 944, 2);
         }
@@ -642,6 +645,9 @@
       step: 'loading', // 'loading' | 'cover' | 'name' | 'questions' | 'result'
       lastStep: null,
       fullName: '',
+      email: '',
+      emailStatus: 'idle', // 'idle' | 'sending' | 'sent' | 'simulated' | 'error'
+      emailMessage: '',
       activeQuiz: null,
       questions: [],
       answers: {},
@@ -654,6 +660,91 @@
       error: '',
       receipt: null
     };
+
+    function isValidEmail(str) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(str || '').trim());
+    }
+
+    function buildEmailStatusHtml() {
+      var r = state.receipt;
+      var targetEmail = (r && r.email) || state.email || '';
+      if (!targetEmail) return '';
+      if (state.emailStatus === 'sending') {
+        return (
+          '<div class="tepa-email-status is-sending">' +
+          '  <span>Sending access code to <strong>' + esc(targetEmail) + '</strong>...</span>' +
+          '</div>'
+        );
+      }
+      if (state.emailStatus === 'sent') {
+        return (
+          '<div class="tepa-email-status is-sent">' +
+          '  <span>✓ Access code sent to <strong>' + esc(targetEmail) + '</strong></span>' +
+          '</div>'
+        );
+      }
+      if (state.emailStatus === 'simulated') {
+        return (
+          '<div class="tepa-email-status is-simulated">' +
+          '  <span>✉ ' + esc(state.emailMessage || 'Preview mode — automatic email activates on WordPress.') + '</span>' +
+          '</div>'
+        );
+      }
+      if (state.emailStatus === 'error') {
+        return (
+          '<div class="tepa-email-status is-error">' +
+          '  <span>' + esc(state.emailMessage || 'Could not send email automatically.') + '</span>' +
+          '  <button type="button" class="tepa-email-retry-btn" data-action="resend-code-email">Resend</button>' +
+          '</div>'
+        );
+      }
+      return (
+        '<div class="tepa-email-status is-idle">' +
+        '  <span>Email registered: <strong>' + esc(targetEmail) + '</strong></span>' +
+        '  <button type="button" class="tepa-email-retry-btn" data-action="resend-code-email">Send code</button>' +
+        '</div>'
+      );
+    }
+
+    function updateEmailStatusInPlace() {
+      var slot = root.querySelector('#tepa-email-status-slot');
+      if (slot) {
+        slot.innerHTML = buildEmailStatusHtml();
+      }
+    }
+
+    async function dispatchQuizCodeEmail(isResend) {
+      var r = state.receipt;
+      var targetEmail = (r && r.email) || state.email || '';
+      if (!r || !r.unique_code || !targetEmail) return;
+      state.emailStatus = 'sending';
+      state.emailMessage = '';
+      updateEmailStatusInPlace();
+      try {
+        var mailRes = await Store.sendQuizCodeEmail({
+          fullName: r.full_name || state.fullName,
+          email: targetEmail,
+          uniqueCode: r.unique_code,
+          eventTitle: (state.activeQuiz && state.activeQuiz.title) || 'TEPA Performance Award 2026',
+          resend: Boolean(isResend)
+        });
+        if (mailRes && mailRes.simulated) {
+          state.emailStatus = 'simulated';
+          state.emailMessage = mailRes.message || 'Preview mode — automatic email activates on WordPress.';
+        } else if (mailRes && mailRes.ok && mailRes.sent) {
+          state.emailStatus = 'sent';
+          state.emailMessage = '';
+          if (state.receipt) state.receipt.email_sent = true;
+        } else {
+          state.emailStatus = 'error';
+          state.emailMessage = (mailRes && mailRes.error) || 'Could not send email automatically.';
+        }
+      } catch (err) {
+        state.emailStatus = 'error';
+        state.emailMessage = (err && err.message) || 'Could not send email automatically.';
+      }
+      updateEmailStatusInPlace();
+    }
 
     function ensureShell() {
       if (root.querySelector('#tepa-quiz-stage')) return;
@@ -705,6 +796,8 @@
         var cached = Store.getCachedQuizReceipt(quizEpoch);
         if (cached && cached.unique_code) {
           state.receipt = cached;
+          state.email = cached.email || '';
+          state.emailStatus = cached.email_sent ? 'sent' : 'idle';
           state.step = 'result';
         } else {
           state.step = 'cover';
@@ -877,11 +970,16 @@
           '  <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
           '  <h1 class="tepa-step-heading tepa-rainbow-text">WELCOME</h1>' +
           '  <p class="tepa-step-sub">First ' + esc((state.activeQuiz && state.activeQuiz.max_vouchers) || 10) + ' winning participants receive a ' + esc((state.activeQuiz && state.activeQuiz.voucher_title) || 'Café Bonjour Breakfast Voucher') + '</p>' +
-          '  <form id="tepa-quiz-name-form" class="tepa-gradient-card" style="margin-top:6px;">' +
+          '  <form id="tepa-quiz-name-form" class="tepa-gradient-card" style="margin-top:6px;" novalidate>' +
           '    <label class="tepa-input-label" for="tepa-quiz-fullname">Your Full Name</label>' +
           '    <input id="tepa-quiz-fullname" class="tepa-dark-input" type="text" maxlength="80" autocomplete="name" placeholder="e.g. Maria João Silva" value="' + esc(state.fullName) + '" required>' +
+          '    <div class="tepa-field-group">' +
+          '      <label class="tepa-input-label" for="tepa-quiz-email">Your Email Address</label>' +
+          '      <input id="tepa-quiz-email" class="tepa-dark-input" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="e.g. maria.silva@totalenergies.com" value="' + esc(state.email) + '" required>' +
+          '      <p class="tepa-input-helper">Your unique access code will be sent automatically to this email.</p>' +
+          '    </div>' +
           (state.error ? '<p style="color:#FF8B8E;font-size:13px;margin:10px 0 0;">' + esc(state.error) + '</p>' : '') +
-          '    <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;">' +
+          '    <div style="margin-top:16px;display:flex;flex-direction:column;gap:10px;">' +
           '      <button type="submit" class="tepa-btn-cta" style="width:100%;">Start Quiz</button>' +
           '      <button type="button" class="tepa-btn-rainbow-outline is-pill" data-action="back-cover" style="width:100%;">← Back</button>' +
           '    </div>' +
@@ -977,7 +1075,9 @@
           '  <div class="tepa-unique-id-box" style="width:100%;">' +
           '    <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#C7C9D9;">Unique Participant ID</div>' +
           '    <div class="tepa-unique-id-code" id="tepa-unique-code-val">' + esc(r.unique_code) + '</div>' +
-          '    <div style="font-size:12.5px;color:#D4D6E6;margin-bottom:12px;">' + esc(r.full_name) + '</div>' +
+          '    <div style="font-size:12.5px;color:#D4D6E6;margin-bottom:' + ((r.email || state.email) ? '3px' : '12px') + ';">' + esc(r.full_name) + '</div>' +
+          ((r.email || state.email) ? '<div class="tepa-unique-id-email">' + esc(r.email || state.email) + '</div>' : '') +
+          '    <div id="tepa-email-status-slot">' + buildEmailStatusHtml() + '</div>' +
           '    <div class="tepa-receipt-actions">' +
           '      <button type="button" class="tepa-stage-btn" data-action="copy-code">Copy Unique ID</button>' +
           '      <button type="button" class="tepa-stage-btn is-pdf" data-action="download-quiz-pdf">' + PDF_ICON_SVG + '<span>Save PDF Receipt</span></button>' +
@@ -994,14 +1094,24 @@
     root.addEventListener('submit', function (ev) {
       if (ev.target && ev.target.id === 'tepa-quiz-name-form') {
         ev.preventDefault();
-        var input = root.querySelector('#tepa-quiz-fullname');
-        var val = (input ? input.value : '').trim();
-        if (val.length < 2) {
+        var nameInput = root.querySelector('#tepa-quiz-fullname');
+        var emailInput = root.querySelector('#tepa-quiz-email');
+        var nameVal = (nameInput ? nameInput.value : '').trim();
+        var emailVal = (emailInput ? emailInput.value : '').trim().toLowerCase();
+        state.fullName = nameVal;
+        state.email = emailVal;
+        if (nameVal.length < 2) {
           state.error = 'Please enter your full name (at least 2 characters).';
           render();
           return;
         }
-        state.fullName = val;
+        if (!emailVal || !isValidEmail(emailVal)) {
+          state.error = 'Please enter a valid email address so we can send your access code.';
+          render();
+          var eInp = root.querySelector('#tepa-quiz-email');
+          if (eInp) setTimeout(function () { try { eInp.focus(); } catch (e) {} }, 40);
+          return;
+        }
         state.error = '';
         state.step = 'questions';
         render('next');
@@ -1052,21 +1162,35 @@
           var nBtn = root.querySelector('#tepa-quiz-next-btn');
           if (nBtn) nBtn.textContent = 'Submitting...';
           try {
-            var res = await Store.submitQuizAttempt(state.fullName, state.answers);
+            var res = await Store.submitQuizAttempt(state.fullName, state.answers, state.email);
             if (!res || !res.ok) {
               state.error = (res && res.error) || 'Could not submit your quiz.';
               state.submitting = false;
               render();
               return;
             }
+            if (!res.email && state.email) {
+              res.email = state.email;
+            }
             state.receipt = res;
             state.step = 'result';
-          } catch (err) {
-            state.error = (err && err.message) || 'Network error while submitting.';
-          } finally {
+            var shouldAutoEmail = Boolean(res.email && !res.already_submitted);
+            state.emailStatus = shouldAutoEmail ? 'sending' : (res.email_sent ? 'sent' : 'idle');
+            state.emailMessage = '';
             state.submitting = false;
             render('next');
+            if (shouldAutoEmail) {
+              dispatchQuizCodeEmail(false);
+            }
+          } catch (err) {
+            state.error = (err && err.message) || 'Network error while submitting.';
+            state.submitting = false;
+            render();
           }
+        }
+      } else if (action === 'resend-code-email') {
+        if (state.receipt && state.emailStatus !== 'sending') {
+          await dispatchQuizCodeEmail(true);
         }
       } else if (action === 'copy-code') {
         if (state.receipt && navigator.clipboard) {
@@ -1086,6 +1210,7 @@
               kind: 'quiz',
               code: state.receipt.unique_code,
               fullName: state.receipt.full_name,
+              email: state.receipt.email || state.email || '',
               eventTitle: (state.activeQuiz && state.activeQuiz.title) || 'TEPA 2026 — Welcome Quiz',
               createdAt: state.receipt.created_at
             });
@@ -1103,6 +1228,9 @@
         state.step = 'loading';
         state.lastStep = null;
         state.fullName = '';
+        state.email = '';
+        state.emailStatus = 'idle';
+        state.emailMessage = '';
         state.answers = {};
         state.page = 0;
         state.receipt = null;
@@ -3308,12 +3436,13 @@
     }
 
     function downloadCsv(rows) {
-      var header = ['Rank', 'Full Name', 'Unique ID', 'Score', 'Total', 'Passed', 'Voucher Winner', 'Voucher Claimed', 'Submitted At'];
+      var header = ['Rank', 'Full Name', 'Email', 'Unique ID', 'Score', 'Total', 'Passed', 'Voucher Winner', 'Voucher Claimed', 'Submitted At'];
       var lines = [header.join(',')];
       rows.forEach(function (r) {
         var cols = [
           r.winner_rank || '',
           '"' + String(r.full_name || '').replace(/"/g, '""') + '"',
+          '"' + String(r.email || '').replace(/"/g, '""') + '"',
           r.unique_code || '',
           r.score,
           r.total_questions,
@@ -4318,6 +4447,7 @@
           if (!needle) return true;
           return (
             String(row.full_name || '').toLowerCase().indexOf(needle) !== -1 ||
+            String(row.email || '').toLowerCase().indexOf(needle) !== -1 ||
             String(row.unique_code || '').toLowerCase().indexOf(needle) !== -1
           );
         });
@@ -4346,7 +4476,7 @@
                 return (
                   '<tr>' +
                   '  <td>' + (r.winner_rank ? '<span class="tepa-bo-badge is-gold">#' + r.winner_rank + '</span>' : '<span style="color:#94A3B8;">—</span>') + '</td>' +
-                  '  <td><strong>' + esc(r.full_name) + '</strong></td>' +
+                  '  <td><strong>' + esc(r.full_name) + '</strong>' + (r.email ? '<div style="font-size:11.5px;color:#64748B;margin-top:2px;">' + esc(r.email) + '</div>' : '') + '</td>' +
                   '  <td><button type="button" class="tepa-bo-code-btn" data-action="copy-text" data-text="' + esc(r.unique_code) + '" data-label="' + esc(t('subCopyCodeLabel')) + '" title="' + esc(t('subCopyCodeTitle')) + '">' + icon('copy', 11) + ' ' + esc(r.unique_code) + '</button></td>' +
                   '  <td><span class="tepa-bo-badge ' + (r.passed_criteria ? 'is-green' : 'is-muted') + '">' + esc(r.score) + ' / ' + esc(r.total_questions) + '</span></td>' +
                   '  <td>' + (r.is_voucher_winner

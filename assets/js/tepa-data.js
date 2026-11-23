@@ -135,7 +135,9 @@
       quizUrl: cfg.quizUrl || 'quiz.html',
       voteUrl: cfg.voteUrl || 'vote.html',
       liveUrl: cfg.liveUrl || 'live.html',
-      adminUrl: cfg.adminUrl || 'admin.html'
+      adminUrl: cfg.adminUrl || 'admin.html',
+      emailEndpoint: (cfg.emailEndpoint || '').trim(),
+      emailNonce: (cfg.emailNonce || '').trim()
     };
   }
 
@@ -592,26 +594,39 @@
       return computeDemoDashboard(loadDemoState());
     },
 
-    submitQuizAttempt: async function (fullName, answersMap) {
+    submitQuizAttempt: async function (fullName, answersMap, email) {
       var deviceId = getDeviceId();
       var cleanName = String(fullName || '').trim();
+      var cleanEmail = String(email || '').trim().toLowerCase();
       if (cleanName.length < 2) {
         return { ok: false, error: 'Please enter your full name.' };
+      }
+      if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
+        return { ok: false, error: 'Please enter a valid email address.' };
       }
 
       if (isSupabaseConfigured()) {
         var sb = await ensureSupabaseLoaded();
-        var res = await sb.rpc('submit_quiz_attempt', {
+        var rpcPayload = {
           p_full_name: cleanName,
           p_device_id: deviceId,
           p_answers: answersMap || {}
-        });
+        };
+        if (cleanEmail) {
+          rpcPayload.p_email = cleanEmail;
+        }
+        var res = await sb.rpc('submit_quiz_attempt', rpcPayload);
         if (res.error) throw res.error;
         if (res.data && res.data.ok) {
+          var normalizedRes = Object.assign({ email: cleanEmail || null }, res.data);
+          if (!normalizedRes.email && cleanEmail) {
+            normalizedRes.email = cleanEmail;
+          }
           try {
-            global.localStorage.setItem(QUIZ_CACHE_KEY, JSON.stringify(Object.assign({ device_id: deviceId }, res.data)));
+            global.localStorage.setItem(QUIZ_CACHE_KEY, JSON.stringify(Object.assign({ device_id: deviceId }, normalizedRes)));
           } catch (e) {}
           await broadcastSupabaseSignal('quiz_updated');
+          return normalizedRes;
         }
         return res.data;
       }
@@ -627,6 +642,7 @@
           already_submitted: true,
           epoch: existing.epoch || state.settings.quiz_epoch || 1,
           full_name: existing.full_name,
+          email: existing.email || cleanEmail || '',
           device_id: existing.device_id,
           score: existing.score,
           total_questions: existing.total_questions,
@@ -687,6 +703,7 @@
         id: generateUuidLike(),
         epoch: state.settings.quiz_epoch || 1,
         full_name: cleanName,
+        email: cleanEmail || '',
         device_id: deviceId,
         answers: answersMap || {},
         score: score,
@@ -708,6 +725,7 @@
         already_submitted: false,
         epoch: record.epoch,
         full_name: record.full_name,
+        email: record.email,
         device_id: record.device_id,
         score: record.score,
         total_questions: record.total_questions,
@@ -720,6 +738,82 @@
         global.localStorage.setItem(QUIZ_CACHE_KEY, JSON.stringify(result));
       } catch (e) {}
       return result;
+    },
+
+    sendQuizCodeEmail: async function (opts) {
+      opts = opts || {};
+      var email = String(opts.email || '').trim().toLowerCase();
+      var uniqueCode = String(opts.uniqueCode || opts.unique_code || '').trim().toUpperCase();
+      var fullName = String(opts.fullName || opts.full_name || '').trim();
+      var eventTitle = String(opts.eventTitle || opts.event_title || 'TEPA Performance Award 2026').trim();
+      var resend = Boolean(opts.resend);
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        return { ok: false, sent: false, error: 'Invalid email address.' };
+      }
+      if (!/^TEPA-[A-Z0-9]{6}$/.test(uniqueCode)) {
+        return { ok: false, sent: false, error: 'Invalid access code.' };
+      }
+
+      var cfg = getConfig();
+      if (!cfg.emailEndpoint) {
+        return {
+          ok: true,
+          sent: false,
+          simulated: true,
+          message: 'Preview mode — automatic email activates on WordPress.'
+        };
+      }
+
+      try {
+        var headers = { 'Content-Type': 'application/json' };
+        if (cfg.emailNonce) {
+          headers['X-WP-Nonce'] = cfg.emailNonce;
+        }
+        var resp = await global.fetch(cfg.emailEndpoint, {
+          method: 'POST',
+          headers: headers,
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            full_name: fullName,
+            email: email,
+            unique_code: uniqueCode,
+            event_title: eventTitle,
+            resend: resend
+          })
+        });
+        var data = null;
+        try { data = await resp.json(); } catch (e) {}
+        if (!resp.ok || !data || !data.ok) {
+          return {
+            ok: false,
+            sent: false,
+            error: (data && data.error) || 'Could not send email automatically.'
+          };
+        }
+        try {
+          var rawCache = global.localStorage.getItem(QUIZ_CACHE_KEY);
+          if (rawCache) {
+            var parsedCache = JSON.parse(rawCache);
+            if (parsedCache && parsedCache.unique_code === uniqueCode) {
+              parsedCache.email = email;
+              parsedCache.email_sent = true;
+              global.localStorage.setItem(QUIZ_CACHE_KEY, JSON.stringify(parsedCache));
+            }
+          }
+        } catch (e) {}
+        return {
+          ok: true,
+          sent: true,
+          already_sent: Boolean(data.already_sent)
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          sent: false,
+          error: (err && err.message) || 'Network error while sending email.'
+        };
+      }
     },
 
     submitProjectVote: async function (projectId, voterName) {

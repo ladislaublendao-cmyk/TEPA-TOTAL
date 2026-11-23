@@ -778,6 +778,17 @@ body:not(.wp-admin) a,
   margin-bottom: 8px;
 }
 
+.tepa-field-group {
+  margin-top: 14px;
+}
+
+.tepa-input-helper {
+  margin: 7px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(212, 214, 230, 0.78);
+}
+
 .tepa-dark-input {
   width: 100%;
   min-height: 48px;
@@ -1138,6 +1149,76 @@ body:not(.wp-admin) a,
   font-variant-numeric: tabular-nums;
   margin: 4px 0;
   word-break: break-all;
+}
+
+.tepa-unique-id-email {
+  font-size: 12px;
+  color: #B6B9CE;
+  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+.tepa-email-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.tepa-email-status strong {
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.tepa-email-status.is-sending {
+  background: rgba(33, 148, 212, 0.16);
+  border: 1px solid rgba(33, 148, 212, 0.42);
+  color: #CFEFFF;
+}
+
+.tepa-email-status.is-sent {
+  background: rgba(100, 189, 117, 0.16);
+  border: 1px solid rgba(100, 189, 117, 0.48);
+  color: #D2F8DA;
+}
+
+.tepa-email-status.is-simulated,
+.tepa-email-status.is-idle {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #D4D6E6;
+}
+
+.tepa-email-status.is-error {
+  background: rgba(231, 36, 40, 0.18);
+  border: 1px solid rgba(231, 36, 40, 0.48);
+  color: #FFD2D3;
+}
+
+.tepa-email-retry-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.tepa-email-retry-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .tepa-receipt-actions {
