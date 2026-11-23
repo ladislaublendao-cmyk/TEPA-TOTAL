@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEPA_THEME_VERSION', '1.8.22' );
+define( 'TEPA_THEME_VERSION', '1.8.23' );
 define( 'TEPA_DEFAULT_SUPABASE_URL', 'https://ujpzqulgainzxxombrgb.supabase.co' );
 define( 'TEPA_DEFAULT_SUPABASE_KEY', 'sb_publishable_cuReE7bA6g0vdzdJQCPWJQ_oPCuxzxM' );
 
@@ -80,16 +80,9 @@ function tepa_enqueue_assets() {
 	$theme_uri = get_template_directory_uri();
 
 	wp_enqueue_style(
-		'tepa-google-fonts',
-		'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap',
-		array(),
-		null
-	);
-
-	wp_enqueue_style(
 		'tepa-award-style',
 		$theme_uri . '/assets/css/tepa.css',
-		array( 'tepa-google-fonts' ),
+		array(),
 		tepa_asset_ver( 'assets/css/tepa.css' )
 	);
 

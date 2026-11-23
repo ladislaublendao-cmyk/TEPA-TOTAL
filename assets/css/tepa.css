@@ -3,6 +3,118 @@
    Design Tokens & Full Stylesheet (Mobile Quiz, Mobile Voting, 16:9 Stage, Admin)
    ========================================================================== */
 
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-LightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Book.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-BookItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-MediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Medium.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-MediumItalic.otf') format('opentype');
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-BoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Bold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-BoldItalic.otf') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-Bold.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Gotham Rounded';
+  src: url('../fontes/GothamRounded-BoldItalic.otf') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --tepa-bg: #0F1019;
   --tepa-bg-deep: #05050D;
@@ -16,7 +128,7 @@
   --tepa-border-subtle: rgba(255, 255, 255, 0.12);
   --tepa-grad-rainbow: linear-gradient(90deg, #F77B39 0%, #8F4F9E 26.92%, #2194D4 50.81%, #64BD75 77.4%, #FFD239 99.52%);
   --tepa-grad-cta: linear-gradient(90deg, #E76D25 0%, #E72428 100%);
-  --tepa-font: 'Inter', 'Plus Jakarta Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --tepa-font: 'Gotham Rounded', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
   --tepa-shadow-glow: 0 12px 36px rgba(231, 68, 37, 0.25);
 }
 

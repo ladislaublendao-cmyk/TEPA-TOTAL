@@ -237,9 +237,18 @@
   async function downloadReceiptPdf(opts) {
     opts = opts || {};
     var isQuiz = opts.kind === 'quiz';
-    var fontStack = 'Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    var fontStack = '"Gotham Rounded", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     var lightUpLogo = null;
     var teLogo = null;
+    try {
+      if (document.fonts && document.fonts.ready) {
+        await Promise.all([
+          document.fonts.ready,
+          document.fonts.load('400 28px "Gotham Rounded"'),
+          document.fonts.load('700 42px "Gotham Rounded"')
+        ]);
+      }
+    } catch (e) {}
     try {
       var imgs = await Promise.all([
         loadImageSafe(assetUrl('light-up-logo.png')),
