@@ -635,6 +635,127 @@
     return true;
   }
 
+  // Cloudflare Turnstile lazy loader & widget lifecycle helpers (Vote Anti-Bot)
+  var _turnstileLoadPromise = null;
+
+  function loadTurnstileScript() {
+    if (global.turnstile && typeof global.turnstile.render === 'function') {
+      return Promise.resolve(global.turnstile);
+    }
+    if (_turnstileLoadPromise) return _turnstileLoadPromise;
+
+    _turnstileLoadPromise = new Promise(function (resolve) {
+      var settled = false;
+      function finish(ts) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (!ts) _turnstileLoadPromise = null;
+        resolve(ts || null);
+      }
+
+      var timer = setTimeout(function () {
+        finish(global.turnstile && typeof global.turnstile.render === 'function' ? global.turnstile : null);
+      }, 15000);
+
+      var existing = document.querySelector('script[data-tepa-turnstile]');
+      if (existing) {
+        existing.addEventListener('load', function () {
+          finish(global.turnstile && typeof global.turnstile.render === 'function' ? global.turnstile : null);
+        });
+        existing.addEventListener('error', function () { finish(null); });
+        return;
+      }
+
+      var s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.defer = true;
+      s.setAttribute('data-tepa-turnstile', '1');
+      s.onload = function () {
+        finish(global.turnstile && typeof global.turnstile.render === 'function' ? global.turnstile : null);
+      };
+      s.onerror = function () { finish(null); };
+      document.head.appendChild(s);
+    });
+    return _turnstileLoadPromise;
+  }
+
+  function renderTurnstile(container, siteKey) {
+    var settled = false;
+    var resolveFn = null;
+    var handle = {
+      widgetId: null,
+      cancelled: false,
+      tokenPromise: null
+    };
+
+    function armNewPromise() {
+      settled = false;
+      handle.tokenPromise = new Promise(function (resolve) {
+        resolveFn = function (tok) {
+          if (!settled) {
+            settled = true;
+            resolve(tok || null);
+          }
+        };
+      });
+    }
+
+    armNewPromise();
+
+    loadTurnstileScript().then(function (ts) {
+      if (handle.cancelled || !ts || !container || !container.isConnected) {
+        if (resolveFn) resolveFn(null);
+        return;
+      }
+      try {
+        container.innerHTML = '';
+        handle.widgetId = ts.render(container, {
+          sitekey: siteKey,
+          action: 'vote',
+          theme: 'dark',
+          appearance: 'interaction-only',
+          callback: function (token) {
+            if (resolveFn) resolveFn(token);
+          },
+          'error-callback': function () {
+            if (resolveFn) resolveFn(null);
+          },
+          'timeout-callback': function () {
+            if (resolveFn) resolveFn(null);
+          },
+          'expired-callback': function () {
+            armNewPromise();
+            try { ts.reset(handle.widgetId); } catch (e) {
+              if (resolveFn) resolveFn(null);
+            }
+          }
+        });
+      } catch (e) {
+        if (resolveFn) resolveFn(null);
+      }
+    }).catch(function () {
+      if (resolveFn) resolveFn(null);
+    });
+
+    return handle;
+  }
+
+  function removeTurnstile(widgetOrHandle) {
+    if (!widgetOrHandle) return;
+    var wid = typeof widgetOrHandle === 'object' ? widgetOrHandle.widgetId : widgetOrHandle;
+    if (typeof widgetOrHandle === 'object') {
+      widgetOrHandle.cancelled = true;
+    }
+    if (wid === null || wid === undefined) return;
+    try {
+      if (global.turnstile && typeof global.turnstile.remove === 'function') {
+        global.turnstile.remove(wid);
+      }
+    } catch (e) {}
+  }
+
   // =========================================================================
   // 1. MOBILE WELCOME QUIZ ([data-tepa-app="quiz"])
   // =========================================================================
@@ -1228,6 +1349,12 @@
       loading: true,
       confirmOpen: false,
       submitting: false,
+      verifying: false,
+      guardMode: 'off',
+      turnstileSiteKey: '',
+      guardActive: false,
+      guardWidget: null,
+      modalError: '',
       error: '',
       receipt: null
     };
@@ -1267,6 +1394,12 @@
         state.projects = (dash && dash.projects_with_votes) || [];
         var settings = (dash && dash.settings) || {};
         state.votingOpen = settings.voting_open !== undefined ? Boolean(settings.voting_open) : true;
+        state.guardMode = settings.vote_guard_mode || 'off';
+        state.turnstileSiteKey = String(settings.turnstile_site_key || '').trim();
+        state.guardActive = Store.getMode() === 'supabase' && state.guardMode !== 'off' && Boolean(state.turnstileSiteKey);
+        if (state.guardActive) {
+          loadTurnstileScript();
+        }
         var subRaw = (state.activePoll && state.activePoll.voting_subtitle) || settings.voting_subtitle;
         state.votingSubtitle = formatCoverSubtitle(subRaw, state.projects.length, isSimpleMode());
         var voteEpoch = Number(settings.vote_epoch || 1);
@@ -1329,6 +1462,12 @@
       var selectedProj = state.projects.find(function (p) { return p.id === state.selectedProjectId; });
 
       if (!state.confirmOpen || !selectedProj) {
+        if (state.guardWidget) {
+          removeTurnstile(state.guardWidget);
+          state.guardWidget = null;
+        }
+        state.verifying = false;
+        state.modalError = '';
         if (existing) existing.remove();
         return;
       }
@@ -1336,8 +1475,15 @@
       if (existing) {
         var confBtn = existing.querySelector('#tepa-vote-confirm-btn');
         if (confBtn) {
-          confBtn.disabled = state.submitting;
-          confBtn.textContent = state.submitting ? 'Recording Vote...' : 'Confirm My Vote';
+          confBtn.disabled = state.submitting || state.verifying;
+          confBtn.textContent = state.verifying
+            ? 'Verifying...'
+            : (state.submitting ? 'Recording Vote...' : 'Confirm My Vote');
+        }
+        var errP = existing.querySelector('#tepa-vote-modal-error');
+        if (errP) {
+          errP.textContent = state.modalError || '';
+          errP.hidden = !state.modalError;
         }
         return;
       }
@@ -1358,14 +1504,22 @@
         catLine +
         '    Each participant can submit only <strong>1 vote</strong>' + (isSimple ? ' in this poll.' : ' for Best of the Best.') +
         '  </p>' +
+        '  <div id="tepa-turnstile-slot" class="tepa-turnstile-slot"></div>' +
+        '  <p id="tepa-vote-modal-error" class="tepa-vote-modal-error"' + (state.modalError ? '' : ' hidden') + '>' + esc(state.modalError || '') + '</p>' +
         '  <div style="display:flex;flex-direction:column;gap:10px;">' +
-        '    <button type="button" class="tepa-btn-cta is-pill" id="tepa-vote-confirm-btn" data-action="confirm-vote" ' + (state.submitting ? 'disabled' : '') + '>' +
-        (state.submitting ? 'Recording Vote...' : 'Confirm My Vote') +
+        '    <button type="button" class="tepa-btn-cta is-pill" id="tepa-vote-confirm-btn" data-action="confirm-vote" ' + ((state.submitting || state.verifying) ? 'disabled' : '') + '>' +
+        (state.verifying ? 'Verifying...' : (state.submitting ? 'Recording Vote...' : 'Confirm My Vote')) +
         '    </button>' +
         '    <button type="button" class="tepa-btn-rainbow-outline is-pill" data-action="cancel-confirm">Change Selection</button>' +
         '  </div>' +
         '</div>';
       shell.appendChild(wrap);
+      if (state.guardActive) {
+        var tsSlot = wrap.querySelector('#tepa-turnstile-slot');
+        if (tsSlot) {
+          state.guardWidget = renderTurnstile(tsSlot, state.turnstileSiteKey);
+        }
+      }
     }
 
     var shellSwapTimer = 0;
@@ -1547,6 +1701,8 @@
         syncSelectionInPlace();
       } else if (action === 'open-confirm') {
         if (state.selectedProjectId) {
+          state.modalError = '';
+          state.verifying = false;
           state.confirmOpen = true;
           syncModalInPlace();
         }
@@ -1554,25 +1710,70 @@
         state.confirmOpen = false;
         syncModalInPlace();
       } else if (action === 'confirm-vote') {
+        if (state.submitting || state.verifying) return;
+        state.modalError = '';
+        var captchaToken = null;
+        if (state.guardActive) {
+          state.verifying = true;
+          syncModalInPlace();
+          if (!state.guardWidget) {
+            var tsSlot = root.querySelector('#tepa-turnstile-slot');
+            if (tsSlot) state.guardWidget = renderTurnstile(tsSlot, state.turnstileSiteKey);
+          }
+          if (state.guardWidget && state.guardWidget.tokenPromise) {
+            captchaToken = await Promise.race([
+              state.guardWidget.tokenPromise,
+              new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 15000); })
+            ]);
+          }
+          state.verifying = false;
+          if (!captchaToken && state.guardMode === 'enforce') {
+            state.modalError = 'Security check could not complete. Check your connection and tap Confirm again.';
+            removeTurnstile(state.guardWidget);
+            state.guardWidget = null;
+            var retrySlot = root.querySelector('#tepa-turnstile-slot');
+            if (retrySlot) state.guardWidget = renderTurnstile(retrySlot, state.turnstileSiteKey);
+            syncModalInPlace();
+            return;
+          }
+        }
+
         state.submitting = true;
         state.error = '';
         syncModalInPlace();
         try {
-          var res = await Store.submitProjectVote(state.selectedProjectId);
+          var res = await Store.submitProjectVote(state.selectedProjectId, null, captchaToken);
           if (!res || !res.ok) {
+            if (res && res.code === 'captcha_required') {
+              state.modalError = 'Security check could not complete. Check your connection and tap Confirm again.';
+              removeTurnstile(state.guardWidget);
+              state.guardWidget = null;
+              var retrySlot2 = root.querySelector('#tepa-turnstile-slot');
+              if (retrySlot2 && state.guardActive) {
+                state.guardWidget = renderTurnstile(retrySlot2, state.turnstileSiteKey);
+              }
+              state.submitting = false;
+              syncModalInPlace();
+              return;
+            }
             state.error = (res && res.error) || 'Could not submit your vote.';
             state.confirmOpen = false;
             state.submitting = false;
             render();
             return;
           }
+          if (state.guardWidget) {
+            removeTurnstile(state.guardWidget);
+            state.guardWidget = null;
+          }
           state.receipt = res;
           state.confirmOpen = false;
+          state.submitting = false;
           state.step = 'receipt';
+          render('next');
         } catch (err) {
           state.error = (err && err.message) || 'Network error while voting.';
           state.confirmOpen = false;
-        } finally {
           state.submitting = false;
           render('next');
         }
@@ -3051,6 +3252,7 @@
       pollDrafts: {},
       pollCopyDraft: null,
       data: null,
+      guardData: null,
       loading: true,
       saving: false,
       notice: '',
@@ -3428,9 +3630,20 @@
             try { sessionStorage.removeItem(PIN_SESSION_KEY); } catch (e) {}
           }
           state.data = null;
+          state.guardData = null;
         } else {
           state.error = '';
           state.data = res;
+          if (mode === 'supabase') {
+            try {
+              var gRes = await Store.voteGuardAdmin(state.pin || '2026', 'get_status');
+              if (gRes && gRes.ok) {
+                state.guardData = { guard: gRes.guard, audit: gRes.audit };
+              }
+            } catch (e) {}
+          } else {
+            state.guardData = null;
+          }
         }
       } catch (err) {
         state.error = (err && err.message) || t('errLoadAdmin');
@@ -3442,6 +3655,17 @@
           render(!silent);
         }
       }
+    }
+
+    async function refreshGuard() {
+      if (Store.getMode() !== 'supabase' || !state.pin) return;
+      try {
+        var gRes = await Store.voteGuardAdmin(state.pin, 'get_status');
+        if (gRes && gRes.ok) {
+          state.guardData = { guard: gRes.guard, audit: gRes.audit };
+        }
+      } catch (e) {}
+      render(false);
     }
 
     function sanitizeCsvCell(val) {
@@ -3686,6 +3910,120 @@
       var quizScreenUrl = cfg.quizUrl || 'quiz.html';
       var liveScreenUrl = cfg.liveUrl || 'live.html';
 
+      function renderVoteGuardCard() {
+        var gd = state.guardData || {
+          guard: {
+            mode: s.vote_guard_mode || 'monitor',
+            site_key: s.turnstile_site_key || '',
+            secret_configured: false
+          },
+          audit: { summary: {}, top_ips: [] }
+        };
+        var guard = gd.guard || {};
+        var audit = gd.audit || {};
+        var sum = audit.summary || {};
+        var byVer = sum.by_verification || {};
+        var topIps = Array.isArray(audit.top_ips) ? audit.top_ips : [];
+        var activeMode = guard.mode || 'monitor';
+        var unverifiedSum = Number(byVer.unverified || 0) + Number(byVer.legacy || 0);
+
+        if (mode !== 'supabase') {
+          return (
+            '<div class="tepa-bo-card">' +
+            '  <div class="tepa-bo-card-head">' +
+            '    <div>' +
+            '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('shield', 15) + '</span><h2 class="tepa-bo-card-title">' + esc(t('guardTitle')) + '</h2></div>' +
+            '      <p class="tepa-bo-card-desc">' + esc(t('guardLiveOnly')) + '</p>' +
+            '    </div>' +
+            '  </div>' +
+            '</div>'
+          );
+        }
+
+        var modesMeta = [
+          { val: 'off', label: t('guardModeOff'), desc: t('guardModeOffDesc') },
+          { val: 'monitor', label: t('guardModeMonitor'), desc: t('guardModeMonitorDesc') },
+          { val: 'enforce', label: t('guardModeEnforce'), desc: t('guardModeEnforceDesc') }
+        ];
+
+        return (
+          '<div class="tepa-bo-card" id="tepa-bo-guard-card">' +
+          '  <div class="tepa-bo-card-head">' +
+          '    <div>' +
+          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('shield', 15) + '</span><h2 class="tepa-bo-card-title">' + esc(t('guardTitle')) + '</h2></div>' +
+          '      <p class="tepa-bo-card-desc">' + esc(t('guardDesc')) + '</p>' +
+          '    </div>' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="guard-refresh">' + icon('refresh', 13) + '<span>' + esc(t('guardRefresh')) + '</span></button>' +
+          '  </div>' +
+          '  <div class="tepa-bo-guard-modes">' +
+          modesMeta.map(function (m) {
+            var isAct = activeMode === m.val;
+            return (
+              '<div class="tepa-bo-guard-mode-box">' +
+              '  <button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (isAct ? 'tepa-bo-btn-primary' : '') + '" data-action="guard-set-mode" data-val="' + m.val + '">' + esc(m.label) + '</button>' +
+              '  <div class="tepa-bo-guard-mode-desc">' + esc(m.desc) + '</div>' +
+              '</div>'
+            );
+          }).join('') +
+          '  </div>' +
+          '  <div class="tepa-bo-guard-keys">' +
+          '    <div>' +
+          '      <label class="tepa-bo-label" for="tepa-guard-site-key">' + esc(t('guardSiteKeyLbl')) + '</label>' +
+          '      <input id="tepa-guard-site-key" class="tepa-bo-input" type="text" value="' + esc(guard.site_key || '') + '" placeholder="' + esc(t('guardSiteKeyPh')) + '">' +
+          '    </div>' +
+          '    <div>' +
+          '      <label class="tepa-bo-label" for="tepa-guard-secret-key">' + esc(t('guardSecretKeyLbl')) + '</label>' +
+          '      <input id="tepa-guard-secret-key" class="tepa-bo-input" type="password" value="" placeholder="' + esc(guard.secret_configured ? t('guardSecretConfiguredPh') : t('guardSecretEmptyPh')) + '">' +
+          '    </div>' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="guard-save-keys">' + icon('check', 13) + '<span>' + esc(t('guardSaveKeysBtn')) + '</span></button>' +
+          '  </div>' +
+          '  <div class="tepa-bo-guard-stats">' +
+          '    <span class="tepa-bo-badge is-blue">' + esc(t('guardStatValid', { count: sum.total_valid || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-green">' + esc(t('guardStatVerified', { count: byVer.turnstile || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-gold">' + esc(t('guardStatUnverified', { count: unverifiedSum })) + '</span>' +
+          '    <span class="tepa-bo-badge is-red">' + esc(t('guardStatFailed', { count: byVer.failed || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-muted">' + esc(t('guardStatVoided', { count: sum.voided || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge ' + (Number(sum.suspicious_ua || 0) > 0 ? 'is-red' : 'is-muted') + '">' + esc(t('guardStatSuspiciousUa', { count: sum.suspicious_ua || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-muted">' + esc(t('guardStatPeak', { count: sum.peak_per_second || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-muted">' + esc(t('guardStatLast60', { count: sum.last_60s || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-muted">' + esc(t('guardStatIps', { count: sum.distinct_ips || 0 })) + '</span>' +
+          '  </div>' +
+          '  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="guard-void-unverified">' + icon('trash', 12) + '<span>' + esc(t('guardVoidUnverifiedBtn')) + '</span></button>' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="guard-restore-all">' + icon('refresh', 12) + '<span>' + esc(t('guardRestoreAllBtn')) + '</span></button>' +
+          '  </div>' +
+          '  <p class="tepa-bo-hint" style="margin:0 0 12px;">' + esc(t('guardOffshoreHint')) + '</p>' +
+          '  <div class="tepa-bo-table-wrap"><table class="tepa-bo-table">' +
+          '    <thead><tr><th>' + esc(t('guardColIp')) + '</th><th>' + esc(t('guardColValid')) + '</th><th>' + esc(t('guardColVerified')) + '</th><th>' + esc(t('guardColUnverified')) + '</th><th>' + esc(t('guardColFailed')) + '</th><th>' + esc(t('guardColUa')) + '</th><th>' + esc(t('guardColLast')) + '</th><th>' + esc(t('guardColAction')) + '</th></tr></thead>' +
+          '    <tbody>' +
+          (topIps.length
+            ? topIps.map(function (row) {
+                var actBtns = '';
+                if (Number(row.valid || 0) > 0) {
+                  actBtns += '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="guard-void-ip" data-ip="' + esc(row.ip) + '">' + esc(t('guardVoidBtn')) + '</button> ';
+                }
+                if (Number(row.voided || 0) > 0) {
+                  actBtns += '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="guard-restore-ip" data-ip="' + esc(row.ip) + '">' + esc(t('guardRestoreBtn')) + ' (' + row.voided + ')</button>';
+                }
+                return (
+                  '<tr>' +
+                  '  <td><code>' + esc(row.ip) + '</code></td>' +
+                  '  <td><strong>' + esc(row.valid || 0) + '</strong></td>' +
+                  '  <td><span class="tepa-bo-badge is-green">' + esc(row.turnstile || 0) + '</span></td>' +
+                  '  <td>' + esc(row.unverified || 0) + '</td>' +
+                  '  <td>' + esc(row.failed || 0) + '</td>' +
+                  '  <td>' + (Number(row.suspicious_ua || 0) > 0 ? '<span class="tepa-bo-badge is-red">' + esc(row.suspicious_ua) + '</span>' : '0') + '</td>' +
+                  '  <td style="color:#64748B;">' + esc(formatTime(row.last_at)) + '</td>' +
+                  '  <td style="white-space:nowrap;">' + (actBtns || '<span style="color:#94A3B8;">—</span>') + '</td>' +
+                  '</tr>'
+                );
+              }).join('')
+            : '<tr><td colspan="8" style="text-align:center;padding:20px;color:#64748B;">' + esc(t('guardNoVotes')) + '</td></tr>') +
+          '    </tbody></table></div>' +
+          '</div>'
+        );
+      }
+
       if (state.tab === 'stage') {
         var top5 = k.sortedProjects.slice(0, 5);
         var maxTopVotes = Math.max(1, Number((top5[0] && top5[0].votes) || 0));
@@ -3855,7 +4193,8 @@
           '      <p class="tepa-bo-hint" style="margin-top:8px;">' + esc(t('stResetHint')) + '</p>' +
           '    </div>' +
           '  </div>' +
-          '</div>'
+          '</div>' +
+          renderVoteGuardCard()
         );
       }
 
@@ -5424,9 +5763,127 @@
         state.pin = '';
         state.manuallyLocked = true;
         state.data = null;
+        state.guardData = null;
         state.error = '';
         try { sessionStorage.removeItem(PIN_SESSION_KEY); } catch (e) {}
         render(false);
+        return;
+      }
+
+      if (act === 'guard-refresh') {
+        await refreshGuard();
+        flash(t('toastGuardRefreshed'));
+        return;
+      }
+
+      if (act === 'guard-set-mode') {
+        var nextGuardMode = btn.getAttribute('data-val') || 'monitor';
+        try {
+          var gmRes = await Store.voteGuardAdmin(pin, 'update_guard', { mode: nextGuardMode });
+          if (!gmRes || !gmRes.ok) {
+            flash((gmRes && gmRes.error) || t('toastSettingErr'), true);
+            return;
+          }
+          await refreshGuard();
+          await loadAdmin(false);
+          flash(t('toastGuardUpdated'));
+        } catch (err) {
+          flash((err && err.message) || t('toastSettingErr'), true);
+        }
+        return;
+      }
+
+      if (act === 'guard-save-keys') {
+        var siteVal = ((root.querySelector('#tepa-guard-site-key') || {}).value || '').trim();
+        var secVal = ((root.querySelector('#tepa-guard-secret-key') || {}).value || '').trim();
+        var keyPayload = { site_key: siteVal };
+        if (secVal) {
+          keyPayload.secret_key = secVal;
+        }
+        try {
+          var gkRes = await Store.voteGuardAdmin(pin, 'update_guard', keyPayload);
+          if (!gkRes || !gkRes.ok) {
+            flash((gkRes && gkRes.error) || t('toastSettingErr'), true);
+            return;
+          }
+          var secEl = root.querySelector('#tepa-guard-secret-key');
+          if (secEl) secEl.value = '';
+          await refreshGuard();
+          await loadAdmin(false);
+          flash(t('toastGuardKeysSaved'));
+        } catch (err) {
+          flash((err && err.message) || t('toastSettingErr'), true);
+        }
+        return;
+      }
+
+      if (act === 'guard-void-ip') {
+        var targetIp = btn.getAttribute('data-ip') || '';
+        if (!targetIp || !global.confirm(t('guardConfirmVoidIp', { ip: targetIp }))) return;
+        try {
+          var vIpRes = await Store.voteGuardAdmin(pin, 'void_votes', { ip: targetIp });
+          if (!vIpRes || !vIpRes.ok) {
+            flash((vIpRes && vIpRes.error) || t('toastActionFailed'), true);
+            return;
+          }
+          flash(t('toastGuardVoided', { count: vIpRes.count || 0 }));
+          await refreshGuard();
+          await loadAdmin(false);
+        } catch (err) {
+          flash((err && err.message) || t('toastActionFailed'), true);
+        }
+        return;
+      }
+
+      if (act === 'guard-restore-ip') {
+        var restIp = btn.getAttribute('data-ip') || '';
+        if (!restIp || !global.confirm(t('guardConfirmRestoreIp', { ip: restIp }))) return;
+        try {
+          var rIpRes = await Store.voteGuardAdmin(pin, 'restore_votes', { ip: restIp });
+          if (!rIpRes || !rIpRes.ok) {
+            flash((rIpRes && rIpRes.error) || t('toastActionFailed'), true);
+            return;
+          }
+          flash(t('toastGuardRestored', { count: rIpRes.count || 0 }));
+          await refreshGuard();
+          await loadAdmin(false);
+        } catch (err) {
+          flash((err && err.message) || t('toastActionFailed'), true);
+        }
+        return;
+      }
+
+      if (act === 'guard-void-unverified') {
+        if (!global.confirm(t('guardConfirmVoidUnverified'))) return;
+        try {
+          var vUnRes = await Store.voteGuardAdmin(pin, 'void_votes', { verifications: ['unverified', 'failed', 'legacy'] });
+          if (!vUnRes || !vUnRes.ok) {
+            flash((vUnRes && vUnRes.error) || t('toastActionFailed'), true);
+            return;
+          }
+          flash(t('toastGuardVoided', { count: vUnRes.count || 0 }));
+          await refreshGuard();
+          await loadAdmin(false);
+        } catch (err) {
+          flash((err && err.message) || t('toastActionFailed'), true);
+        }
+        return;
+      }
+
+      if (act === 'guard-restore-all') {
+        if (!global.confirm(t('guardConfirmRestoreAll'))) return;
+        try {
+          var rAllRes = await Store.voteGuardAdmin(pin, 'restore_votes', { all: true });
+          if (!rAllRes || !rAllRes.ok) {
+            flash((rAllRes && rAllRes.error) || t('toastActionFailed'), true);
+            return;
+          }
+          flash(t('toastGuardRestored', { count: rAllRes.count || 0 }));
+          await refreshGuard();
+          await loadAdmin(false);
+        } catch (err) {
+          flash((err && err.message) || t('toastActionFailed'), true);
+        }
         return;
       }
 

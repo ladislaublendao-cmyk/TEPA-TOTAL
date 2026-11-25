@@ -816,7 +816,7 @@
       }
     },
 
-    submitProjectVote: async function (projectId, voterName) {
+    submitProjectVote: async function (projectId, voterName, captchaToken) {
       var deviceId = getDeviceId();
       var pid = Number(projectId);
 
@@ -825,7 +825,8 @@
         var res = await sb.rpc('submit_project_vote', {
           p_project_id: pid,
           p_device_id: deviceId,
-          p_voter_name: voterName || null
+          p_voter_name: voterName || null,
+          p_captcha_token: captchaToken || null
         });
         if (res.error) throw res.error;
         if (res.data && res.data.ok) {
@@ -1119,6 +1120,20 @@
         global.removeEventListener('storage', onStorage);
         global.removeEventListener('tepa:realtime', onLocal);
       };
+    },
+
+    voteGuardAdmin: async function (pin, action, payload) {
+      if (isSupabaseConfigured()) {
+        var sb = await ensureSupabaseLoaded();
+        var res = await sb.rpc('tepa_vote_guard_admin', {
+          p_pin: String(pin || '').trim(),
+          p_action: String(action || ''),
+          p_payload: payload || {}
+        });
+        if (res.error) throw res.error;
+        return res.data;
+      }
+      return { ok: false, error: 'Available only with the live database.' };
     },
 
     adminAction: async function (pin, action, payload) {
