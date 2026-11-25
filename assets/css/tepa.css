@@ -6195,8 +6195,8 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 }
 
 .tepa-privacy-box {
-  margin-top: 14px;
-  padding: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -6232,11 +6232,56 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
   flex-shrink: 0;
 }
 
+.tepa-privacy-details {
+  margin-top: 6px;
+  padding-left: 26px;
+}
+
+.tepa-privacy-details.is-compact {
+  margin-top: 4px;
+  padding-left: 0;
+  text-align: center;
+}
+
+.tepa-privacy-details summary {
+  font-size: 11.5px;
+  color: #FFD239;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tepa-privacy-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.tepa-privacy-details summary::after {
+  content: '▾';
+  font-size: 10px;
+}
+
+.tepa-privacy-details[open] summary::after {
+  content: '▴';
+}
+
+.tepa-privacy-details .tepa-privacy-text {
+  margin: 6px 0 0;
+  text-align: left;
+}
+
+.tepa-privacy-note-wrap {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
 .tepa-privacy-note {
-  font-size: 11px;
-  line-height: 1.45;
-  color: #9EA1B5;
-  margin: 0 0 14px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #AEB2C8;
+  margin: 0;
 }
 
 .tepa-privacy-note a {

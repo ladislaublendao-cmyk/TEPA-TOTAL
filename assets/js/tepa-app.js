@@ -1133,8 +1133,11 @@
           '      <p class="tepa-input-helper">Your unique access code will be sent automatically to this email.</p>' +
           '    </div>' +
           '    <div class="tepa-privacy-box">' +
-          '      <p class="tepa-privacy-text"><strong>Privacy notice.</strong> ' + esc(state.privacy.controller) + ' (data controller) uses your name and email only to run this quiz, send your access code and manage quiz prizes. Only your first name and surname initial may appear on the event screen. Your data is stored securely and deleted after the event. You can request access, correction or deletion at any time. Angola Personal Data Protection Law (Lei n.º 22/11).' + (extraQuizPrivacyLinks ? ' ' + extraQuizPrivacyLinks : '') + '</p>' +
-          '      <label class="tepa-privacy-check"><input type="checkbox" id="tepa-quiz-privacy"' + (state.privacyAccepted ? ' checked' : '') + '> <span>I have read the privacy notice and agree to the processing of my data for this quiz.</span></label>' +
+          '      <label class="tepa-privacy-check"><input type="checkbox" id="tepa-quiz-privacy"' + (state.privacyAccepted ? ' checked' : '') + '> <span>I agree to ' + esc(state.privacy.controller) + ' using my name and email for this quiz and prizes (Lei n.º 22/11).</span></label>' +
+          '      <details class="tepa-privacy-details">' +
+          '        <summary>Privacy details</summary>' +
+          '        <p class="tepa-privacy-text">' + esc(state.privacy.controller) + ' (data controller) uses your name and email only to run this quiz, send your access code and manage quiz prizes. Only your first name and surname initial may appear on the event screen. Your data is stored securely and deleted after the event. You can request access, correction or deletion at any time.' + (extraQuizPrivacyLinks ? ' ' + extraQuizPrivacyLinks : '') + '</p>' +
+          '      </details>' +
           '    </div>' +
           (state.error ? '<p style="color:#FF8B8E;font-size:13px;margin:10px 0 0;">' + esc(state.error) + '</p>' : '') +
           '    <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;">' +
@@ -1559,7 +1562,13 @@
         catLine +
         '    Each participant can submit only <strong>1 vote</strong>' + (isSimple ? ' in this poll.' : ' for Best of the Best.') +
         '  </p>' +
-        '  <p class="tepa-privacy-note">To protect the vote against fraud we record a device identifier and your IP address. They are never shown publicly and are deleted after the event.' + (extraVotePrivacyLinks ? ' ' + extraVotePrivacyLinks : '') + '</p>' +
+        '  <div class="tepa-privacy-note-wrap">' +
+        '    <p class="tepa-privacy-note">Your vote is anonymous and encrypted. Security data is deleted after the event.</p>' +
+        '    <details class="tepa-privacy-details is-compact">' +
+        '      <summary>Privacy details</summary>' +
+        '      <p class="tepa-privacy-text">Votes are transmitted and stored with encryption. To keep voting fair, a device identifier and IP address are recorded only for security verification, never shown publicly and deleted after the event (Lei n.º 22/11).' + (extraVotePrivacyLinks ? ' ' + extraVotePrivacyLinks : '') + '</p>' +
+        '    </details>' +
+        '  </div>' +
         '  <div id="tepa-turnstile-slot" class="tepa-turnstile-slot"></div>' +
         '  <p id="tepa-vote-modal-error" class="tepa-vote-modal-error"' + (state.modalError ? '' : ' hidden') + '>' + esc(state.modalError || '') + '</p>' +
         '  <div style="display:flex;flex-direction:column;gap:10px;">' +
