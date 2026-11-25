@@ -1136,7 +1136,7 @@
           '      <label class="tepa-privacy-check"><input type="checkbox" id="tepa-quiz-privacy"' + (state.privacyAccepted ? ' checked' : '') + '> <span>I agree to ' + esc(state.privacy.controller) + ' using my name and email for this quiz and prizes.</span></label>' +
           '      <details class="tepa-privacy-details">' +
           '        <summary>Privacy details</summary>' +
-          '        <p class="tepa-privacy-text">' + esc(state.privacy.controller) + ' (data controller) uses your name and email only to run this quiz, send your access code and manage quiz prizes. Only your first name and surname initial may appear on the event screen. Your data is stored securely and deleted after the event. You can request access, correction or deletion at any time. In accordance with Angola Data Protection Law (Lei n.º 22/11).' + (extraQuizPrivacyLinks ? ' ' + extraQuizPrivacyLinks : '') + '</p>' +
+          '        <p class="tepa-privacy-text">' + esc(state.privacy.controller) + ' (data controller) uses your name and email only to run this quiz, send your access code and manage quiz prizes. Only your first and last name (with middle names abbreviated) may appear on the event screen. Your data is stored securely and deleted after the event. You can request access, correction or deletion at any time. In accordance with Angola Data Protection Law (Lei n.º 22/11).' + (extraQuizPrivacyLinks ? ' ' + extraQuizPrivacyLinks : '') + '</p>' +
           '      </details>' +
           '    </div>' +
           (state.error ? '<p style="color:#FF8B8E;font-size:13px;margin:10px 0 0;">' + esc(state.error) + '</p>' : '') +
