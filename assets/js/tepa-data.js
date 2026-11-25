@@ -20,7 +20,7 @@
   var DEFAULT_POLLS = [
     {
       id: DEFAULT_POLL_ID,
-      title: 'TEPA 2026 — Best of the Best',
+      title: 'TEPA 2026: Best of the Best',
       voting_headline: 'Which finalist project deserves the Best of the Best?',
       voting_subtitle: 'You have 15 finalist projects · Choose one for Best of the Best',
       poll_type: 'projects',
@@ -51,7 +51,7 @@
   var DEFAULT_QUIZZES = [
     {
       id: DEFAULT_QUIZ_ID,
-      title: 'TEPA Welcome Quiz — TotalEnergies & Award',
+      title: 'TEPA Welcome Quiz: TotalEnergies & Award',
       subtitle: 'Test your knowledge about TotalEnergies in Angola and the TEPA Performance Award 2026!',
       min_score: 4,
       voucher_enabled: true,
@@ -64,7 +64,7 @@
     },
     {
       id: DEFAULT_QUIZ_2_ID,
-      title: 'TEPA Quiz 2 — TotalEnergies EP Angola',
+      title: 'TEPA Quiz 2: TotalEnergies EP Angola',
       subtitle: 'How well do you know TotalEnergies EP Angola, our offshore hubs, and our core values?',
       min_score: 4,
       voucher_enabled: true,
@@ -77,7 +77,7 @@
     },
     {
       id: DEFAULT_QUIZ_3_ID,
-      title: 'TEPA Quiz 3 — Multi-Energy & Innovation',
+      title: 'TEPA Quiz 3: Multi-Energy & Innovation',
       subtitle: 'Explore TotalEnergies\' 7 energies, Net Zero 2050 ambition, and the TEPA Performance Award!',
       min_score: 4,
       voucher_enabled: true,
@@ -94,14 +94,14 @@
     // QUIZ 1: TEPA Welcome Quiz — TotalEnergies & Award
     { id: 1,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 1,  sort_order: 1, question_text: 'In which year did Total officially rebrand to TotalEnergies to reflect its transformation into a broad multi-energy company?', question_type: 'multiple_choice', options: ['2018', '2021', '2015', '2023'], correct_answer: true, correct_option: 1, is_active: true, is_archived: false },
     { id: 2,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 2,  sort_order: 2, question_text: 'Which deepwater block operated by TotalEnergies EP Angola is known as the "Golden Block", home to the Girassol, Dalia, Pazflor, and CLOV FPSOs?', question_type: 'multiple_choice', options: ['Block 17', 'Block 32', 'Block 0', 'Block 14'], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
-    { id: 3,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 3,  sort_order: 3, question_text: 'Has TotalEnergies been operating in Angola since 1953 — more than 70 years of continuous partnership?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 3,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 3,  sort_order: 3, question_text: 'Has TotalEnergies been operating in Angola since 1953, with more than 70 years of continuous partnership?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
     { id: 4,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 4,  sort_order: 4, question_text: 'Which core value sits at the heart of every TotalEnergies operation worldwide as our non-negotiable #1 priority?', question_type: 'multiple_choice', options: ['Speed at Any Cost', 'Short-Term Profit', 'Safety', 'Individual Competition'], correct_answer: true, correct_option: 2, is_active: true, is_archived: false },
     { id: 5,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 5,  sort_order: 5, question_text: 'At the TEPA Performance Award, do 15 finalist projects (1 winner per category) pitch on stage before employees vote live for the "Best of the Best"?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
     { id: 6,  quiz_id: DEFAULT_QUIZ_ID,   question_number: 6,  sort_order: 6, question_text: 'Which solar project in Huíla Province exemplifies TotalEnergies\' renewable and multi-energy transition in Angola?', question_type: 'multiple_choice', options: ['Namibe Wind Corridor', 'Luanda Geothermal Hub', 'Caculo Cabaça Hydro', 'Quilemba Solar Plant'], correct_answer: true, correct_option: 3, is_active: true, is_archived: false },
     // QUIZ 2: TEPA Quiz 2 — TotalEnergies EP Angola
     { id: 7,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 7,  sort_order: 1, question_text: 'What does the acronym TEPA stand for in our Angolan operations?', question_type: 'multiple_choice', options: ['Total Energy Power Africa', 'TotalEnergies EP Angola', 'Technical Engineering & Production Alliance', 'Trans-Equatorial Petroleum Agency'], correct_answer: true, correct_option: 1, is_active: true, is_archived: false },
     { id: 8,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 8,  sort_order: 2, question_text: 'Which pioneering FPSO came online in 2001 as the very first deepwater development hub on Block 17?', question_type: 'multiple_choice', options: ['Girassol', 'Pazflor', 'Kaombo Sul', 'Dalia'], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
-    { id: 9,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 9,  sort_order: 3, question_text: 'Does the ultra-deepwater Kaombo project on Block 32 operate using two converted FPSO vessels — Kaombo Norte and Kaombo Sul?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
+    { id: 9,  quiz_id: DEFAULT_QUIZ_2_ID, question_number: 9,  sort_order: 3, question_text: 'Does the ultra-deepwater Kaombo project on Block 32 operate using two converted FPSO vessels (Kaombo Norte and Kaombo Sul)?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
     { id: 10, quiz_id: DEFAULT_QUIZ_2_ID, question_number: 10, sort_order: 4, question_text: 'Which five values form the official core values of TotalEnergies?', question_type: 'multiple_choice', options: ['Speed, Hierarchy, Secrecy, Cost-Cutting, Exclusivity', 'Compliance, Tradition, Standardization, Caution, Uniformity', 'Safety, Respect for Each Other, Pioneer Spirit, Stand Together, Performance-Minded', 'Oil Only, Centralization, Seniority, Risk-Taking, Autonomy'], correct_answer: true, correct_option: 2, is_active: true, is_archived: false },
     { id: 11, quiz_id: DEFAULT_QUIZ_2_ID, question_number: 11, sort_order: 5, question_text: 'Is the Kaminho deepwater project in the Kwanza Basin designed with an all-electric FPSO and zero routine flaring to cut emissions?', question_type: 'yes_no', options: [], correct_answer: true, correct_option: 0, is_active: true, is_archived: false },
     { id: 12, quiz_id: DEFAULT_QUIZ_2_ID, question_number: 12, sort_order: 6, question_text: 'In the TEPA Performance Award, is participation restricted only to directors with more than 15 years at the company?', question_type: 'yes_no', options: [], correct_answer: false, correct_option: 0, is_active: true, is_archived: false },
@@ -594,7 +594,7 @@
       return computeDemoDashboard(loadDemoState());
     },
 
-    submitQuizAttempt: async function (fullName, answersMap, email) {
+    submitQuizAttempt: async function (fullName, answersMap, email, privacyConsent) {
       var deviceId = getDeviceId();
       var cleanName = String(fullName || '').trim();
       var cleanEmail = String(email || '').trim().toLowerCase();
@@ -612,7 +612,10 @@
           p_device_id: deviceId,
           p_answers: answersMap || {}
         };
-        if (cleanEmail) {
+        if (privacyConsent) {
+          rpcPayload.p_email = cleanEmail || null;
+          rpcPayload.p_privacy_consent = true;
+        } else if (cleanEmail) {
           rpcPayload.p_email = cleanEmail;
         }
         var res = await sb.rpc('submit_quiz_attempt', rpcPayload);
@@ -761,7 +764,7 @@
           ok: true,
           sent: false,
           simulated: true,
-          message: 'Preview mode — automatic email activates on WordPress.'
+          message: 'Preview mode: automatic email activates on WordPress.'
         };
       }
 
@@ -1126,6 +1129,20 @@
       if (isSupabaseConfigured()) {
         var sb = await ensureSupabaseLoaded();
         var res = await sb.rpc('tepa_vote_guard_admin', {
+          p_pin: String(pin || '').trim(),
+          p_action: String(action || ''),
+          p_payload: payload || {}
+        });
+        if (res.error) throw res.error;
+        return res.data;
+      }
+      return { ok: false, error: 'Available only with the live database.' };
+    },
+
+    privacyAdmin: async function (pin, action, payload) {
+      if (isSupabaseConfigured()) {
+        var sb = await ensureSupabaseLoaded();
+        var res = await sb.rpc('tepa_privacy_admin', {
           p_pin: String(pin || '').trim(),
           p_action: String(action || ''),
           p_payload: payload || {}

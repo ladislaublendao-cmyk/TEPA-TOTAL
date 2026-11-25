@@ -48,7 +48,7 @@ add_action( 'admin_init', 'tepa_register_settings' );
  */
 function tepa_add_admin_menu() {
 	add_menu_page(
-		'TEPA Award 2026 — Command Center',
+		'TEPA Award 2026: Command Center',
 		'TEPA Award 2026',
 		'manage_options',
 		'tepa-award-2026',
@@ -70,7 +70,7 @@ function tepa_add_admin_menu() {
 	foreach ( $submenus as $sub ) {
 		add_submenu_page(
 			'tepa-award-2026',
-			'TEPA 2026 — ' . $sub['title'],
+			'TEPA 2026: ' . $sub['title'],
 			$sub['title'],
 			'manage_options',
 			$sub['slug'],
@@ -107,7 +107,7 @@ function tepa_render_admin_page() {
 	$force_demo   = (bool) get_option( 'tepa_force_demo', false );
 	?>
 	<div class="wrap tepa-wp-admin-wrap">
-		<h1 class="screen-reader-text">TEPA Performance Award 2026 — Event Backoffice</h1>
+		<h1 class="screen-reader-text">TEPA Performance Award 2026: Event Backoffice</h1>
 
 		<?php settings_errors(); ?>
 

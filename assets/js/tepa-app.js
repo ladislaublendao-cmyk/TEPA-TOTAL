@@ -16,6 +16,32 @@
       .replace(/'/g, '&#39;');
   }
 
+  function readPrivacySettings(settings) {
+    settings = settings || {};
+    var rawUrl = String(settings.privacy_policy_url || '').trim();
+    return {
+      url: /^https?:\/\//i.test(rawUrl) ? rawUrl : '',
+      contact: String(settings.privacy_contact || '').trim(),
+      controller: String(settings.privacy_controller || '').trim() || 'TotalEnergies EP Angola'
+    };
+  }
+
+  function privacyLinksHtml(p) {
+    p = p || {};
+    var parts = [];
+    if (p.contact) {
+      if (p.contact.indexOf('@') !== -1) {
+        parts.push('<a href="mailto:' + esc(p.contact) + '">' + esc(p.contact) + '</a>');
+      } else {
+        parts.push(esc(p.contact));
+      }
+    }
+    if (p.url) {
+      parts.push('<a href="' + esc(p.url) + '" target="_blank" rel="noopener noreferrer">Full privacy policy</a>');
+    }
+    return parts.join(' · ');
+  }
+
   function assetUrl(file) {
     var base = (Store.getConfig().assetsBase || '../tepa-award-theme/assets').replace(/\/+$/, '');
     return base + '/images/' + file;
@@ -127,7 +153,7 @@
 
   function wrapCanvasText(ctx, text, maxWidth, maxLines) {
     var words = String(text == null ? '' : text).trim().split(/\s+/).filter(Boolean);
-    if (!words.length) return ['—'];
+    if (!words.length) return ['-'];
     var limit = maxLines || 2;
     var lines = [];
     var current = '';
@@ -353,7 +379,7 @@
       ctx.textBaseline = 'top';
       ctx.fillText(isQuiz ? 'UNIQUE PARTICIPANT ID' : 'VOTE RECEIPT CODE', W / 2, 560);
 
-      var codeStr = String(opts.code || '—');
+      var codeStr = String(opts.code || '-');
       ctx.fillStyle = '#FFD239';
       ctx.font = '800 70px ' + fontStack;
       ctx.fillText(codeStr, W / 2, 606);
@@ -371,15 +397,15 @@
       // Metadata rows
       var rows = [];
       if (isQuiz) {
-        rows.push({ label: 'PARTICIPANT', value: opts.fullName || '—' });
+        rows.push({ label: 'PARTICIPANT', value: opts.fullName || '-' });
         if (opts.email) {
           rows.push({ label: 'EMAIL', value: opts.email });
         }
-        rows.push({ label: 'QUIZ / EVENT', value: opts.eventTitle || 'TEPA 2026 — Welcome Quiz' });
+        rows.push({ label: 'QUIZ / EVENT', value: opts.eventTitle || 'TEPA 2026: Welcome Quiz' });
         rows.push({ label: 'DATE & TIME', value: formatDateTimeReceipt(opts.createdAt) });
         rows.push({ label: 'VERIFICATION', value: 'TEPA Unique ID (Winners announced live during the event)' });
       } else {
-        rows.push({ label: 'SELECTED CHOICE', value: opts.choiceTitle || '—' });
+        rows.push({ label: 'SELECTED CHOICE', value: opts.choiceTitle || '-' });
         if (opts.choiceMeta) {
           rows.push({ label: 'CATEGORY / TEAM', value: opts.choiceMeta });
         }
@@ -776,6 +802,8 @@
       lastPage: 0,
       pageSize: 2,
       quizOpen: true,
+      privacyAccepted: false,
+      privacy: readPrivacySettings({}),
       loading: true,
       submitting: false,
       error: '',
@@ -852,7 +880,7 @@
         });
         if (mailRes && mailRes.simulated) {
           state.emailStatus = 'simulated';
-          state.emailMessage = mailRes.message || 'Preview mode — automatic email activates on WordPress.';
+          state.emailMessage = mailRes.message || 'Preview mode: automatic email activates on WordPress.';
         } else if (mailRes && mailRes.ok && mailRes.sent) {
           state.emailStatus = 'sent';
           state.emailMessage = '';
@@ -912,6 +940,7 @@
         state.activeQuiz = dash.active_quiz || null;
         state.pageSize = Math.max(1, Math.min(10, Number((state.activeQuiz && state.activeQuiz.questions_per_page) || 2)));
         state.quizOpen = settings.quiz_open !== undefined ? Boolean(settings.quiz_open) : true;
+        state.privacy = readPrivacySettings(settings);
         var quizEpoch = Number(settings.quiz_epoch || 1);
         var cached = Store.getCachedQuizReceipt(quizEpoch);
         if (cached && cached.unique_code) {
@@ -1085,6 +1114,7 @@
           '  </div>' +
           '</div>';
       } else if (state.step === 'name') {
+        var extraQuizPrivacyLinks = privacyLinksHtml(state.privacy);
         stage.innerHTML =
           '<div class="tepa-quiz-step-wrap ' + animClass + '">' +
           '  <img class="tepa-lightup-logo is-sm" src="' + esc(assetUrl('light-up-logo.png')) + '" alt="LIGHT UP">' +
@@ -1097,6 +1127,10 @@
           '      <label class="tepa-input-label" for="tepa-quiz-email">Your Email Address</label>' +
           '      <input id="tepa-quiz-email" class="tepa-dark-input" type="email" inputmode="email" maxlength="120" autocomplete="email" placeholder="e.g. maria.silva@totalenergies.com" value="' + esc(state.email) + '" required>' +
           '      <p class="tepa-input-helper">Your unique access code will be sent automatically to this email.</p>' +
+          '    </div>' +
+          '    <div class="tepa-privacy-box">' +
+          '      <p class="tepa-privacy-text"><strong>Privacy notice.</strong> ' + esc(state.privacy.controller) + ' (data controller) uses your name and email only to run this quiz, send your access code and manage quiz prizes. Only your first name and surname initial may appear on the event screen. Your data is stored securely and deleted after the event. You can request access, correction or deletion at any time. Angola Personal Data Protection Law (Lei n.º 22/11).' + (extraQuizPrivacyLinks ? ' ' + extraQuizPrivacyLinks : '') + '</p>' +
+          '      <label class="tepa-privacy-check"><input type="checkbox" id="tepa-quiz-privacy"' + (state.privacyAccepted ? ' checked' : '') + '> <span>I have read the privacy notice and agree to the processing of my data for this quiz.</span></label>' +
           '    </div>' +
           (state.error ? '<p style="color:#FF8B8E;font-size:13px;margin:10px 0 0;">' + esc(state.error) + '</p>' : '') +
           '    <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px;">' +
@@ -1171,7 +1205,7 @@
           '  <div class="tepa-voucher-badge" style="margin-bottom:8px;">✓ Quiz Completed</div>' +
           '  <h2 style="margin:0 0 6px;font-size:22px;font-weight:800;" class="tepa-rainbow-text">Quiz Recorded!</h2>' +
           '  <p style="margin:0;font-size:13.5px;line-height:1.5;color:#D6D8E8;">' +
-          '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below — the quiz winners will be announced live during the event.' +
+          '    Thank you, <strong>' + esc(r.full_name) + '</strong>! Keep your Unique Participant ID below. The quiz winners will be announced live during the event.' +
           '  </p>' +
           '</div>';
 
@@ -1195,15 +1229,23 @@
       }
     }
 
+    root.addEventListener('change', function (ev) {
+      if (ev.target && ev.target.id === 'tepa-quiz-privacy') {
+        state.privacyAccepted = Boolean(ev.target.checked);
+      }
+    });
+
     root.addEventListener('submit', function (ev) {
       if (ev.target && ev.target.id === 'tepa-quiz-name-form') {
         ev.preventDefault();
         var nameInput = root.querySelector('#tepa-quiz-fullname');
         var emailInput = root.querySelector('#tepa-quiz-email');
+        var privInput = root.querySelector('#tepa-quiz-privacy');
         var nameVal = (nameInput ? nameInput.value : '').trim();
         var emailVal = (emailInput ? emailInput.value : '').trim().toLowerCase();
         state.fullName = nameVal;
         state.email = emailVal;
+        state.privacyAccepted = Boolean(privInput && privInput.checked);
         if (nameVal.length < 2) {
           state.error = 'Please enter your full name (at least 2 characters).';
           render();
@@ -1214,6 +1256,11 @@
           render();
           var eInp = root.querySelector('#tepa-quiz-email');
           if (eInp) setTimeout(function () { try { eInp.focus(); } catch (e) {} }, 40);
+          return;
+        }
+        if (!state.privacyAccepted) {
+          state.error = 'Please accept the privacy notice to continue.';
+          render();
           return;
         }
         state.error = '';
@@ -1253,7 +1300,7 @@
           var nBtn = root.querySelector('#tepa-quiz-next-btn');
           if (nBtn) nBtn.textContent = 'Submitting...';
           try {
-            var res = await Store.submitQuizAttempt(state.fullName, state.answers, state.email);
+            var res = await Store.submitQuizAttempt(state.fullName, state.answers, state.email, state.privacyAccepted);
             if (!res || !res.ok) {
               state.error = (res && res.error) || 'Could not submit your quiz.';
               state.submitting = false;
@@ -1302,7 +1349,7 @@
               code: state.receipt.unique_code,
               fullName: state.receipt.full_name,
               email: state.receipt.email || state.email || '',
-              eventTitle: (state.activeQuiz && state.activeQuiz.title) || 'TEPA 2026 — Welcome Quiz',
+              eventTitle: (state.activeQuiz && state.activeQuiz.title) || 'TEPA 2026: Welcome Quiz',
               createdAt: state.receipt.created_at
             });
             btn.textContent = 'PDF Saved ✓';
@@ -1320,6 +1367,7 @@
         state.lastStep = null;
         state.fullName = '';
         state.email = '';
+        state.privacyAccepted = false;
         state.emailStatus = 'idle';
         state.emailMessage = '';
         state.answers = {};
@@ -1354,6 +1402,7 @@
       turnstileSiteKey: '',
       guardActive: false,
       guardWidget: null,
+      privacy: readPrivacySettings({}),
       modalError: '',
       error: '',
       receipt: null
@@ -1397,6 +1446,7 @@
         state.guardMode = settings.vote_guard_mode || 'off';
         state.turnstileSiteKey = String(settings.turnstile_site_key || '').trim();
         state.guardActive = Store.getMode() === 'supabase' && state.guardMode !== 'off' && Boolean(state.turnstileSiteKey);
+        state.privacy = readPrivacySettings(settings);
         if (state.guardActive) {
           loadTurnstileScript();
         }
@@ -1492,6 +1542,7 @@
       var catLine = selectedProj.category_name
         ? ('Category: <strong>' + esc(selectedProj.category_name) + '</strong><br>')
         : '';
+      var extraVotePrivacyLinks = privacyLinksHtml(state.privacy);
 
       var wrap = document.createElement('div');
       wrap.className = 'tepa-modal-backdrop';
@@ -1500,10 +1551,11 @@
         '<div class="tepa-modal-card">' +
         '  <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#FFD239;font-weight:700;margin-bottom:6px;">Confirm Your Vote</div>' +
         '  <h2 style="margin:0 0 8px;font-size:20px;">' + esc(selectedProj.project_title) + '</h2>' +
-        '  <p style="margin:0 0 18px;font-size:13px;color:#C7C9D9;line-height:1.45;">' +
+        '  <p style="margin:0 0 12px;font-size:13px;color:#C7C9D9;line-height:1.45;">' +
         catLine +
         '    Each participant can submit only <strong>1 vote</strong>' + (isSimple ? ' in this poll.' : ' for Best of the Best.') +
         '  </p>' +
+        '  <p class="tepa-privacy-note">To protect the vote against fraud we record a device identifier and your IP address. They are never shown publicly and are deleted after the event.' + (extraVotePrivacyLinks ? ' ' + extraVotePrivacyLinks : '') + '</p>' +
         '  <div id="tepa-turnstile-slot" class="tepa-turnstile-slot"></div>' +
         '  <p id="tepa-vote-modal-error" class="tepa-vote-modal-error"' + (state.modalError ? '' : ' hidden') + '>' + esc(state.modalError || '') + '</p>' +
         '  <div style="display:flex;flex-direction:column;gap:10px;">' +
@@ -2736,11 +2788,11 @@
         '</footer>';
 
       var headlineTitle = stageMode === 'quiz_qr'
-        ? esc((activeQuiz && activeQuiz.title && activeQuiz.title !== 'Quiz' ? activeQuiz.title : 'Welcome Quiz') + ' — Scan to Join & Win!')
+        ? esc((activeQuiz && activeQuiz.title && activeQuiz.title !== 'Quiz' ? activeQuiz.title : 'Welcome Quiz') + ': Scan to Join & Win!')
         : (stageMode === 'vote_qr'
           ? esc(isSimplePoll ? ((activePoll && activePoll.title) || 'Live Voting') : 'Best of the Best')
           : (stageMode === 'winner_reveal'
-            ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
+            ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' · Best of the Best'))
             : esc(effHeadline || 'Which finalist project deserves the Best of the Best?')));
 
       var voteHeaderHtml =
@@ -2888,7 +2940,7 @@
               '  <div class="tepa-winner-stat-sep" aria-hidden="true"></div>' +
               '  <div class="tepa-winner-stat"><strong id="tepa-reveal-pct" class="is-gold">' + pctWin + '%</strong><span>of all votes</span></div>' +
               '</div>')
-            : '<div class="tepa-winner-waiting w-anim w-d5">Waiting for votes — the winner will be revealed here.</div>') +
+            : '<div class="tepa-winner-waiting w-anim w-d5">Waiting for votes. The winner will be revealed here.</div>') +
           '  </div>' +
           '</div>';
       } else {
@@ -3253,6 +3305,7 @@
       pollCopyDraft: null,
       data: null,
       guardData: null,
+      privacyData: null,
       loading: true,
       saving: false,
       notice: '',
@@ -3631,6 +3684,7 @@
           }
           state.data = null;
           state.guardData = null;
+          state.privacyData = null;
         } else {
           state.error = '';
           state.data = res;
@@ -3641,8 +3695,15 @@
                 state.guardData = { guard: gRes.guard, audit: gRes.audit };
               }
             } catch (e) {}
+            try {
+              var pRes = await Store.privacyAdmin(state.pin || '2026', 'get_status');
+              if (pRes && pRes.ok) {
+                state.privacyData = pRes;
+              }
+            } catch (e) {}
           } else {
             state.guardData = null;
+            state.privacyData = null;
           }
         }
       } catch (err) {
@@ -3663,6 +3724,17 @@
         var gRes = await Store.voteGuardAdmin(state.pin, 'get_status');
         if (gRes && gRes.ok) {
           state.guardData = { guard: gRes.guard, audit: gRes.audit };
+        }
+      } catch (e) {}
+      render(false);
+    }
+
+    async function refreshPrivacy() {
+      if (Store.getMode() !== 'supabase' || !state.pin) return;
+      try {
+        var pRes = await Store.privacyAdmin(state.pin, 'get_status');
+        if (pRes && pRes.ok) {
+          state.privacyData = pRes;
         }
       } catch (e) {}
       render(false);
@@ -4014,12 +4086,78 @@
                   '  <td>' + esc(row.failed || 0) + '</td>' +
                   '  <td>' + (Number(row.suspicious_ua || 0) > 0 ? '<span class="tepa-bo-badge is-red">' + esc(row.suspicious_ua) + '</span>' : '0') + '</td>' +
                   '  <td style="color:#64748B;">' + esc(formatTime(row.last_at)) + '</td>' +
-                  '  <td style="white-space:nowrap;">' + (actBtns || '<span style="color:#94A3B8;">—</span>') + '</td>' +
+                  '  <td style="white-space:nowrap;">' + (actBtns || '<span style="color:#94A3B8;">-</span>') + '</td>' +
                   '</tr>'
                 );
               }).join('')
             : '<tr><td colspan="8" style="text-align:center;padding:20px;color:#64748B;">' + esc(t('guardNoVotes')) + '</td></tr>') +
           '    </tbody></table></div>' +
+          '</div>'
+        );
+      }
+
+      function renderPrivacyCard() {
+        if (mode !== 'supabase') {
+          return (
+            '<div class="tepa-bo-card">' +
+            '  <div class="tepa-bo-card-head">' +
+            '    <div>' +
+            '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('lock', 15) + '</span><h2 class="tepa-bo-card-title">' + esc(t('privTitle')) + '</h2></div>' +
+            '      <p class="tepa-bo-card-desc">' + esc(t('privLiveOnly')) + '</p>' +
+            '    </div>' +
+            '  </div>' +
+            '</div>'
+          );
+        }
+
+        var pd = state.privacyData || {};
+        var pCfg = pd.privacy || {};
+        var pStats = pd.stats || {};
+        var pCur = pStats.current || {};
+        var pPrev = pStats.previous || {};
+        var roundsClosed = Boolean(pd.rounds_closed);
+        var ctrlVal = pCfg.controller !== undefined ? pCfg.controller : (s.privacy_controller || 'TotalEnergies EP Angola');
+        var urlVal = pCfg.policy_url !== undefined ? pCfg.policy_url : (s.privacy_policy_url || '');
+        var contactVal = pCfg.contact !== undefined ? pCfg.contact : (s.privacy_contact || '');
+
+        return (
+          '<div class="tepa-bo-card" id="tepa-bo-privacy-card">' +
+          '  <div class="tepa-bo-card-head">' +
+          '    <div>' +
+          '      <div class="tepa-bo-card-title-row"><span class="tepa-bo-card-icon">' + icon('lock', 15) + '</span><h2 class="tepa-bo-card-title">' + esc(t('privTitle')) + '</h2></div>' +
+          '      <p class="tepa-bo-card-desc">' + esc(t('privDesc')) + '</p>' +
+          '    </div>' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm" data-action="priv-refresh">' + icon('refresh', 13) + '<span>' + esc(t('guardRefresh')) + '</span></button>' +
+          '  </div>' +
+          '  <div class="tepa-bo-guard-keys">' +
+          '    <div>' +
+          '      <label class="tepa-bo-label" for="tepa-priv-controller">' + esc(t('privControllerLbl')) + '</label>' +
+          '      <input id="tepa-priv-controller" class="tepa-bo-input" type="text" maxlength="120" value="' + esc(ctrlVal) + '">' +
+          '    </div>' +
+          '    <div>' +
+          '      <label class="tepa-bo-label" for="tepa-priv-url">' + esc(t('privUrlLbl')) + '</label>' +
+          '      <input id="tepa-priv-url" class="tepa-bo-input" type="url" maxlength="500" value="' + esc(urlVal) + '" placeholder="' + esc(t('privUrlPh')) + '">' +
+          '    </div>' +
+          '    <div>' +
+          '      <label class="tepa-bo-label" for="tepa-priv-contact">' + esc(t('privContactLbl')) + '</label>' +
+          '      <input id="tepa-priv-contact" class="tepa-bo-input" type="text" maxlength="200" value="' + esc(contactVal) + '" placeholder="' + esc(t('privContactPh')) + '">' +
+          '    </div>' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-dark" data-action="priv-save">' + icon('check', 13) + '<span>' + esc(t('privSaveBtn')) + '</span></button>' +
+          '  </div>' +
+          '  <div class="tepa-bo-guard-stats">' +
+          '    <span class="tepa-bo-badge is-blue">' + esc(t('privStatCurQuiz', { count: pCur.quiz_rows || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-gold">' + esc(t('privStatCurEmails', { count: pCur.quiz_emails || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-blue">' + esc(t('privStatCurVotes', { count: pCur.vote_rows || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-gold">' + esc(t('privStatCurIps', { count: pCur.vote_ips || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-muted">' + esc(t('privStatPrevQuiz', { count: pPrev.quiz_rows || 0 })) + '</span>' +
+          '    <span class="tepa-bo-badge is-muted">' + esc(t('privStatPrevVotes', { count: pPrev.vote_rows || 0 })) + '</span>' +
+          '  </div>' +
+          '  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="priv-purge-previous">' + icon('trash', 12) + '<span>' + esc(t('privPurgeBtn')) + '</span></button>' +
+          '    <button type="button" class="tepa-bo-btn tepa-bo-btn-sm tepa-bo-btn-danger" data-action="priv-anonymize-current" ' + (roundsClosed ? '' : 'disabled') + '>' + icon('lock', 12) + '<span>' + esc(t('privAnonBtn')) + '</span></button>' +
+          '  </div>' +
+          '  <p class="tepa-bo-hint" style="margin:0 0 6px;">' + esc(t('privAnonHint')) + '</p>' +
+          '  <p class="tepa-bo-hint" style="margin:0;">' + esc(t('privLegalHint')) + '</p>' +
           '</div>'
         );
       }
@@ -4226,7 +4364,7 @@
           : (curStage === 'vote_qr'
             ? (k.isSimpleActivePoll ? ((k.activePoll && k.activePoll.title) || 'Live Voting') : 'Best of the Best')
             : (curStage === 'winner_reveal'
-              ? (k.isSimpleActivePoll ? (vHeadVal || (k.activePoll && k.activePoll.title) || t('lsPollResults')) : (evTitleVal + ' — Best of the Best'))
+              ? (k.isSimpleActivePoll ? (vHeadVal || (k.activePoll && k.activePoll.title) || t('lsPollResults')) : (evTitleVal + ' · Best of the Best'))
               : vHeadVal));
 
         var monitorBodyHtml = '';
@@ -4859,7 +4997,7 @@
             ? filteredSubs.map(function (r) {
                 return (
                   '<tr>' +
-                  '  <td>' + (r.winner_rank ? '<span class="tepa-bo-badge is-gold">#' + r.winner_rank + '</span>' : '<span style="color:#94A3B8;">—</span>') + '</td>' +
+                  '  <td>' + (r.winner_rank ? '<span class="tepa-bo-badge is-gold">#' + r.winner_rank + '</span>' : '<span style="color:#94A3B8;">-</span>') + '</td>' +
                   '  <td><strong>' + esc(r.full_name) + '</strong>' + (r.email ? '<div style="font-size:11.5px;color:#64748B;margin-top:2px;">' + esc(r.email) + '</div>' : '') + '</td>' +
                   '  <td><button type="button" class="tepa-bo-code-btn" data-action="copy-text" data-text="' + esc(r.unique_code) + '" data-label="' + esc(t('subCopyCodeLabel')) + '" title="' + esc(t('subCopyCodeTitle')) + '">' + icon('copy', 11) + ' ' + esc(r.unique_code) + '</button></td>' +
                   '  <td><span class="tepa-bo-badge ' + (r.passed_criteria ? 'is-green' : 'is-muted') + '">' + esc(r.score) + ' / ' + esc(r.total_questions) + '</span></td>' +
@@ -4869,7 +5007,7 @@
                   '  <td style="color:#64748B;">' + esc(formatTime(r.created_at)) + '</td>' +
                   '  <td>' + (r.is_voucher_winner
                     ? '<button type="button" class="tepa-bo-btn tepa-bo-btn-sm ' + (r.voucher_claimed ? 'tepa-bo-btn-success' : 'tepa-bo-btn-dark') + '" data-action="toggle-claim" data-id="' + esc(r.id) + '" data-val="' + (!r.voucher_claimed) + '">' + (r.voucher_claimed ? (icon('check', 12) + '<span>' + esc(t('subRedeemed')) + '</span>') : esc(t('subMarkRedeemed'))) + '</button>'
-                    : '<span style="color:#94A3B8;">—</span>') + '</td>' +
+                    : '<span style="color:#94A3B8;">-</span>') + '</td>' +
                   '</tr>'
                 );
               }).join('')
@@ -5095,7 +5233,8 @@
         '      </div>' +
         '    </form>' +
         '  </div>' +
-        '</div>'
+        '</div>' +
+        renderPrivacyCard()
       );
     }
 
@@ -5764,6 +5903,7 @@
         state.manuallyLocked = true;
         state.data = null;
         state.guardData = null;
+        state.privacyData = null;
         state.error = '';
         try { sessionStorage.removeItem(PIN_SESSION_KEY); } catch (e) {}
         render(false);
@@ -5880,6 +6020,74 @@
           }
           flash(t('toastGuardRestored', { count: rAllRes.count || 0 }));
           await refreshGuard();
+          await loadAdmin(false);
+        } catch (err) {
+          flash((err && err.message) || t('toastActionFailed'), true);
+        }
+        return;
+      }
+
+      if (act === 'priv-refresh') {
+        await refreshPrivacy();
+        flash(t('toastPrivRefreshed'));
+        return;
+      }
+
+      if (act === 'priv-save') {
+        var ctrlVal = ((root.querySelector('#tepa-priv-controller') || {}).value || '').trim();
+        var urlVal = ((root.querySelector('#tepa-priv-url') || {}).value || '').trim();
+        var contactVal = ((root.querySelector('#tepa-priv-contact') || {}).value || '').trim();
+        try {
+          var pSaveRes = await Store.privacyAdmin(pin, 'update_privacy', {
+            policy_url: urlVal,
+            contact: contactVal,
+            controller: ctrlVal
+          });
+          if (!pSaveRes || !pSaveRes.ok) {
+            flash((pSaveRes && pSaveRes.error) || t('toastSettingErr'), true);
+            return;
+          }
+          await refreshPrivacy();
+          await loadAdmin(false);
+          flash(t('toastPrivSaved'));
+        } catch (err) {
+          flash((err && err.message) || t('toastSettingErr'), true);
+        }
+        return;
+      }
+
+      if (act === 'priv-purge-previous') {
+        var pPrev = (state.privacyData && state.privacyData.stats && state.privacyData.stats.previous) || {};
+        var qPrevCnt = Number(pPrev.quiz_rows || 0);
+        var vPrevCnt = Number(pPrev.vote_rows || 0);
+        if (!global.confirm(t('privConfirmPurge', { quiz: qPrevCnt, votes: vPrevCnt }))) return;
+        try {
+          var pPurgeRes = await Store.privacyAdmin(pin, 'purge_previous_rounds');
+          if (!pPurgeRes || !pPurgeRes.ok) {
+            flash((pPurgeRes && pPurgeRes.error) || t('toastActionFailed'), true);
+            return;
+          }
+          var delInfo = pPurgeRes.deleted || {};
+          flash(t('toastPrivPurged', { quiz: delInfo.quiz || 0, votes: delInfo.votes || 0 }));
+          await refreshPrivacy();
+          await loadAdmin(false);
+        } catch (err) {
+          flash((err && err.message) || t('toastActionFailed'), true);
+        }
+        return;
+      }
+
+      if (act === 'priv-anonymize-current') {
+        if (!global.confirm(t('privConfirmAnon'))) return;
+        try {
+          var pAnonRes = await Store.privacyAdmin(pin, 'anonymize_current_round');
+          if (!pAnonRes || !pAnonRes.ok) {
+            flash((pAnonRes && pAnonRes.error) || t('toastActionFailed'), true);
+            return;
+          }
+          var anonInfo = pAnonRes.anonymized || {};
+          flash(t('toastPrivAnonymized', { quiz: anonInfo.quiz || 0, votes: anonInfo.votes || 0 }));
+          await refreshPrivacy();
           await loadAdmin(false);
         } catch (err) {
           flash((err && err.message) || t('toastActionFailed'), true);

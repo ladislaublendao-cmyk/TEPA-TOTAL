@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEPA_THEME_VERSION', '1.11.0' );
+define( 'TEPA_THEME_VERSION', '1.12.0' );
 define( 'TEPA_DEFAULT_SUPABASE_URL', 'https://ujpzqulgainzxxombrgb.supabase.co' );
 define( 'TEPA_DEFAULT_SUPABASE_KEY', 'sb_publishable_cuReE7bA6g0vdzdJQCPWJQ_oPCuxzxM' );
 
@@ -214,7 +214,7 @@ function tepa_build_access_code_email_html( $full_name, $unique_code, $event_tit
 
 	return '<!DOCTYPE html>'
 		. '<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">'
-		. '<title>' . $safe_event . ' — Access Code</title></head>'
+		. '<title>' . $safe_event . ': Access Code</title></head>'
 		. '<body style="margin:0;padding:0;background-color:#0B0C14;font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;color:#141624;">'
 		. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0B0C14;padding:28px 14px;">'
 		. '<tr><td align="center">'
@@ -244,6 +244,60 @@ function tepa_build_access_code_email_html( $full_name, $unique_code, $event_tit
 		. '</table>'
 		. '</td></tr></table>'
 		. '</body></html>';
+}
+
+/**
+ * Verify that an access code belongs to the given email in the current Supabase quiz epoch.
+ *
+ * @return string|false|WP_Error Verified participant name, false if mismatched, or WP_Error if verification failed.
+ */
+function tepa_verify_quiz_code_owner( $unique_code, $email ) {
+	$cfg = tepa_get_runtime_config();
+	if ( ! empty( $cfg['forceDemo'] ) || empty( $cfg['supabaseUrl'] ) || empty( $cfg['supabaseAnonKey'] ) ) {
+		return new WP_Error( 'tepa_verify_unavailable', 'unavailable' );
+	}
+
+	$endpoint = rtrim( (string) $cfg['supabaseUrl'], '/' ) . '/rest/v1/rpc/tepa_verify_quiz_code';
+	$key      = (string) $cfg['supabaseAnonKey'];
+
+	$response = wp_remote_post(
+		$endpoint,
+		array(
+			'timeout' => 8,
+			'headers' => array(
+				'apikey'        => $key,
+				'Authorization' => 'Bearer ' . $key,
+				'Content-Type'  => 'application/json',
+			),
+			'body'    => wp_json_encode(
+				array(
+					'p_unique_code' => $unique_code,
+					'p_email'       => $email,
+				)
+			),
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return $response;
+	}
+
+	$status = (int) wp_remote_retrieve_response_code( $response );
+	if ( 200 !== $status ) {
+		return new WP_Error( 'tepa_verify_http_error', 'Unexpected verification status.' );
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( ! is_array( $data ) ) {
+		return new WP_Error( 'tepa_verify_invalid_json', 'Invalid verification response.' );
+	}
+
+	if ( ! empty( $data['ok'] ) ) {
+		$verified_name = isset( $data['full_name'] ) ? sanitize_text_field( trim( (string) $data['full_name'] ) ) : '';
+		return '' !== $verified_name ? $verified_name : 'Participant';
+	}
+
+	return false;
 }
 
 /**
@@ -341,6 +395,27 @@ function tepa_rest_send_quiz_code( WP_REST_Request $request ) {
 	if ( '' === $event_title ) {
 		$event_title = 'TEPA Performance Award 2026';
 	}
+
+	$verified = tepa_verify_quiz_code_owner( $unique_code, $email );
+	if ( is_wp_error( $verified ) ) {
+		return new WP_REST_Response(
+			array(
+				'ok'    => false,
+				'error' => 'Could not verify your access code right now. Please save your code or download your PDF receipt.',
+			),
+			503
+		);
+	}
+	if ( false === $verified ) {
+		return new WP_REST_Response(
+			array(
+				'ok'    => false,
+				'error' => 'This access code does not match this email address.',
+			),
+			403
+		);
+	}
+	$full_name = $verified;
 
 	$email_lc   = strtolower( $email );
 	$dedupe_key = 'tepa_mail_sent_' . md5( $email_lc . '|' . $unique_code );
