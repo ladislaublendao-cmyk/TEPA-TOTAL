@@ -6179,7 +6179,12 @@ body.tepa-wp-admin-page .tepa-wp-admin-wrap {
 .tepa-turnstile-slot {
   display: flex;
   justify-content: center;
+  width: 100%;
   margin: 0 0 12px;
+}
+
+.tepa-turnstile-slot:empty {
+  display: none;
 }
 
 .tepa-vote-modal-error {

@@ -713,6 +713,7 @@
     var handle = {
       widgetId: null,
       cancelled: false,
+      lastErrorCode: '',
       tokenPromise: null
     };
 
@@ -741,11 +742,14 @@
           sitekey: siteKey,
           action: 'vote',
           theme: 'dark',
-          appearance: 'interaction-only',
+          size: 'flexible',
+          appearance: 'always',
           callback: function (token) {
+            handle.lastErrorCode = '';
             if (resolveFn) resolveFn(token);
           },
-          'error-callback': function () {
+          'error-callback': function (errCode) {
+            handle.lastErrorCode = String(errCode || '');
             if (resolveFn) resolveFn(null);
           },
           'timeout-callback': function () {
@@ -1780,7 +1784,10 @@
           }
           state.verifying = false;
           if (!captchaToken && state.guardMode === 'enforce') {
-            state.modalError = 'Security check could not complete. Check your connection and tap Confirm again.';
+            var tsErrCode = (state.guardWidget && state.guardWidget.lastErrorCode) || '';
+            state.modalError = tsErrCode === '110200'
+              ? ('This domain (' + ((global.location && global.location.hostname) || '') + ') is not authorized in Cloudflare Turnstile. Add it to the widget Hostnames.')
+              : 'Security check could not complete. Check your connection and tap Confirm again.';
             removeTurnstile(state.guardWidget);
             state.guardWidget = null;
             var retrySlot = root.querySelector('#tepa-turnstile-slot');
