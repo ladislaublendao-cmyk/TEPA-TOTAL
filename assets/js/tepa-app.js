@@ -1605,6 +1605,10 @@
 
     var urlParams = new URLSearchParams(global.location ? global.location.search : '');
     var initialChart = urlParams.get('chart') === 'vertical' ? 'vertical' : 'horizontal';
+    var urlStageParam = urlParams.get('stage');
+    var initialStageOverride = (urlStageParam === 'quiz_qr' || urlStageParam === 'vote_qr' || urlStageParam === 'live_voting' || urlStageParam === 'winner_reveal')
+      ? urlStageParam
+      : null;
     var savedTheme = 'light';
     try {
       var stTheme = global.localStorage.getItem(THEME_KEY);
@@ -1613,7 +1617,7 @@
 
     var state = {
       dash: null,
-      localStageOverride: null,
+      localStageOverride: initialStageOverride,
       theme: savedTheme, // 'light' | 'dark'
       chartType: initialChart, // 'horizontal' (Ref 2) | 'vertical' (Ref 1)
       verticalScope: 'top5', // 'top5' | 'all15'
@@ -2490,6 +2494,8 @@
           }
         } else if (stageMode === 'quiz_qr') {
           if (updateQuizQrInPlace(qsForKey, quizWinnersRevealedForKey, totalVotes)) return;
+        } else if (stageMode === 'vote_qr') {
+          return;
         } else if (stageMode === 'winner_reveal') {
           if (updateWinnerRevealInPlace(ranked[0], ranked.slice(1, 4), totalVotes)) return;
         }
@@ -2530,9 +2536,11 @@
 
       var headlineTitle = stageMode === 'quiz_qr'
         ? esc((activeQuiz && activeQuiz.title && activeQuiz.title !== 'Quiz' ? activeQuiz.title : 'Welcome Quiz') + ' — Scan to Join & Win!')
-        : (stageMode === 'winner_reveal'
-          ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
-          : esc(effHeadline || 'Which finalist project deserves the Best of the Best?'));
+        : (stageMode === 'vote_qr'
+          ? esc(isSimplePoll ? ((activePoll && activePoll.title) || 'Live Voting') : 'Best of the Best')
+          : (stageMode === 'winner_reveal'
+            ? esc(isSimplePoll ? (effHeadline || (activePoll && activePoll.title) || 'Poll Results') : ((settings.event_title || 'TEPA Performance Award 2026') + ' — Best of the Best'))
+            : esc(effHeadline || 'Which finalist project deserves the Best of the Best?')));
 
       var voteHeaderHtml =
         '<div class="tepa-vote-stage-head">' +
@@ -2601,6 +2609,31 @@
           '        <div class="tepa-quiz-kpi"><strong id="tepa-quiz-stage-vouchers" class="is-gold">' + (quizWinnersRevealed ? (esc(qs.vouchers_awarded || 0) + ' / ' + esc(qs.max_vouchers || 10)) : ('Top ' + esc(qs.max_vouchers || 10))) + '</strong><span>' + (quizWinnersRevealed ? 'Winners' : 'Prizes available') + '</span></div>' +
           '      </div>' +
           quizRightHtml +
+          '    </div>' +
+          '  </div>' +
+          '</div>';
+      } else if (stageMode === 'vote_qr') {
+        var voteEventTxt = settings.event_title || 'TEPA Performance Award 2026';
+        var voteTitleTxt = isSimplePoll
+          ? ((activePoll && activePoll.title) || 'Live Voting')
+          : 'Best of the Best';
+        var voteSubTxt = isSimplePoll
+          ? ((activePoll && activePoll.voting_headline) || 'Scan the QR code and cast your live vote.')
+          : 'Scan the QR code and choose the project that deserves the Best of the Best.';
+
+        workspaceHtml =
+          '<div class="tepa-quiz-stage is-vote-qr">' +
+          '  <div class="tepa-winner-glow" aria-hidden="true"></div>' +
+          '  <div class="tepa-quiz-stage-grid">' +
+          '    <div class="tepa-quiz-qr-panel q-anim" style="animation-delay:80ms;">' +
+          '      <div class="tepa-quiz-qr-frame"><div class="tepa-menti-qrwrap" id="tepa-stage-vote-qr-hero"></div></div>' +
+          '      <div class="tepa-quiz-qr-cta">Scan to vote</div>' +
+          '      <div class="tepa-quiz-qr-host">' + esc(shortHostLabel(voteTargetUrl)) + '</div>' +
+          '    </div>' +
+          '    <div class="tepa-quiz-info">' +
+          '      <div class="tepa-winner-eyebrow q-anim" style="animation-delay:180ms;">★ ' + esc(voteEventTxt) + '</div>' +
+          '      <h2 class="tepa-quiz-title tepa-rainbow-text q-anim" style="animation-delay:260ms;">' + esc(voteTitleTxt) + '</h2>' +
+          '      <p class="tepa-vote-qr-sub q-anim" style="animation-delay:340ms;">' + esc(voteSubTxt) + '</p>' +
           '    </div>' +
           '  </div>' +
           '</div>';
@@ -2778,6 +2811,8 @@
         targetEl.innerHTML = snap.bodyHtml;
         if (snap.stageMode === 'quiz_qr') {
           renderQR(targetEl.querySelector('#tepa-stage-quiz-qr'), snap.quizTargetUrl);
+        } else if (snap.stageMode === 'vote_qr') {
+          renderQR(targetEl.querySelector('#tepa-stage-vote-qr-hero'), snap.voteTargetUrl);
         } else if (snap.stageMode === 'live_voting') {
           renderQR(targetEl.querySelector('#tepa-stage-vote-qr'), snap.voteTargetUrl);
           applyLeaderState(snap.leaderId, snap.leaderActive);
@@ -3320,11 +3355,15 @@
 
       var stBadge = root.querySelector('[data-tab-count="stage"]');
       if (stBadge) {
-        stBadge.textContent = s.stage_mode === 'quiz_qr' ? t('badgeStageQuiz') : (s.stage_mode === 'winner_reveal' ? t('badgeStageWinner') : t('badgeStageVoting'));
+        stBadge.textContent = s.stage_mode === 'quiz_qr'
+          ? t('badgeStageQuiz')
+          : (s.stage_mode === 'vote_qr'
+            ? t('badgeStageVoteQr')
+            : (s.stage_mode === 'winner_reveal' ? t('badgeStageWinner') : t('badgeStageVoting')));
       }
       var lsBadge = root.querySelector('[data-tab-count="livescreen"]');
       if (lsBadge) {
-        lsBadge.textContent = (s.live_theme === 'dark' ? t('themeDark') : t('themeLight')) + ' · ' + (s.stage_mode === 'quiz_qr' ? 'S1' : (s.stage_mode === 'winner_reveal' ? 'S3' : 'S2'));
+        lsBadge.textContent = (s.live_theme === 'dark' ? t('themeDark') : t('themeLight')) + ' · ' + (s.stage_mode === 'quiz_qr' ? 'S1' : (s.stage_mode === 'vote_qr' ? 'S2' : (s.stage_mode === 'winner_reveal' ? 'S4' : 'S3')));
       }
       var qc = root.querySelector('[data-tab-count="questions"]');
       if (qc) {
@@ -3663,6 +3702,14 @@
           '        </span>' +
           (s.stage_mode === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">' + esc(t('stLiveNow')) + '</span>' : '') +
           '      </button>' +
+          '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'vote_qr' ? 'is-active' : '') + '" data-action="set-stage" data-val="vote_qr">' +
+          '        <span class="tepa-bo-stage-num">' + icon('qr', 15) + '</span>' +
+          '        <span class="tepa-bo-stage-meta">' +
+          '          <span class="tepa-bo-stage-title">' + esc(t('stModeVoteQrTitle')) + '</span>' +
+          '          <span class="tepa-bo-stage-desc">' + esc(t('stModeVoteQrDesc')) + '</span>' +
+          '        </span>' +
+          (s.stage_mode === 'vote_qr' ? '<span class="tepa-bo-badge is-green">' + esc(t('stLiveNow')) + '</span>' : '') +
+          '      </button>' +
           '      <button type="button" class="tepa-bo-stage-card ' + (s.stage_mode === 'live_voting' ? 'is-active' : '') + '" data-action="set-stage" data-val="live_voting">' +
           '        <span class="tepa-bo-stage-num">' + icon('barChart', 15) + '</span>' +
           '        <span class="tepa-bo-stage-meta">' +
@@ -3823,14 +3870,17 @@
 
         var stageNameMap = {
           quiz_qr: t('lsScene1'),
+          vote_qr: t('lsSceneVoteQr'),
           live_voting: t('lsScene2'),
           winner_reveal: k.isSimpleActivePoll ? t('lsScene3Simple') : t('lsScene3Projects')
         };
         var monitorHeadline = curStage === 'quiz_qr'
           ? t('lsScanToJoin', { title: (k.activeQuiz && k.activeQuiz.title && k.activeQuiz.title !== 'Quiz') ? k.activeQuiz.title : 'Welcome Quiz' })
-          : (curStage === 'winner_reveal'
-            ? (k.isSimpleActivePoll ? (vHeadVal || (k.activePoll && k.activePoll.title) || t('lsPollResults')) : (evTitleVal + ' — Best of the Best'))
-            : vHeadVal);
+          : (curStage === 'vote_qr'
+            ? (k.isSimpleActivePoll ? ((k.activePoll && k.activePoll.title) || 'Live Voting') : 'Best of the Best')
+            : (curStage === 'winner_reveal'
+              ? (k.isSimpleActivePoll ? (vHeadVal || (k.activePoll && k.activePoll.title) || t('lsPollResults')) : (evTitleVal + ' — Best of the Best'))
+              : vHeadVal));
 
         var monitorBodyHtml = '';
         if (curStage === 'quiz_qr') {
@@ -3844,6 +3894,15 @@
               ? t('lsMonQuizShowing', { count: k.voucherWinners.length, prize: prizeTitleLs })
               : t('lsMonQuizHidden')) +
             '    </div>' +
+            '  </div>' +
+            '</div>';
+        } else if (curStage === 'vote_qr') {
+          monitorBodyHtml =
+            '<div style="display:flex;align-items:center;gap:14px;">' +
+            '  <div style="width:56px;height:56px;border-radius:12px;background:' + (curTheme === 'dark' ? 'rgba(255,255,255,0.08)' : '#F1F5F9') + ';display:flex;align-items:center;justify-content:center;flex-shrink:0;">' + icon('qr', 26) + '</div>' +
+            '  <div style="min-width:0;flex:1;">' +
+            '    <div style="font-size:12px;font-weight:700;color:#F77B39;">' + esc(t('lsMonVoteQrTitle', { votes: k.totalVotes })) + '</div>' +
+            '    <div style="font-size:12.5px;margin-top:3px;opacity:0.85;">' + esc(t('lsMonVoteQrSub')) + '</div>' +
             '  </div>' +
             '</div>';
         } else if (curStage === 'winner_reveal') {
@@ -3890,6 +3949,14 @@
           '          <span class="tepa-bo-stage-desc">' + esc(t('lsScene1Desc', { count: k.subs.length, state: curQuizReveal ? t('lsAnnounced') : t('lsHidden') })) + '</span>' +
           '        </span>' +
           (curStage === 'quiz_qr' ? '<span class="tepa-bo-badge is-green">' + esc(t('lsOnAir')) + '</span>' : '') +
+          '      </button>' +
+          '      <button type="button" class="tepa-bo-stage-card ' + (curStage === 'vote_qr' ? 'is-active' : '') + '" data-action="set-stage" data-val="vote_qr">' +
+          '        <span class="tepa-bo-stage-num">' + icon('qr', 15) + '</span>' +
+          '        <span class="tepa-bo-stage-meta">' +
+          '          <span class="tepa-bo-stage-title">' + esc(t('lsSceneVoteQr')) + '</span>' +
+          '          <span class="tepa-bo-stage-desc">' + esc(t('lsSceneVoteQrDesc', { votes: k.totalVotes })) + '</span>' +
+          '        </span>' +
+          (curStage === 'vote_qr' ? '<span class="tepa-bo-badge is-green">' + esc(t('lsOnAir')) + '</span>' : '') +
           '      </button>' +
           '      <button type="button" class="tepa-bo-stage-card ' + (curStage === 'live_voting' ? 'is-active' : '') + '" data-action="set-stage" data-val="live_voting">' +
           '        <span class="tepa-bo-stage-num">' + icon('barChart', 15) + '</span>' +
@@ -4526,7 +4593,7 @@
           },
           {
             ok: true,
-            title: t('aud7Title', { mode: s.stage_mode === 'quiz_qr' ? t('aud7ModeQuiz') : (s.stage_mode === 'winner_reveal' ? t('aud7ModeWin') : t('aud7ModeVote')) }),
+            title: t('aud7Title', { mode: s.stage_mode === 'quiz_qr' ? t('aud7ModeQuiz') : (s.stage_mode === 'vote_qr' ? t('aud7ModeVoteQr') : (s.stage_mode === 'winner_reveal' ? t('aud7ModeWin') : t('aud7ModeVote'))) }),
             desc: t('aud7Desc'),
             badge: t('aud7Badge'),
             actionTab: 'stage',
@@ -4818,7 +4885,11 @@
       var quizScreenUrl = cfg.quizUrl || 'quiz.html';
       var liveScreenUrl = cfg.liveUrl || 'live.html';
       var meta = getSectionMeta(state.tab);
-      var stageBadgeText = s.stage_mode === 'quiz_qr' ? t('badgeStageQuiz') : (s.stage_mode === 'winner_reveal' ? t('badgeStageWinner') : t('badgeStageVoting'));
+      var stageBadgeText = s.stage_mode === 'quiz_qr'
+        ? t('badgeStageQuiz')
+        : (s.stage_mode === 'vote_qr'
+          ? t('badgeStageVoteQr')
+          : (s.stage_mode === 'winner_reveal' ? t('badgeStageWinner') : t('badgeStageVoting')));
 
       root.innerHTML =
         '<div class="tepa-bo tepa-bo-app' + (forceFullShell ? '' : ' tepa-anim-enter') + '" id="tepa-bo-shell">' +
@@ -4845,7 +4916,7 @@
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'livescreen' ? 'is-active' : '') + '" data-tab="livescreen">' +
         '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('monitor', 15) + '</span><span>' + esc(t('navLiveScreen')) + '</span></span>' +
-        '        <span class="tepa-bo-nav-badge" data-tab-count="livescreen">' + esc((s.live_theme === 'dark' ? t('themeDark') : t('themeLight')) + ' · ' + (s.stage_mode === 'quiz_qr' ? 'S1' : (s.stage_mode === 'winner_reveal' ? 'S3' : 'S2'))) + '</span>' +
+        '        <span class="tepa-bo-nav-badge" data-tab-count="livescreen">' + esc((s.live_theme === 'dark' ? t('themeDark') : t('themeLight')) + ' · ' + (s.stage_mode === 'quiz_qr' ? 'S1' : (s.stage_mode === 'vote_qr' ? 'S2' : (s.stage_mode === 'winner_reveal' ? 'S4' : 'S3')))) + '</span>' +
         '      </button>' +
         '      <button type="button" class="tepa-bo-nav-item tepa-bo-tab ' + (state.tab === 'questions' ? 'is-active' : '') + '" data-tab="questions">' +
         '        <span class="tepa-bo-nav-left"><span class="tepa-bo-nav-icon">' + icon('sparkles', 15) + '</span><span>' + esc(t('navQuiz')) + '</span></span>' +
@@ -4905,6 +4976,7 @@
         '        <div class="tepa-bo-quick-stage" title="' + esc(t('quickStageTitle')) + '">' +
         '          <span class="tepa-bo-quick-stage-lbl">' + icon('monitor', 12) + '<span>' + esc(t('quickStageLbl')) + '</span></span>' +
         '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'quiz_qr' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="quiz_qr">' + esc(t('quickStage1')) + '</button>' +
+        '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'vote_qr' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="vote_qr">' + esc(t('quickStageVoteQr')) + '</button>' +
         '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'live_voting' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="live_voting">' + esc(t('quickStage2')) + '</button>' +
         '          <button type="button" class="tepa-bo-quick-stage-btn ' + (s.stage_mode === 'winner_reveal' ? 'is-active' : '') + '" data-quick-stage data-action="set-stage" data-val="winner_reveal">' + esc(t('quickStage3')) + '</button>' +
         '        </div>' +
@@ -5357,7 +5429,11 @@
           reveal_winner: stageVal === 'winner_reveal'
         });
         await loadAdmin(false);
-        var stageLbl = stageVal === 'quiz_qr' ? t('aud7ModeQuiz') : (stageVal === 'winner_reveal' ? t('aud7ModeWin') : t('aud7ModeVote'));
+        var stageLbl = stageVal === 'quiz_qr'
+          ? t('aud7ModeQuiz')
+          : (stageVal === 'vote_qr'
+            ? t('aud7ModeVoteQr')
+            : (stageVal === 'winner_reveal' ? t('aud7ModeWin') : t('aud7ModeVote')));
         flash(t('toastStageSwitched', { stage: stageLbl }));
         return;
       }

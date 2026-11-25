@@ -2764,12 +2764,15 @@ body:not(.wp-admin) a,
 .tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-count,
 .tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-sort,
 .tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-count,
-.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-sort {
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-sort,
+.tepa-menti-stage[data-stage-mode="vote_qr"] .tepa-broadcast-count,
+.tepa-menti-stage[data-stage-mode="vote_qr"] .tepa-broadcast-sort {
   display: none;
 }
 
 .tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-fs,
-.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs {
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs,
+.tepa-menti-stage[data-stage-mode="vote_qr"] .tepa-broadcast-fs {
   opacity: 0;
   transition: opacity 0.2s ease, background 0.16s ease;
 }
@@ -2777,7 +2780,9 @@ body:not(.wp-admin) a,
 .tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-fs:hover,
 .tepa-menti-stage[data-stage-mode="winner_reveal"] .tepa-broadcast-fs:focus-visible,
 .tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs:hover,
-.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs:focus-visible {
+.tepa-menti-stage[data-stage-mode="quiz_qr"] .tepa-broadcast-fs:focus-visible,
+.tepa-menti-stage[data-stage-mode="vote_qr"] .tepa-broadcast-fs:hover,
+.tepa-menti-stage[data-stage-mode="vote_qr"] .tepa-broadcast-fs:focus-visible {
   opacity: 1;
 }
 
@@ -3188,6 +3193,40 @@ body:not(.wp-admin) a,
   font-size: clamp(16px, 2.4vh, 24px);
   font-weight: 500;
   color: rgba(255, 255, 255, 0.72);
+}
+
+/* Best of the Best — Scan to Vote full-bleed QR stage */
+.tepa-quiz-stage.is-vote-qr .tepa-winner-glow {
+  left: 40%;
+  top: 44%;
+  width: min(980px, 95%);
+}
+
+.tepa-quiz-stage.is-vote-qr .tepa-quiz-stage-grid {
+  gap: clamp(38px, 5.8vw, 104px);
+}
+
+.tepa-quiz-stage.is-vote-qr .tepa-quiz-qr-frame {
+  padding: clamp(11px, 1.5vh, 16px);
+  border-radius: 30px;
+  background: linear-gradient(135deg, #F77B39 0%, #E72428 22%, #8F4F9E 46%, #2194D4 70%, #64BD75 86%, #FFD239 100%);
+  box-shadow: 0 26px 76px rgba(247, 123, 57, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.tepa-quiz-stage.is-vote-qr .tepa-quiz-qr-frame .tepa-menti-qrwrap {
+  width: clamp(235px, 43vh, 450px);
+  padding: clamp(14px, 1.8vh, 20px);
+  border-radius: 20px;
+}
+
+.tepa-vote-qr-sub {
+  margin: clamp(14px, 2.2vh, 24px) 0 0;
+  max-width: clamp(440px, 44vw, 660px);
+  font-size: clamp(20px, 3vh, 32px);
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.01em;
+  color: #FFFFFF;
 }
 
 .tepa-quiz-kpis {
