@@ -3444,15 +3444,23 @@
       }
     }
 
+    function sanitizeCsvCell(val) {
+      var str = String(val == null ? '' : val).replace(/\r?\n/g, ' ').trim();
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = "'" + str;
+      }
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+
     function downloadCsv(rows) {
       var header = ['Rank', 'Full Name', 'Email', 'Unique ID', 'Score', 'Total', 'Passed', 'Voucher Winner', 'Voucher Claimed', 'Submitted At'];
       var lines = [header.join(',')];
       rows.forEach(function (r) {
         var cols = [
           r.winner_rank || '',
-          '"' + String(r.full_name || '').replace(/"/g, '""') + '"',
-          '"' + String(r.email || '').replace(/"/g, '""') + '"',
-          r.unique_code || '',
+          sanitizeCsvCell(r.full_name),
+          sanitizeCsvCell(r.email),
+          sanitizeCsvCell(r.unique_code),
           r.score,
           r.total_questions,
           r.passed_criteria ? 'YES' : 'NO',

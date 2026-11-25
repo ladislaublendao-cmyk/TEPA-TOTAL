@@ -7,7 +7,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TEPA_THEME_VERSION', '1.10.1' );
+define( 'TEPA_THEME_VERSION', '1.10.2' );
 define( 'TEPA_DEFAULT_SUPABASE_URL', 'https://ujpzqulgainzxxombrgb.supabase.co' );
 define( 'TEPA_DEFAULT_SUPABASE_KEY', 'sb_publishable_cuReE7bA6g0vdzdJQCPWJQ_oPCuxzxM' );
 
@@ -250,6 +250,60 @@ function tepa_build_access_code_email_html( $full_name, $unique_code, $event_tit
  * REST callback: POST /wp-json/tepa/v1/send-quiz-code
  */
 function tepa_rest_send_quiz_code( WP_REST_Request $request ) {
+	// 1. Same-origin / Referer check when header is present (blocks external cross-site abuse)
+	$site_host = wp_parse_url( home_url(), PHP_URL_HOST );
+	$origin    = (string) $request->get_header( 'origin' );
+	$referer   = (string) $request->get_header( 'referer' );
+	if ( '' !== $origin && '' !== $site_host ) {
+		$origin_host = wp_parse_url( $origin, PHP_URL_HOST );
+		if ( $origin_host && strtolower( (string) $origin_host ) !== strtolower( (string) $site_host ) ) {
+			return new WP_REST_Response(
+				array(
+					'ok'    => false,
+					'error' => 'Cross-origin email dispatch is not permitted.',
+				),
+				403
+			);
+		}
+	} elseif ( '' !== $referer && '' !== $site_host ) {
+		$ref_host = wp_parse_url( $referer, PHP_URL_HOST );
+		if ( $ref_host && strtolower( (string) $ref_host ) !== strtolower( (string) $site_host ) ) {
+			return new WP_REST_Response(
+				array(
+					'ok'    => false,
+					'error' => 'Cross-origin email dispatch is not permitted.',
+				),
+				403
+			);
+		}
+	}
+
+	// 2. Verify X-WP-Nonce if provided by the client
+	$nonce = (string) $request->get_header( 'x_wp_nonce' );
+	if ( '' !== $nonce && ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+		return new WP_REST_Response(
+			array(
+				'ok'    => false,
+				'error' => 'Invalid or expired security token. Please reload the page.',
+			),
+			403
+		);
+	}
+
+	// 3. Auditorium-safe per-IP ceiling (120 emails / 10 min per IP)
+	$client_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '0.0.0.0';
+	$ip_key    = 'tepa_mail_ip_' . md5( $client_ip );
+	$ip_count  = (int) get_transient( $ip_key );
+	if ( $ip_count >= 120 ) {
+		return new WP_REST_Response(
+			array(
+				'ok'    => false,
+				'error' => 'Email rate limit reached. Please try again in a few minutes.',
+			),
+			429
+		);
+	}
+
 	$params = $request->get_json_params();
 	if ( ! is_array( $params ) || empty( $params ) ) {
 		$params = $request->get_params();
@@ -333,6 +387,7 @@ function tepa_rest_send_quiz_code( WP_REST_Request $request ) {
 
 	set_transient( $dedupe_key, 1, DAY_IN_SECONDS );
 	set_transient( $rate_key, $rate_count + 1, 10 * MINUTE_IN_SECONDS );
+	set_transient( $ip_key, $ip_count + 1, 10 * MINUTE_IN_SECONDS );
 
 	return new WP_REST_Response(
 		array(
